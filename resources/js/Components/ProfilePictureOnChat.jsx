@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export default function ProfilePictureOnChat({ user }) {
     return (
@@ -12,5 +12,5 @@ export default function ProfilePictureOnChat({ user }) {
                 {/*<span className="absolute bottom-0 right-0.5 block h-2 w-2 rounded-full ring-2 ring-gray-200 bg-green-500"/>*/}
             </div>
         </>
-    )
+    );
 }

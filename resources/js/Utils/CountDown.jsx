@@ -1,0 +1,39 @@
+import React, { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+
+export default function Countdown({ expired_at }) {
+    if (!expired_at) {
+        return <Badge variant="destructive">Tidak ada waktu!</Badge>;
+    }
+
+    // Convert string ke timestamp
+    const targetTime = new Date(expired_at.replace(" ", "T")).getTime();
+
+    if (isNaN(targetTime)) {
+        return <Badge variant="destructive">Format waktu tidak valid!</Badge>;
+    }
+
+    const [timeLeft, setTimeLeft] = useState(targetTime - Date.now());
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeLeft(targetTime - Date.now());
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [targetTime]);
+
+    if (timeLeft <= 0) {
+        return <Badge className="bg-red-100 text-red-700">Waktu habis!</Badge>;
+    }
+
+    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    return (
+        <Badge className="bg-yellow-100 text-yellow-600 font-mono text-sm">
+            {String(hours).padStart(2, "0")}:{String(minutes).padStart(2, "0")}:
+            {String(seconds).padStart(2, "0")}
+        </Badge>
+    );
+}

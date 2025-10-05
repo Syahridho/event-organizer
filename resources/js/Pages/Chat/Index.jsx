@@ -1,21 +1,21 @@
-import React from 'react';
+import React from "react";
 import { Head } from "@inertiajs/react";
-import App from "@/Layouts/App.jsx";
+import AppChat from "@/Layouts/App.jsx";
 
-export default function Index() {
+export default function Chat() {
     return (
         <>
-            <Head title="Chats" />
+            <Head title="Pesan" />
 
             <div className="flex-col hidden lg:flex lg:w-2/3">
                 <div className="flex items-center justify-center h-screen">
-                   <div className="font-semibold tracking-tight text-gray-300">
-                       Search and select someone to start chatting with
-                   </div>
+                    <div className="font-semibold tracking-tight">
+                        Cari dan pilih percakapan untuk memulai pesan
+                    </div>
                 </div>
             </div>
         </>
-    )
+    );
 }
 
-Index.layout = (page) => <App children={page}/>;
+Chat.layout = (page) => <AppChat children={page} />;

@@ -1,19 +1,42 @@
-import './bootstrap';
-import '../css/app.css';
+import "./bootstrap";
+import "../css/app.css";
+import "leaflet/dist/leaflet.css";
 
-import { createRoot } from 'react-dom/client';
-import { createInertiaApp } from '@inertiajs/react';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { createRoot } from "react-dom/client";
+import { createInertiaApp } from "@inertiajs/react";
+import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
+import { Toaster } from "sonner";
+import { Provider } from "react-redux";
+import { store } from "./Store";
+import Initializer from "./hooks/useInitializeTheme";
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+function AppWrapper({ App, props }) {
+    return (
+        <Provider store={store}>
+            <Initializer />
+            <App {...props} />
+            <Toaster position="bottom-right" richColors />
+        </Provider>
+    );
+}
+
+const appName = import.meta.env.VITE_APP_NAME || "Eventplan";
+
+let root = null;
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
+    resolve: (name) =>
+        resolvePageComponent(
+            `./Pages/${name}.jsx`,
+            import.meta.glob("./Pages/**/*.jsx")
+        ),
     setup({ el, App, props }) {
-        const root = createRoot(el);
+        if (!root) {
+            root = createRoot(el);
+        }
 
-        root.render(<App {...props} />);
+        root.render(<AppWrapper App={App} props={props} />);
     },
-    progress: false,
+    progress: true,
 });
