@@ -65,13 +65,13 @@ class RentController extends Controller
             }
         }
 
-        return redirect()->route('rents.index')->with('success', 'Barang Berhasil Ditambahkan');
+        return redirect()->route('rents.index')->with('success', 'Property Berhasil Ditambahkan');
 
     }
 
     public function edit($id)
     {
-        $rent = RentProperties::find($id);
+        $rent = RentProperties::findOrFail($id);
         return Inertia::render('Mitra/RentProperty/Update', [
             'id' => $id,
             'rent' => $rent,
@@ -129,17 +129,18 @@ class RentController extends Controller
 
                         $rent->itemPhotos()->create([
                             'photo' => $filename,
+                            'item_type' => RentProperties::class,
                             'caption' => $request->input("itemPhoto.$index.caption"),
                         ]);
                     }
                 }
             }
 
-            return redirect()->route('rents.index')->with('success', 'Sewa berhasil diperbarui');
+            return redirect()->route('rents.index')->with('success', 'Property berhasil diperbarui');
 
         } catch (\Exception $e) {
             return redirect()->back()->withErrors([
-                'error' => 'Gagal memperbarui Sewa: ' . $e->getMessage()
+                'error' => 'Gagal memperbarui Property: ' . $e->getMessage()
             ]);
         }
     }
@@ -158,7 +159,7 @@ class RentController extends Controller
 
             $rent->delete();
 
-            return Redirect::route('rents.index')->with('success', 'Berhasil Menghapus Barang');
+            return Redirect::route('rents.index')->with('success', 'Berhasil Menghapus Property');
            } catch (\Exception $e) {
             return Redirect::back()->withErrors(['error' => 'Gagal menghapus jasa: ' . $e->getMessage()]);
         }

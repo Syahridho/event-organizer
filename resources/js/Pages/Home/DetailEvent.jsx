@@ -14,6 +14,7 @@ import {
     Clock,
     User,
     AlertTriangle,
+    RefreshCw,
 } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,6 +27,96 @@ import { PaymentSheet } from "@/components/paymentSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import MainLayout from "@/Layouts/Main";
 
+// Countdown Timer Component
+const CountdownTimer = ({ targetDate, onComplete }) => {
+    const [timeLeft, setTimeLeft] = useState({
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+    });
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        const calculateTimeLeft = () => {
+            const now = new Date().getTime();
+            const target = new Date(targetDate).getTime();
+            const difference = target - now;
+
+            if (difference <= 0) {
+                setIsExpired(true);
+                onComplete?.();
+                return {
+                    days: 0,
+                    hours: 0,
+                    minutes: 0,
+                    seconds: 0,
+                };
+            }
+
+            return {
+                days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                hours: Math.floor(
+                    (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+                ),
+                minutes: Math.floor(
+                    (difference % (1000 * 60 * 60)) / (1000 * 60)
+                ),
+                seconds: Math.floor((difference % (1000 * 60)) / 1000),
+            };
+        };
+
+        setTimeLeft(calculateTimeLeft());
+
+        const timer = setInterval(() => {
+            setTimeLeft(calculateTimeLeft());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [targetDate, onComplete]);
+
+    if (isExpired) {
+        return null;
+    }
+
+    return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-blue-600" />
+                <h3 className="text-sm font-semibold text-blue-900">
+                    Penjualan Tiket Dimulai Dalam:
+                </h3>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="bg-white rounded p-2 shadow-sm">
+                    <div className="text-2xl font-bold text-blue-600">
+                        {timeLeft.days}
+                    </div>
+                    <div className="text-xs text-gray-600">Hari</div>
+                </div>
+                <div className="bg-white rounded p-2 shadow-sm">
+                    <div className="text-2xl font-bold text-blue-600">
+                        {timeLeft.hours}
+                    </div>
+                    <div className="text-xs text-gray-600">Jam</div>
+                </div>
+                <div className="bg-white rounded p-2 shadow-sm">
+                    <div className="text-2xl font-bold text-blue-600">
+                        {timeLeft.minutes}
+                    </div>
+                    <div className="text-xs text-gray-600">Menit</div>
+                </div>
+                <div className="bg-white rounded p-2 shadow-sm">
+                    <div className="text-2xl font-bold text-blue-600">
+                        {timeLeft.seconds}
+                    </div>
+                    <div className="text-xs text-gray-600">Detik</div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // SpeakerCard Component
 const SpeakerCard = ({ speaker, baseUrl, onImageLoad }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -36,24 +127,28 @@ const SpeakerCard = ({ speaker, baseUrl, onImageLoad }) => {
     }, [speaker.id, onImageLoad]);
 
     return (
-        <div className="relative flex flex-col items-center justify-center text-center">
+        <div className="relative flex flex-col items-center justify-center text-center group">
             {!imageLoaded && (
-                <Skeleton className="absolute left-1/2 h-24 w-24 rounded-full -translate-x-1/2 top-0" />
+                <Skeleton className="absolute left-1/2 h-20 w-20 sm:h-24 sm:w-24 rounded-full -translate-x-1/2 top-0" />
             )}
-            <img
-                src={`${baseUrl}/storage/speakers/${speaker.photo}`}
-                alt={speaker.name}
-                className={`h-24 w-24 rounded-full border object-cover shadow-md transition-opacity duration-300 ${
-                    imageLoaded ? "opacity-100" : "opacity-0"
-                }`}
-                onLoad={handleImageLoad}
-                loading="lazy"
-            />
-            <div className="mt-2 space-y-0.5 text-center">
-                <h1 className="truncate text-sm font-medium max-w-[120px]">
+            <div className="relative">
+                <img
+                    src={`${baseUrl}/storage/speakers/${speaker.photo}`}
+                    alt={speaker.name}
+                    className={`h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 object-cover shadow-lg transition-all duration-300 ${
+                        imageLoaded
+                            ? "opacity-100 group-hover:scale-105"
+                            : "opacity-0"
+                    }`}
+                    onLoad={handleImageLoad}
+                    loading="lazy"
+                />
+            </div>
+            <div className="mt-3 space-y-1 text-center w-full px-1">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2">
                     {speaker.name}
-                </h1>
-                <p className="text-xs text-gray-500 max-w-[120px] truncate">
+                </h3>
+                <p className="text-xs text-gray-600 line-clamp-2">
                     {speaker.description}
                 </p>
             </div>
@@ -67,14 +162,10 @@ const TicketStockBadge = ({ ticket }) => {
     const percentage =
         ticket.quantity > 0 ? (remaining / ticket.quantity) * 100 : 0;
 
-    if (ticket.name === "Free") {
-        return null;
-    }
-
     if (ticket.is_sold_out) {
         return (
             <Badge variant="destructive" className="ml-2">
-                Habis
+                {ticket?.name} Habis
             </Badge>
         );
     }
@@ -82,7 +173,7 @@ const TicketStockBadge = ({ ticket }) => {
     if (percentage <= 10) {
         return (
             <Badge variant="destructive" className="ml-2">
-                Sisa {remaining}
+                {ticket?.name} Sisa {remaining}
             </Badge>
         );
     }
@@ -93,27 +184,38 @@ const TicketStockBadge = ({ ticket }) => {
                 variant="outline"
                 className="ml-2 border-yellow-600 text-yellow-600"
             >
-                Sisa {remaining}
+                {ticket?.name} Sisa {remaining}
             </Badge>
         );
     }
 
     return (
-        <Badge variant="outline" className="ml-2 text-muted-foreground">
-            Tersedia {remaining}
+        <Badge variant="outline" className="text-muted-foreground">
+            {ticket?.name === "Free" ? "Gratis" : ticket.name} Tersedia
+            <span className="text-bold text-black ps-1">{remaining} Tiket</span>
         </Badge>
     );
 };
 
 export default function ShowEvent() {
     const { event, auth, ziggy, alreadyRegistered } = usePage().props;
-    console.log(event);
+
+    const [latitude, longitude] = event?.pin.split(",");
+
+    const embedSrc = `https://maps.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
 
     const dispatch = useDispatch();
     const [isPaying, setIsPaying] = useState(false);
     const [isCart, setIsCart] = useState(false);
     const [isLoadingFree, setIsLoadingFree] = useState(false);
     const [imageLoadedStates, setImageLoadedStates] = useState({});
+    const [showRefreshAlert, setShowRefreshAlert] = useState(false);
+    const [isSaleActive, setIsSaleActive] = useState(() => {
+        if (!event.ticket_date_start) return true;
+        const now = new Date().getTime();
+        const saleStart = new Date(event.ticket_date_start).getTime();
+        return now >= saleStart;
+    });
 
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
     const {
@@ -123,6 +225,28 @@ export default function ShowEvent() {
         hasSelectedTickets,
         resetTicketCounts,
     } = useTicketSelection(event.tickets);
+
+    // Check if ticket sale has started
+    useEffect(() => {
+        const checkSaleStatus = () => {
+            const now = new Date().getTime();
+            const saleStart = new Date(event.ticket_date_start).getTime();
+            setIsSaleActive(now >= saleStart);
+        };
+
+        checkSaleStatus();
+        const interval = setInterval(checkSaleStatus, 1000);
+
+        return () => clearInterval(interval);
+    }, [event.ticket_date_start]);
+
+    const handleCountdownComplete = useCallback(() => {
+        setShowRefreshAlert(true);
+        toast.success("Penjualan tiket telah dibuka!", {
+            description: "Silakan refresh halaman untuk membeli tiket",
+            duration: 5000,
+        });
+    }, []);
 
     const paidTickets = useMemo(
         () => event.tickets.filter((ticket) => ticket.name !== "Free"),
@@ -167,6 +291,12 @@ export default function ShowEvent() {
                 setPaymentError(
                     "Sistem pembayaran belum siap. Silakan refresh halaman."
                 );
+                return;
+            }
+
+            if (auth.user.id === event.user.id) {
+                setPaymentError("Kamu tidak bisa membeli tiket sendiri.");
+                toast.error("Kamu tidak bisa membeli tiket sendiri.");
                 return;
             }
 
@@ -256,7 +386,6 @@ export default function ShowEvent() {
                 window.snap.pay(snapToken, {
                     skipOrderSummary: false,
                     onSuccess: (result) => {
-                        console.log("Payment success:", result);
                         resetTicketCounts();
                         setIsPaying(false);
                         router.visit("/purchase", {
@@ -265,10 +394,9 @@ export default function ShowEvent() {
                         });
                     },
                     onPending: (result) => {
-                        console.log("Payment pending:", result);
                         resetTicketCounts();
                         setIsPaying(false);
-                        router.visit("/purchase/pending", {
+                        router.visit("/purchase", {
                             method: "get",
                             preserveState: false,
                         });
@@ -281,7 +409,6 @@ export default function ShowEvent() {
                         );
                     },
                     onClose: () => {
-                        console.log("Payment popup closed");
                         router.visit("/purchase", {
                             method: "get",
                             preserveState: false,
@@ -333,7 +460,12 @@ export default function ShowEvent() {
 
     const handleAddToCart = async () => {
         try {
-            // VALIDASI REAL-TIME KE DATABASE
+            if (auth.user.id === event.user.id) {
+                setPaymentError("Kamu tidak bisa membeli tiket sendiri.");
+                toast.error("Kamu tidak bisa membeli tiket sendiri.");
+                return;
+            }
+
             const ticketsToValidate = Object.entries(ticketCounts)
                 .filter(([_, count]) => count > 0)
                 .map(([ticketId, quantity]) => ({
@@ -381,7 +513,7 @@ export default function ShowEvent() {
 
             if (result.success) {
                 toast.success(`${event.name} ditambahkan ke keranjang`);
-                resetTicketCounts(); // Reset counter setelah berhasil add to cart
+                resetTicketCounts();
             } else {
                 toast.warning(result.message);
             }
@@ -406,12 +538,23 @@ export default function ShowEvent() {
             return;
         }
 
+        if (alreadyRegistered) {
+            toast.error("Anda Sudah Mengambil Tiket Gratis!!");
+            return;
+        }
+
+        if (auth.user.id === event.user.id) {
+            setPaymentError("Kamu tidak bisa membeli tiket sendiri.");
+            toast.error("Kamu tidak bisa membeli tiket sendiri.");
+            return;
+        }
+
         try {
             setIsLoadingFree(true);
             const paymentData = {
                 items: [
                     {
-                        id: event.id,
+                        id: freeTicket?.id,
                         quantity: 1,
                         type: "ticket",
                     },
@@ -431,6 +574,7 @@ export default function ShowEvent() {
 
             if (response.data.success) {
                 setIsLoadingFree(false);
+                toast.success("Berhasil Mengambil Tiket Gratis");
                 router.reload();
             } else {
                 console.error("Transaksi gagal:", response.data.message);
@@ -453,14 +597,10 @@ export default function ShowEvent() {
         }));
     }, []);
 
-    const totalItems = useSelector((state) =>
-        state.cart.items.reduce((sum, item) => sum + item.quantity, 0)
-    );
-
     return (
         <>
-            <Head title={`Detail - ${event.name}`} />
-            <div className="mx-auto my-12 min-h-screen max-w-[1000px] p-4">
+            <Head title={event.name} />
+            <div className="mx-auto my-4 min-h-screen max-w-[1000px] p-4">
                 {paymentError && (
                     <Alert variant="destructive" className="my-4">
                         <AlertDescription>{paymentError}</AlertDescription>
@@ -476,141 +616,195 @@ export default function ShowEvent() {
                     </Alert>
                 )}
 
+                <Button
+                    onClick={() => window.history.back()}
+                    variant="outline"
+                    size="sm"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+                </Button>
+
                 <div className="my-6 flex flex-col lg:flex-row gap-6">
-                    <div className="flex-shrink-0">
+                    {/* Image Section - Full width on mobile */}
+                    <div className="flex-shrink-0 mx-1 lg:mx-0">
                         <img
                             src={thumbnailUrl}
                             alt={event.name}
-                            className="w-full max-w-52 rounded shadow-md"
+                            className="w-full lg:w-52 rounded object-cover shadow max-h-80"
                             loading="lazy"
                         />
                     </div>
 
-                    <div className="flex-1">
-                        <h1 className="mb-2 text-2xl lg:text-4xl font-bold">
-                            {event.name}
-                        </h1>
-                        <Badge className="mb-2" variant="secondary">
-                            {event.event_mode}
-                        </Badge>
+                    {/* Content Section */}
+                    <div className="flex-1 lg:flex lg:gap-6">
+                        {/* Left Content */}
+                        <div className="flex-1">
+                            <h1 className="mb-2 text-2xl lg:text-4xl font-bold">
+                                {event.name}
+                            </h1>
+                            <Badge className="mb-2" variant="secondary">
+                                {event.event_mode}
+                            </Badge>
 
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                            <p className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {event.location}
-                            </p>
-                            <p className="flex items-center gap-1">
-                                <User className="h-4 w-4" />
-                                Diselenggarakan oleh {event.user.name}
-                            </p>
-                            <p className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {formatTanggalIndo(event.event_date_start)}
-                            </p>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {event.tickets.map((ticket) => (
-                                <div
-                                    key={ticket.id}
-                                    className="flex items-center"
-                                >
-                                    <Badge variant="outline">
-                                        {ticket.name}
-                                    </Badge>
-                                    <TicketStockBadge ticket={ticket} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 lg:min-w-[200px]">
-                        <div className="text-center lg:text-right">
-                            <h3 className="text-sm text-muted-foreground">
-                                Terbuka Hingga
-                            </h3>
-                            <p className="font-medium mb-3">
-                                {formatTanggalIndo(event.event_date_start)}
-                            </p>
-                        </div>
-
-                        {auth.user ? (
-                            <div className="space-y-2">
-                                {freeTicket && (
-                                    <>
-                                        {alreadyRegistered ? (
-                                            <Button
-                                                className="w-full border border-green-800 text-green-800 bg-white"
-                                                size="lg"
-                                                disabled
-                                            >
-                                                Sudah mendaftar gratis
-                                            </Button>
-                                        ) : freeTicket.is_sold_out ? (
-                                            <Button
-                                                className="w-full"
-                                                size="lg"
-                                                variant="destructive"
-                                                disabled
-                                            >
-                                                Tiket Gratis Habis
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                onClick={handleFree}
-                                                className="w-full"
-                                                size="lg"
-                                                disabled={isLoadingFree}
-                                            >
-                                                Daftar Gratis!
-                                                {isLoadingFree && (
-                                                    <Loader2 className="animate-spin ml-2" />
-                                                )}
-                                            </Button>
-                                        )}
-                                    </>
-                                )}
-
-                                {paidTickets.length > 0 &&
-                                    !allPaidTicketsSoldOut && (
-                                        <PaymentSheet
-                                            tickets={paidTickets}
-                                            ticketCounts={ticketCounts}
-                                            handleChangeTicket={
-                                                handleChangeTicket
-                                            }
-                                            totalHarga={totalHarga}
-                                            hasSelectedTickets={
-                                                hasSelectedTickets
-                                            }
-                                            handlePay={handlePay}
-                                            handleAddToCart={handleAddToCart}
-                                            isPaying={isPaying}
-                                            snapLoaded={snapLoaded}
-                                            isCart={isCart}
-                                        />
-                                    )}
-
-                                {allPaidTicketsSoldOut && (
-                                    <Alert className="border-red-600">
-                                        <AlertTriangle className="h-4 w-4 text-red-600" />
-                                        <AlertDescription className="text-red-600 text-sm">
-                                            Semua tiket berbayar sudah habis
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                                <p className="flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" />
+                                    {event.location}
+                                </p>
+                                <p className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    Diselenggarakan oleh {event.user.name}
+                                </p>
+                                <p className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {formatTanggalIndo(event.event_date_start)}
+                                </p>
                             </div>
-                        ) : (
-                            <Link href="/login">
-                                <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    size="lg"
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {event.tickets.map((ticket) => (
+                                    <div
+                                        key={ticket.id}
+                                        className="flex items-center"
+                                    >
+                                        <TicketStockBadge ticket={ticket} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Right Action Section */}
+                        <div className="flex flex-col gap-2 lg:min-w-[240px] mt-6 lg:mt-0">
+                            <div className="text-center lg:text-right bg-gray-50 p-4 rounded-lg">
+                                <h3 className="text-sm text-muted-foreground">
+                                    Terbuka Hingga
+                                </h3>
+                                <p className="font-medium">
+                                    {formatTanggalIndo(event.event_date_start)}
+                                </p>
+                            </div>
+
+                            {auth.user ? (
+                                <div className="space-y-2">
+                                    {/* Countdown Timer jika belum dimulai */}
+                                    {!isSaleActive &&
+                                        event.ticket_date_start && (
+                                            <CountdownTimer
+                                                targetDate={
+                                                    event.ticket_date_start
+                                                }
+                                                onComplete={
+                                                    handleCountdownComplete
+                                                }
+                                            />
+                                        )}
+
+                                    {/* Show message if sale hasn't started */}
+                                    {!isSaleActive &&
+                                        event.ticket_date_start && (
+                                            <Alert className="border-orange-600">
+                                                <Clock className="h-4 w-4 text-orange-600" />
+                                                <AlertDescription className="text-orange-700 text-sm">
+                                                    Penjualan tiket belum
+                                                    dibuka. Tunggu hingga{" "}
+                                                    {formatTanggalIndo(
+                                                        event.ticket_date_start
+                                                    )}
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
+
+                                    {/* Only show ticket options if sale is active */}
+                                    {isSaleActive && (
+                                        <>
+                                            {freeTicket && (
+                                                <>
+                                                    {alreadyRegistered ? (
+                                                        <Button
+                                                            className="w-full border border-green-800 text-green-800 bg-white"
+                                                            size="lg"
+                                                            disabled
+                                                        >
+                                                            Sudah mendaftar
+                                                            gratis
+                                                        </Button>
+                                                    ) : freeTicket.is_sold_out ? (
+                                                        <Button
+                                                            className="w-full"
+                                                            size="lg"
+                                                            variant="destructive"
+                                                            disabled
+                                                        >
+                                                            Tiket Gratis Habis
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            onClick={handleFree}
+                                                            className="w-full"
+                                                            size="lg"
+                                                            disabled={
+                                                                isLoadingFree
+                                                            }
+                                                        >
+                                                            Daftar Gratis!
+                                                            {isLoadingFree && (
+                                                                <Loader2 className="animate-spin ml-2" />
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {paidTickets.length > 0 &&
+                                                !allPaidTicketsSoldOut && (
+                                                    <PaymentSheet
+                                                        tickets={paidTickets}
+                                                        ticketCounts={
+                                                            ticketCounts
+                                                        }
+                                                        handleChangeTicket={
+                                                            handleChangeTicket
+                                                        }
+                                                        totalHarga={totalHarga}
+                                                        hasSelectedTickets={
+                                                            hasSelectedTickets
+                                                        }
+                                                        handlePay={handlePay}
+                                                        handleAddToCart={
+                                                            handleAddToCart
+                                                        }
+                                                        isPaying={isPaying}
+                                                        snapLoaded={snapLoaded}
+                                                        isCart={isCart}
+                                                    />
+                                                )}
+
+                                            {allPaidTicketsSoldOut && (
+                                                <Alert className="border-red-600">
+                                                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                                                    <AlertDescription className="text-red-600 text-sm">
+                                                        Semua tiket berbayar
+                                                        sudah habis
+                                                    </AlertDescription>
+                                                </Alert>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <Link
+                                    href={`/login?redirect=${ziggy.location}`}
                                 >
-                                    Masuk untuk Mendaftar
-                                </Button>
-                            </Link>
-                        )}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        size="lg"
+                                    >
+                                        Masuk untuk Mendaftar
+                                    </Button>
+                                </Link>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -618,16 +812,24 @@ export default function ShowEvent() {
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-bold mb-4">Deskripsi</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                        {event.description ||
-                            "Tidak ada deskripsi untuk acara ini."}
-                    </p>
+                    {event.description ? (
+                        <div
+                            className="prose prose-sm max-w-none text-muted-foreground leading-relaxed text-sm"
+                            dangerouslySetInnerHTML={{
+                                __html: event.description,
+                            }}
+                        />
+                    ) : (
+                        <p className="text-muted-foreground">
+                            Tidak ada deskripsi untuk acara ini.
+                        </p>
+                    )}
                 </section>
 
                 <section className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4">Pembicara</h2>
+                    <h2 className="text-2xl font-bold mb-6">Pembicara</h2>
                     {event?.speakers?.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                             {event.speakers.map((speaker) => (
                                 <SpeakerCard
                                     key={speaker.id}
@@ -638,7 +840,7 @@ export default function ShowEvent() {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                             Belum ada pembicara yang ditentukan untuk acara ini.
                         </p>
                     )}
@@ -646,14 +848,14 @@ export default function ShowEvent() {
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-bold mb-4">Lokasi</h2>
-                    <div className="w-full max-w-md h-64 rounded-lg overflow-hidden shadow-md">
+                    <div className="w-full max-w-2xl h-64 sm:h-80 rounded-lg overflow-hidden shadow-md border">
                         <iframe
-                            src="https://www.google.com/maps?q=0.5761133,101.4252478&z=15&output=embed"
+                            src={embedSrc}
                             className="w-full h-full border-0"
                             allowFullScreen
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
-                            title="Event Location"
+                            title={`Lokasi: ${event.name}`}
                         />
                     </div>
                 </section>

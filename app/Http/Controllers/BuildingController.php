@@ -66,13 +66,14 @@ class BuildingController extends Controller
             }
         }
 
-        return redirect()->route('buildings.index')->with('success', 'Jasa Berhasil Ditambahkan');
+        return redirect()->route('buildings.index')->with('success', 'Gedung Berhasil Ditambahkan');
 
     }
 
     public function edit($id)
     {
-        $building = Building::find($id);
+        $building = Building::findOrFail($id);
+        
         return Inertia::render('Mitra/Buildings/Update', [
             'id' => $id,
             'building' => $building,
@@ -129,6 +130,7 @@ class BuildingController extends Controller
 
                         $building->itemPhotos()->create([
                             'photo' => $filename,
+                            'item_type' => Building::class,
                             'caption' => $request->input("itemPhoto.$index.caption"),
                         ]);
                     }

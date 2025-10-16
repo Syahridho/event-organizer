@@ -40,7 +40,6 @@ import { Badge } from "@/components/ui/badge";
 import LocationInputWithMap from "@/components/location-input-with-map";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import ReactQuill from "react-quill";
-import "quill/dist/quill.snow.css";
 
 const breadcrumbs = [
     {
@@ -48,7 +47,7 @@ const breadcrumbs = [
         href: "/dashboard",
     },
     {
-        title: "Event",
+        title: "Events",
         href: "/dashboard/event",
     },
     {
@@ -173,7 +172,7 @@ export default function CreateEvent() {
                                 k === "price"
                                     ? Number(String(v).replace(/\./g, ""))
                                     : v ?? "";
-                            console.log(finalValue);
+
                             formSubmit.append(
                                 `${key}[${idx}][${k}]`,
                                 finalValue
@@ -195,8 +194,6 @@ export default function CreateEvent() {
             }
         });
 
-        console.table([...formSubmit.entries()]);
-
         post(route("events.store"), formSubmit, {
             forceFormData: true,
         });
@@ -214,7 +211,7 @@ export default function CreateEvent() {
 
             <div className="p-4">
                 <div className="mb-6 flex items-center">
-                    <Link href="/dashboard/event">
+                    <Link href="/dashboard/events">
                         <Button variant="ghost" className="cursor-pointer">
                             <ArrowLeft />
                         </Button>

@@ -18,6 +18,7 @@ class CheckoutController extends Controller
             'total' => 'required|numeric|min:0'
         ]);
 
+
         // Verify cart ownership dan availability
         $cartIds = $request->cart_ids;
         $carts = Cart::with(['item.event'])

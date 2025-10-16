@@ -389,16 +389,17 @@ class EventController extends Controller
     {
         try {
             $request->validate([
-                'items' => 'required|array|min:1',
-                'items.*.id' => 'required|integer|min:1',
+                'items' => 'required|array',
+                'items.*.id' => 'required|integer',
                 'items.*.type' => 'required|string|in:ticket,service,building,rent_property',
-                'items.*.quantity' => 'required|integer|min:1|max:999',
+                'items.*.quantity' => 'required|integer|max:999',
                 'amount' => 'required|numeric|max:0',
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|max:255'
             ]);
 
             $validatedItems = $request->input('items');
+
             if (!$validatedItems || !is_array($validatedItems)) {
                 return response()->json([
                     'success' => false,
@@ -407,6 +408,8 @@ class EventController extends Controller
             }
 
             $itemId = $validatedItems[0]['id'];
+
+
             $itemType = $validatedItems[0]['type'];
             $userId = Auth::id();
 

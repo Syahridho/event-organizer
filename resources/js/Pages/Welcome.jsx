@@ -177,18 +177,18 @@ const ItemCard = ({ item, type, baseUrl }) => {
         return `/${path}/${item.id}`;
     }, [type, item.id]);
 
-    const getBadgeVariant = useCallback(() => {
+    const getTitle = useCallback(() => {
         switch (type) {
             case "events":
-                return "default";
+                return "Event";
             case "services":
-                return "secondary";
+                return "Jasa";
             case "buildings":
-                return "outline";
+                return "Gedung";
             case "propertys":
-                return "destructive";
+                return "Property";
             default:
-                return "default";
+                return "Event";
         }
     }, [type]);
 
@@ -204,10 +204,10 @@ const ItemCard = ({ item, type, baseUrl }) => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <Badge
-                            variant={getBadgeVariant()}
+                            variant="secondary"
                             className="absolute top-3 right-3 capitalize font-medium"
                         >
-                            {type === "propertys" ? "property" : type}
+                            {getTitle(type)}
                         </Badge>
                     </div>
                 </CardHeader>
@@ -234,57 +234,64 @@ const ItemCard = ({ item, type, baseUrl }) => {
 };
 
 // Komponen CategorySection yang diperbaiki
-const CategorySection = ({ title, items, type, baseUrl, id }) => (
-    <section id={id} className="py-16 bg-background">
-        <div className="container mx-auto max-w-7xl px-4 md:px-6">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                        {title}
-                    </h2>
-                    <p className="text-muted-foreground text-lg">
-                        Pilihan terbaik untuk kebutuhan event Anda
-                    </p>
+const CategorySection = ({ title, items, type, baseUrl, id }) => {
+    return (
+        <section id={id} className="py-16 bg-background">
+            <div className="container mx-auto max-w-7xl px-4 md:px-6">
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
+                            {title}
+                        </h2>
+                        <p className="text-muted-foreground text-lg">
+                            Pilihan terbaik untuk kebutuhan Anda
+                        </p>
+                    </div>
+                    {/* 3. Tombol diperbaiki di sini */}
+                    <Link
+                        className="hidden md:flex items-center gap-2"
+                        href={route("listings.show", { type: id })}
+                    >
+                        Lihat Semua
+                        <ChevronRight className="w-4 h-4" />
+                    </Link>
                 </div>
-                <Button
-                    variant="outline"
-                    className="hidden md:flex items-center gap-2"
-                >
-                    Lihat Semua
-                    <ChevronRight className="w-4 h-4" />
-                </Button>
-            </div>
 
-            <ScrollArea className="w-full">
-                <div className="flex space-x-6 py-2">
-                    {items.length > 0 ? (
-                        items.map((item, index) => (
-                            <ItemCard
-                                key={`${type}-${index}`}
-                                item={item}
-                                type={type}
-                                baseUrl={baseUrl}
-                            />
-                        ))
-                    ) : (
-                        <Card className="w-full py-16">
-                            <CardContent className="text-center">
-                                <p className="text-muted-foreground text-lg">
-                                    Tidak ada {title.toLowerCase()} yang
-                                    ditemukan
-                                </p>
-                                <Button variant="outline" className="mt-4">
-                                    Muat Ulang
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-                <ScrollBar orientation="horizontal" className="mt-4" />
-            </ScrollArea>
-        </div>
-    </section>
-);
+                <ScrollArea className="w-full">
+                    <div className="flex space-x-6 py-2">
+                        {items.length > 0 ? (
+                            items.map((item, index) => (
+                                <ItemCard
+                                    key={`${type}-${index}`}
+                                    item={item}
+                                    type={type}
+                                    baseUrl={baseUrl}
+                                />
+                            ))
+                        ) : (
+                            <Card className="w-full py-16">
+                                <CardContent className="text-center">
+                                    <p className="text-muted-foreground text-lg">
+                                        Tidak ada {title.toLowerCase()} yang
+                                        ditemukan
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        className="mt-4"
+                                        onClick={() => window.location.reload()}
+                                    >
+                                        Muat Ulang
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                    <ScrollBar orientation="horizontal" className="mt-4" />
+                </ScrollArea>
+            </div>
+        </section>
+    );
+};
 
 // Komponen TestimonialSection yang diperbaiki
 function TestimonialSection() {
@@ -635,7 +642,6 @@ export default function Welcome() {
                     </div>
                 </div>
             </section>
-
             {/* Quick Categories */}
             <section className="relative -mt-20 z-20 pb-20">
                 <div className="container mx-auto max-w-6xl px-4 md:px-6">
@@ -669,78 +675,79 @@ export default function Welcome() {
                     </div>
                 </div>
             </section>
-
-            {/* Content Sections */}
-            <CategorySection
-                id="events"
-                title="🔥 Acara yang Sedang Populer"
-                items={events}
-                type="events"
-                baseUrl={ziggy.url}
-            />
-
-            <div className="bg-secondary/5">
+            <div className="flex-1 container mx-auto px-4 py-6">
+                {/* Content Sections */}
                 <CategorySection
-                    id="services"
-                    title="⭐ Andalan Utama dan Terbukti Efektif"
-                    items={services}
-                    type="services"
+                    id="events"
+                    title="Acara yang Sedang Populer"
+                    items={events}
+                    type="events"
                     baseUrl={ziggy.url}
                 />
-            </div>
 
-            <CategorySection
-                id="buildings"
-                title="🏢 Sewa Lokasi dan Solusi Teruji"
-                items={buildings}
-                type="buildings"
-                baseUrl={ziggy.url}
-            />
-
-            <div className="bg-secondary/5">
-                <CategorySection
-                    id="properties"
-                    title="🎪 Solusi Sewa Perlengkapan Acara"
-                    items={propertys}
-                    type="propertys"
-                    baseUrl={ziggy.url}
-                />
-            </div>
-
-            {/* Testimonial Section */}
-            <TestimonialSection />
-
-            {/* CTA Section */}
-            <section className="py-20 bg-gradient-to-r from-primary to-secondary">
-                <div className="container mx-auto max-w-4xl text-center px-4 md:px-6">
-                    <Card className="border-0 bg-primary-foreground/10 backdrop-blur-sm">
-                        <CardContent className="p-12 space-y-6">
-                            <Badge variant="secondary" className="mb-4">
-                                🚀 Bergabung Sekarang
-                            </Badge>
-                            <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground">
-                                Siap Bergabung dengan Kami?
-                            </h2>
-                            <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto">
-                                Jadilah mitra Eventnusa dan tingkatkan bisnis
-                                event Anda ke level selanjutnya dengan jangkauan
-                                yang lebih luas
-                            </p>
-                            <Button
-                                size="lg"
-                                variant="secondary"
-                                className="px-8 py-4 text-lg font-semibold"
-                                onClick={() =>
-                                    handleNavigation("/partner/register")
-                                }
-                            >
-                                Daftar Sebagai Mitra
-                                <ChevronRight className="ml-2 w-5 h-5" />
-                            </Button>
-                        </CardContent>
-                    </Card>
+                <div className="bg-secondary/5">
+                    <CategorySection
+                        id="services"
+                        title="Andalan Utama dan Terbukti Efektif"
+                        items={services}
+                        type="services"
+                        baseUrl={ziggy.url}
+                    />
                 </div>
-            </section>
+
+                <CategorySection
+                    id="buildings"
+                    title="Sewa Lokasi dan Solusi Teruji"
+                    items={buildings}
+                    type="buildings"
+                    baseUrl={ziggy.url}
+                />
+
+                <div className="bg-secondary/5">
+                    <CategorySection
+                        id="properties"
+                        title="Solusi Sewa Perlengkapan Acara"
+                        items={propertys}
+                        type="propertys"
+                        baseUrl={ziggy.url}
+                    />
+                </div>
+
+                {/* Testimonial Section */}
+                <TestimonialSection />
+
+                {/* CTA Section */}
+                <section className="py-20 ">
+                    <div className="container mx-auto max-w-4xl text-center px-4 md:px-6">
+                        <Card className="border-0 bg-slate-800 backdrop-blur-sm">
+                            <CardContent className="p-12 space-y-6">
+                                <Badge variant="secondary" className="mb-4">
+                                    🚀 Bergabung Sekarang
+                                </Badge>
+                                <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground">
+                                    Siap Bergabung dengan Kami?
+                                </h2>
+                                <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto">
+                                    Jadilah mitra Eventnusa dan tingkatkan
+                                    bisnis event Anda ke level selanjutnya
+                                    dengan jangkauan yang lebih luas
+                                </p>
+                                <Button
+                                    size="lg"
+                                    variant="secondary"
+                                    className="px-8 py-4 text-lg font-semibold"
+                                    onClick={() =>
+                                        handleNavigation("/partner/register")
+                                    }
+                                >
+                                    Daftar Sebagai Mitra
+                                    <ChevronRight className="ml-2 w-5 h-5" />
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }

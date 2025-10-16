@@ -21,6 +21,12 @@ import { Textarea } from "@/components/ui/textarea";
 import ItemStatusBadge from "@/components/item-status-badge";
 import Rating from "react-rating";
 import { IoStar, IoStarOutline } from "react-icons/io5";
+import MainLayout from "@/Layouts/Main";
+import axios from "axios";
+
+// ===================================
+// KOMPONEN RATING DIALOG
+// ===================================
 
 const RatingDialog = ({
     transaction,
@@ -38,7 +44,7 @@ const RatingDialog = ({
             return;
         }
 
-        onRatingSubmit(transaction.item_id, rating, comment, item_type);
+        onRatingSubmit(transaction.id, rating, comment, item_type);
     };
 
     return (
@@ -88,6 +94,10 @@ const RatingDialog = ({
     );
 };
 
+// ===================================
+// KOMPONEN TRANSACTION ITEM (DENGAN PERBAIKAN RESPONSIVITAS)
+// ===================================
+
 const TransactionItem = React.memo(
     ({
         transaction,
@@ -119,12 +129,12 @@ const TransactionItem = React.memo(
         };
 
         return (
-            <div className="border rounded-2xl p-4 mb-4 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm font-semibold mb-2 text-gray-600">
+            <div className="border rounded-lg sm:rounded-2xl p-3 sm:p-4 mb-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-600">
                         <Link
                             href={route("purchase.show", transaction.id)}
-                            className="block hover:bg-gray-50 p-2 rounded-lg"
+                            className="block hover:bg-gray-50 p-1 sm:p-2 rounded-lg"
                         >
                             Order ID: {transaction.order_id}
                         </Link>
@@ -137,16 +147,19 @@ const TransactionItem = React.memo(
                         key={item.id}
                         className="flex items-center justify-between mt-2 pb-2 border-b border-gray-200 last:border-none"
                     >
-                        <div className="flex items-start gap-4 flex-1">
+                        {/* PERBAIKAN: Tambahkan min-w-0 ke flex-1 agar detail produk dapat menyusut */}
+                        <div className="flex items-start gap-4 flex-1 **min-w-0**">
                             <img
                                 src={getThumbnail(item)}
                                 alt={item.item?.name || "Produk"}
                                 className="w-16 h-16 rounded object-cover flex-shrink-0"
                                 loading="lazy"
                             />
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
-                                    <p className="font-semibold text-gray-800">
+                            {/* PERBAIKAN: Tambahkan min-w-0 ke container detail teks */}
+                            <div className="flex flex-col **min-w-0**">
+                                <div className="flex items-center gap-2 **min-w-0**">
+                                    {/* PERBAIKAN: Tambahkan break-words untuk teks panjang dan min-w-0 */}
+                                    <p className="font-semibold text-gray-800 **break-words min-w-0**">
                                         {item.item?.event?.name ||
                                             item.item?.name ||
                                             "Produk"}
@@ -167,11 +180,12 @@ const TransactionItem = React.memo(
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-end text-right ml-4">
-                            <h1 className="font-semibold text-gray-900">
+                        {/* PERBAIKAN: Tambahkan flex-shrink-0 untuk memastikan bagian harga tidak menyusut paksa */}
+                        <div className="flex flex-col items-end text-right ml-4 **flex-shrink-0**">
+                            <h1 className="font-semibold text-gray-900 **whitespace-nowrap**">
                                 Rp {formatRupiah(item.price * item.qty)}
                             </h1>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 mt-1 **whitespace-nowrap**">
                                 Harga Satuan Rp {formatRupiah(item.price)}
                             </p>
                             {item.rating === null &&
@@ -210,16 +224,16 @@ const TransactionItem = React.memo(
                         </div>
                     </div>
                 ))}
-                <div className="flex justify-between mt-2 pt-2 border-t">
+                <div className="flex flex-col sm:flex-row sm:justify-between mt-3 pt-2 gap-2">
                     {transaction?.status === "pending" && (
                         <Countdown expired_at={transaction.expired_at} />
                     )}
-                    <p className="font-bold">
+                    <p className="font-bold text-sm sm:text-base">
                         Total: Rp {formatRupiah(transaction.total)}
                     </p>
                 </div>
 
-                <div className="flex gap-2 mt-3">
+                <div className="flex flex-col sm:flex-row gap-2 mt-3">
                     {transaction.status === "pending" &&
                         new Date(
                             transaction.expired_at.replace(" ", "T")
@@ -232,7 +246,8 @@ const TransactionItem = React.memo(
                                     <DialogTrigger asChild>
                                         <Button
                                             variant="default"
-                                            className="bg-blue-500 hover:bg-blue-600"
+                                            // PASTIKAN: w-full di mobile
+                                            className="bg-blue-500 hover:bg-blue-600 **w-full** sm:w-auto text-sm"
                                         >
                                             Bayar Sekarang
                                         </Button>
@@ -297,6 +312,8 @@ const TransactionItem = React.memo(
                                         <Button
                                             disabled={isLoading}
                                             variant="destructive"
+                                            // PASTIKAN: w-full di mobile
+                                            className="**w-full** sm:w-auto text-sm"
                                         >
                                             {isLoading
                                                 ? "Membatalkan..."
@@ -372,6 +389,11 @@ const TransactionItem = React.memo(
     }
 );
 
+// ===================================
+// KOMPONEN UTAMA PURCHASE INDEX (DENGAN PERBAIKAN TABS)
+// ===================================
+
+// ✅ FIX: Changed from named export to default export
 export default function PurchaseIndex() {
     const { transactions, ziggy, midtransClientKey, flash } = usePage().props;
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -384,7 +406,6 @@ export default function PurchaseIndex() {
     const searchParams = new URLSearchParams(window.location.search);
     const currentTab = searchParams.get("tab") || "all";
 
-    // ✅ Handle flash messages
     useEffect(() => {
         if (flash?.success) {
             toast.success(flash.success);
@@ -486,7 +507,6 @@ export default function PurchaseIndex() {
         router.reload();
     }, []);
 
-    // ✅ FIX: Gunakan router.post dengan proper handling
     const handleCancel = useCallback((orderId) => {
         if (!orderId) {
             toast.error("Order ID tidak valid!");
@@ -496,7 +516,6 @@ export default function PurchaseIndex() {
         setIsCancelling(true);
         setCancellingOrderId(orderId);
 
-        // Gunakan axios atau fetch, BUKAN router.post
         axios
             .post(route("transaction.cancel", orderId))
             .then((response) => {
@@ -520,40 +539,45 @@ export default function PurchaseIndex() {
             });
     }, []);
 
-    // ✅ FIX: Perbaiki handleRating
-    const handleRating = useCallback((itemId, rating, comment, item_type) => {
-        setIsCancelling(true);
-        setCancellingOrderId(itemId);
+    const handleRating = useCallback(
+        (transactionItemId, rating, comment, item_type) => {
+            setIsCancelling(true);
+            setCancellingOrderId(transactionItemId);
 
-        router.post(
-            route("mitra.rating.store", { orderId: itemId }),
-            { rating, comment, item_type },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    // Update state lokal untuk menampilkan rating
-                    setAllTransactions((prevTransactions) =>
-                        prevTransactions.map((transaction) => ({
-                            ...transaction,
-                            items: transaction.items.map((item) =>
-                                item.item_id === itemId
-                                    ? { ...item, rating, comment }
-                                    : item
-                            ),
-                        }))
-                    );
-                    setIsRatingDialogOpen(null);
-                },
-                onError: (errors) => {
-                    console.error("Rating error:", errors);
-                },
-                onFinish: () => {
-                    setIsCancelling(false);
-                    setCancellingOrderId(null);
-                },
-            }
-        );
-    }, []);
+            router.post(
+                route("mitra.rating.store", {
+                    transactionItemId: transactionItemId,
+                }),
+                { rating, comment, item_type },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        toast.success("Ulasan berhasil dikirim!");
+                        setAllTransactions((prevTransactions) =>
+                            prevTransactions.map((transaction) => ({
+                                ...transaction,
+                                items: transaction.items.map((item) =>
+                                    item.id === transactionItemId
+                                        ? { ...item, rating, comment }
+                                        : item
+                                ),
+                            }))
+                        );
+                        setIsRatingDialogOpen(null);
+                    },
+                    onError: (errors) => {
+                        console.error("Rating error:", errors);
+                        toast.error("Gagal mengirim ulasan.");
+                    },
+                    onFinish: () => {
+                        setIsCancelling(false);
+                        setCancellingOrderId(null);
+                    },
+                }
+            );
+        },
+        []
+    );
 
     const renderTransaction = useCallback(
         (transaction) => (
@@ -585,14 +609,15 @@ export default function PurchaseIndex() {
     );
 
     return (
-        <div className="max-w-3xl mx-auto p-4">
+        <div className="max-w-4xl mx-auto p-3 sm:p-4">
             <Head title="Pembelian" />
             <Toaster position="top-right" richColors />
 
-            <h1 className="text-xl font-bold mb-4">Status Pembayaran</h1>
+            <h1 className="text-lg sm:text-xl font-bold mb-4">Pembayaran</h1>
 
             <Tabs defaultValue={currentTab} className="w-full">
-                <TabsList className="flex flex-wrap justify-start gap-2 mb-4">
+                {/* PERBAIKAN UTAMA: Gunakan flex-nowrap dan overflow-x-auto untuk horizontal scrolling di mobile */}
+                <TabsList className="flex flex-wrap gap-1 mb-4 h-auto p-1 w-full">
                     {tabs.map((tab) => (
                         <Link
                             key={tab.key}
@@ -600,7 +625,10 @@ export default function PurchaseIndex() {
                             preserveScroll
                             preserveState
                         >
-                            <TabsTrigger value={tab.key}>
+                            <TabsTrigger
+                                value={tab.key}
+                                className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 whitespace-nowrap"
+                            >
                                 {tab.label}
                             </TabsTrigger>
                         </Link>
@@ -655,3 +683,6 @@ export default function PurchaseIndex() {
         </div>
     );
 }
+
+// ✅ FIX: Corrected layout assignment for Inertia
+PurchaseIndex.layout = (page) => <MainLayout children={page} />;

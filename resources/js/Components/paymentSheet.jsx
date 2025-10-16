@@ -12,8 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { FaCartPlus } from "react-icons/fa";
 import { formatRupiah } from "@/Utils/formatRupiah";
-import { TicketItem } from "@/components/ticketItem"; // Import dari file lain
-import { PaymentSummary } from "@/components/paymentSummary"; // Import dari file lain
+import { TicketItem } from "@/components/ticketItem";
+import { PaymentSummary } from "@/components/paymentSummary";
 
 export const PaymentSheet = ({
     tickets,
@@ -79,25 +79,28 @@ export const PaymentSheet = ({
                         </p>
                     </div>
 
-                    <SheetFooter className="border-t pt-4 mt-4 flex">
+                    <SheetFooter className="border-t pt-4 mt-4 grid grid-cols-10 gap-4 w-full">
                         <Button
                             type="button"
-                            className="flex-none"
+                            variant="outline"
+                            size="icon"
                             onClick={handleAddToCart}
                             disabled={isCart || !hasSelectedTickets}
+                            className="col-span-1"
                         >
-                            <FaCartPlus />
+                            <FaCartPlus className="h-4 w-4" />
                         </Button>
+
                         <Button
                             type="submit"
+                            className="col-span-9"
                             disabled={
                                 !snapLoaded || isPaying || totalHarga === 0
                             }
-                            className="flex-1"
                         >
                             {isPaying ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className="h-4 w-4 animate-spin" />
                                     Memproses...
                                 </>
                             ) : (

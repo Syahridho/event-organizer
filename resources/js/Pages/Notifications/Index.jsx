@@ -1,8 +1,9 @@
 import { usePage, router } from "@inertiajs/react";
 import { Bell, CheckCircle, XCircle, Calendar, Trash2 } from "lucide-react";
 import { useState } from "react";
+import MainLayout from "@/Layouts/Main";
 
-const NotificationsIndex = () => {
+export default function NotificationsIndex() {
     const { notifications } = usePage().props;
     const [isLoading, setIsLoading] = useState(false);
 
@@ -44,10 +45,10 @@ const NotificationsIndex = () => {
     };
 
     return (
-        <>
+        <div className="min-h-screen max-w-3xl mx-auto">
             <div className="m-6 xl:m-12">
                 <div className="flex mb-6">
-                    <h1 className="text-2xl  w-full font-bold flex gap-2">
+                    <h1 className="text-2xl w-full font-bold flex gap-2">
                         Notifikasi
                     </h1>
 
@@ -114,8 +115,8 @@ const NotificationsIndex = () => {
                     </div>
                 )}
             </div>
-        </>
+        </div>
     );
-};
+}
 
-export default NotificationsIndex;
+NotificationsIndex.layout = (page) => <MainLayout children={page} />;

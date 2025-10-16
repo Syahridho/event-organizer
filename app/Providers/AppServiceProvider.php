@@ -24,6 +24,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        // Force HTTPS untuk production
+        if (config('app.env') === 'production' || request()->isSecure()) {
+            URL::forceScheme('https');
+        }
+
+        // Jika menggunakan ngrok atau proxy, paksa HTTPS
+        if (request()->header('x-forwarded-proto') === 'https' || request()->header('x-forwarded-ssl') === 'on') {
+            URL::forceScheme('https');
+        }
+
         \Broadcast::channel('online-users', function ($user) {
             return [
                 'id' => $user->id,
@@ -33,11 +44,20 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        Relation::morphMap([
+            'ticket' => \App\Models\Ticket::class,
+            'service' => \App\Models\Service::class,
+            'building' => \App\Models\Building::class,
+            'property' => \App\Models\RentProperties::class,
+        ]);
+
         Relation::enforceMorphMap([
             'ticket'         => \App\Models\Ticket::class,
             'service'        => \App\Models\Service::class,
             'building'       => \App\Models\Building::class,
             'property'       => \App\Models\RentProperties::class,
+            'rent_property'       => \App\Models\RentProperties::class,
+            'itemPhoto'    => \App\Models\ItemPhoto::class,
             'service'        => 'App\Models\Service',
             'building'       => 'App\Models\Building',
             'App\Models\Building'       => \App\Models\Building::class,

@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import ReactQuill from "react-quill";
-import "quill/dist/quill.snow.css";
 
 const breadcrumbs = [
     {
@@ -236,7 +235,7 @@ export default function ServicesCreate() {
                         />
                     </div>
                     <div className="space-y-3">
-                        <Label htmlFor="description">Deskripsi</Label>
+                        <Label htmlFor="description">Deskripsi Jasa</Label>
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
                             <ReactQuill
                                 theme="snow"
@@ -246,6 +245,16 @@ export default function ServicesCreate() {
                                 }
                                 className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
                                 placeholder="Masukkan deskripsi..."
+                                modules={{
+                                    toolbar: [
+                                        ["bold", "italic", "underline"],
+                                        [
+                                            { list: "ordered" },
+                                            { list: "bullet" },
+                                        ],
+                                        ["clean"],
+                                    ],
+                                }}
                             />
                         </div>
                     </div>

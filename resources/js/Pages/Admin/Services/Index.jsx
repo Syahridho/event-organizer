@@ -16,7 +16,7 @@ const breadcrumbs = [
 
 export default function ServiceAdmin() {
     const { auth, services } = usePage().props;
-    console.log(services);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />

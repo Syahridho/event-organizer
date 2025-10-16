@@ -9,11 +9,16 @@ import { formatRupiahInput } from "@/Utils/formatRupiah";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
+import ReactQuill from "react-quill";
 import { toast } from "sonner";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
     { title: "Gedung", href: "/dashboard/buildings" },
+    {
+        title: "Edit",
+        href: "/dashboard/buildings",
+    },
 ];
 
 export default function BuildingsCreate() {
@@ -90,8 +95,6 @@ export default function BuildingsCreate() {
 
         post(route("buildings.update", building.id), formSubmit, {
             forceFormData: true,
-            onProgress: () => console.log(data),
-            onSuccess: () => console.log("Success"),
             onError: (errors) =>
                 console.error("Form submission error:", errors),
         });
@@ -108,7 +111,7 @@ export default function BuildingsCreate() {
                         </Button>
                     </Link>
                     <span className="ms-2 text-lg font-semibold">
-                        Tambahkan Gedung Anda
+                        Edit Gedung Anda
                     </span>
                 </div>
 
@@ -204,14 +207,16 @@ export default function BuildingsCreate() {
                         ))}
                     </div>
 
-                    <Button
-                        type="button"
-                        variant="link"
-                        onClick={handleAddPhoto}
-                        className="text-xs px-0 mx-auto"
-                    >
-                        Tambahkan lebih banyak foto
-                    </Button>
+                    <div className="grid w-full items-center gap-3">
+                        <Button
+                            type="button"
+                            variant="link"
+                            onClick={() => handleAddPhoto()}
+                            className="text-xs px-0 mx-auto"
+                        >
+                            Tambahakan lebih banyak foto
+                        </Button>
+                    </div>
 
                     <div className="grid w-full gap-3">
                         <Label htmlFor="name">Nama Gedung</Label>
@@ -224,15 +229,18 @@ export default function BuildingsCreate() {
                     </div>
 
                     <div className="grid w-full gap-3">
-                        <Label htmlFor="description">Deskripsi</Label>
-                        <Textarea
-                            id="description"
-                            value={data.description}
-                            onChange={(e) =>
-                                setData("description", e.target.value)
-                            }
-                            required
-                        />
+                        <Label htmlFor="description">Deskripsi Gedung</Label>
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
+                            <ReactQuill
+                                theme="snow"
+                                value={data.description}
+                                onChange={(content) =>
+                                    setData("description", content)
+                                }
+                                className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
+                                placeholder="Masukkan deskripsi..."
+                            />
+                        </div>
                     </div>
 
                     <div className="grid w-full gap-3">
@@ -294,9 +302,30 @@ export default function BuildingsCreate() {
                         initialLocationFromDB={building.location}
                     />
 
-                    <Button type="submit" disabled={processing}>
-                        {processing ? "Loading..." : "Kirim"}
-                    </Button>
+                    <div className="flex justify-end gap-4">
+                        <Link href="/dashboard/buildings">
+                            <Button
+                                variant="secondary"
+                                className="cursor-pointer"
+                            >
+                                Batalkan
+                            </Button>
+                        </Link>
+                        <Button
+                            type="submit"
+                            className="cursor-pointer"
+                            disabled={processing}
+                        >
+                            {processing ? (
+                                <>
+                                    <Loader2 className="animate-spin" />{" "}
+                                    Loading...
+                                </>
+                            ) : (
+                                "Edit"
+                            )}
+                        </Button>
+                    </div>
                 </form>
             </div>
         </AppLayout>

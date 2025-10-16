@@ -6,9 +6,7 @@ export default function MainLayout({ children }) {
         <div className="min-h-screen flex flex-col">
             <Navigation />
 
-            <main className="flex-1 container mx-auto px-4 py-6">
-                {children}
-            </main>
+            <main>{children}</main>
             <Footer />
         </div>
     );

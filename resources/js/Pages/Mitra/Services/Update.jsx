@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
-import { Textarea } from "@/components/ui/textarea";
+import ReactQuill from "react-quill";
 import { toast } from "sonner";
 
 const breadcrumbs = [
@@ -15,11 +15,11 @@ const breadcrumbs = [
         href: "/dashboard",
     },
     {
-        title: "Service",
+        title: "Jasa",
         href: "/dashboard/service",
     },
     {
-        title: "Perbarui",
+        title: "Edit",
         href: "/dashboard/service",
     },
 ];
@@ -222,7 +222,7 @@ export default function ServicesUpdate() {
                             onClick={() => handleAddPhoto()}
                             className="text-xs px-0 mx-auto"
                         >
-                            Tambahakan lebih banyak foto
+                            Tambahkan lebih banyak foto
                         </Button>
                     </div>
 
@@ -238,17 +238,19 @@ export default function ServicesUpdate() {
                         />
                     </div>
                     <div className="grid w-full items-center gap-3">
-                        <Label htmlFor="description">Deskripsi</Label>
-                        <Textarea
-                            type="text"
-                            id="description"
-                            placeholder="Ceriatakan tentang jasa anda"
-                            onChange={(e) =>
-                                setData("description", e.target.value)
-                            }
-                            value={data.description}
-                            required
-                        />
+                        <Label htmlFor="description">Deskripsi Jasa</Label>
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
+                            <ReactQuill
+                                theme="snow"
+                                value={data.description}
+                                onChange={(content) =>
+                                    setData("description", content)
+                                }
+                                className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
+                                placeholder="Masukkan deskripsi..."
+                                required
+                            />
+                        </div>
                     </div>
                     <div className="grid w-full items-center gap-3">
                         <Label htmlFor="location">Lokasi</Label>
@@ -289,19 +291,31 @@ export default function ServicesUpdate() {
                             />
                         </div>
                     </div>
-                    <Button
-                        type="submit"
-                        className="cursor-pointer"
-                        disabled={processing}
-                    >
-                        {processing ? (
-                            <>
-                                <Loader2 className="animate-spin" /> Loading...
-                            </>
-                        ) : (
-                            "Simpan"
-                        )}
-                    </Button>
+
+                    <div className="flex justify-end gap-4">
+                        <Link href="/dashboard/services">
+                            <Button
+                                variant="secondary"
+                                className="cursor-pointer"
+                            >
+                                Batalkan
+                            </Button>
+                        </Link>
+                        <Button
+                            type="submit"
+                            className="cursor-pointer"
+                            disabled={processing}
+                        >
+                            {processing ? (
+                                <>
+                                    <Loader2 className="animate-spin" />{" "}
+                                    Loading...
+                                </>
+                            ) : (
+                                "Edit"
+                            )}
+                        </Button>
+                    </div>
                 </form>
             </div>
         </AppLayout>

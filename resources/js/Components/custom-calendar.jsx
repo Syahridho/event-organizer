@@ -35,11 +35,6 @@ const CustomCalendar = ({
         return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     };
 
-    const isWeekend = (date) => {
-        const day = date.getDay();
-        return day === 0 || day === 6;
-    };
-
     const isSameDay = (date1, date2) => {
         return (
             date1.getDate() === date2.getDate() &&
@@ -129,10 +124,7 @@ const CustomCalendar = ({
         const leaveStatus = isLeave(date, disabledLeaves);
 
         const isDisabled =
-            disabled(date) ||
-            isWeekend(date) ||
-            bookingStatus.isBooked ||
-            leaveStatus;
+            disabled(date) || bookingStatus.isBooked || leaveStatus;
 
         const isSelected = selected && isSameDay(date, selected);
 
@@ -141,11 +133,12 @@ const CustomCalendar = ({
         if (isDisabled) {
             dayClasses += "cursor-not-allowed ";
         } else {
-            dayClasses += "cursor-pointer hover:bg-blue-50 ";
+            dayClasses +=
+                "cursor-pointer hover:bg-primary/80 hover:text-white ";
         }
 
         if (isSelected) {
-            dayClasses += "bg-blue-600 text-white hover:bg-blue-700 ";
+            dayClasses += "bg-primary text-white hover:bg-primary";
         } else if (bookingStatus.isBooked) {
             if (bookingStatus.isCurrentUser) {
                 dayClasses +=
@@ -156,8 +149,6 @@ const CustomCalendar = ({
             }
         } else if (leaveStatus) {
             dayClasses += "bg-yellow-100 text-yellow-700 cursor-not-allowed ";
-        } else if (isWeekend(date) && !isDisabled) {
-            dayClasses += "text-red-400 ";
         } else if (!isDisabled) {
             dayClasses += "text-gray-900 ";
         } else {
@@ -171,8 +162,6 @@ const CustomCalendar = ({
                 : "Sudah dibooking oleh user lain";
         } else if (leaveStatus) {
             tooltipText = "Tanggal cuti mitra";
-        } else if (isWeekend(date)) {
-            tooltipText = "Weekend tidak tersedia";
         }
 
         days.push(
@@ -248,7 +237,7 @@ const CustomCalendar = ({
                     <span>Cuti Mitra</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                    <div className="w-3 h-3 bg-primary rounded"></div>
                     <span>Dipilih</span>
                 </div>
                 <div className="flex items-center gap-1">

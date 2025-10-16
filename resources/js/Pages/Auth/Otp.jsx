@@ -31,7 +31,6 @@ const FormSchema = z.object({
 
 export default function OtpPage() {
     const { user_email: emailFromProps } = usePage().props;
-    console.log(usePage().props);
 
     const [uiError, setUiError] = useState({
         pin: false,
@@ -61,7 +60,6 @@ export default function OtpPage() {
             { otp: values.pin },
             {
                 onSuccess: () => {
-                    console.log("OTP valid ✅");
                     setUiError({
                         pin: false,
                         loading: false,
@@ -69,7 +67,6 @@ export default function OtpPage() {
                     });
                 },
                 onError: (errors) => {
-                    console.error("OTP tidak valid ❌", errors);
                     setUiError({
                         pin: true,
                         loading: false,
@@ -91,7 +88,6 @@ export default function OtpPage() {
             { email: email },
             {
                 onSuccess: () => {
-                    console.log("OTP baru telah dikirim ke email kamu.");
                     setUiError({
                         pin: false,
                         loading: false,
@@ -99,7 +95,6 @@ export default function OtpPage() {
                     });
                 },
                 onError: (errors) => {
-                    console.error("Gagal mengirim OTP baru:", errors);
                     setUiError({
                         pin: false,
                         loading: false,

@@ -39,7 +39,7 @@ export default function SearchChatBar() {
 
     return (
         <>
-            <div className="">
+            <div className="mt-2">
                 <label htmlFor="search" className="sr-only">
                     Cari nama
                 </label>

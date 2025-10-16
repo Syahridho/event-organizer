@@ -5,7 +5,6 @@ import clsx from "clsx";
 
 export default function ChatListUser() {
     const { chat_with: chatWithUser, auth, ziggy } = usePage().props;
-    console.log(ziggy.location);
 
     const { data: users } = usePage().props.users;
 

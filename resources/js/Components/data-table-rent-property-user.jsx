@@ -72,6 +72,17 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -126,6 +137,74 @@ function DragHandle({ id }) {
             <GripVerticalIcon className="size-3 text-muted-foreground" />
             <span className="sr-only">Drag to reorder</span>
         </Button>
+    );
+}
+
+function DeleteDialog({ property, onDeleteSuccess }) {
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const handleDelete = () => {
+        setIsDeleting(true);
+
+        // Menggunakan Inertia router.delete untuk menghapus data di backend
+        router.delete(route("rents.destroy", property.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Panggil callback untuk menghapus item dari state tabel
+                onDeleteSuccess(property.id);
+            },
+            onError: (errors) => {
+                toast.error(errors.error || "Gagal menghapus jasa. Coba lagi.");
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()} // Mencegah DropdownMenu tertutup saat mengklik item
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                    Hapus
+                </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                        <Ban className="size-5 text-red-500" />
+                        Konfirmasi Penghapusan
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Anda yakin ingin menghapus jasa{" "}
+                        <span className="font-semibold text-foreground">
+                            "{property.name}"
+                        </span>
+                        ? Tindakan ini tidak dapat dibatalkan.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                    >
+                        {isDeleting ? (
+                            <>
+                                <LoaderIcon className="mr-2 size-4 animate-spin" />
+                                Menghapus...
+                            </>
+                        ) : (
+                            "Hapus"
+                        )}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }
 
@@ -210,9 +289,11 @@ const columns = [
     {
         id: "actions",
         header: () => <div className="w-full text-center">Aksi</div>,
-        cell: ({ row }) => {
-            const rent = row.original;
-            console.log(rent.id);
+        cell: ({ row, table }) => {
+            const property = row.original;
+
+            const onDeleteSuccess = table.options.meta?.onDeleteSuccess;
+
             return (
                 <div className="flex items-center justify-center gap-2">
                     <DropdownMenu>
@@ -230,28 +311,20 @@ const columns = [
                             <DropdownMenuItem
                                 onClick={() => {
                                     router.get(
-                                        `/dashboard/rents/${rent.id}/edit`
+                                        `/dashboard/rents/${property.id}/edit`
                                     );
                                 }}
                             >
                                 Edit
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                                onClick={() => {
-                                    if (
-                                        confirm(
-                                            `Yakin ingin menghapus rent "${rent.title}"?`
-                                        )
-                                    ) {
-                                        router.delete(
-                                            route("rents.destroy", rent.id)
-                                        );
-                                    }
-                                }}
-                            >
-                                Delete
-                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+
+                            {/* Panggil komponen DeleteDialog di sini */}
+                            <DeleteDialog
+                                property={property}
+                                onDeleteSuccess={onDeleteSuccess}
+                            />
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -306,6 +379,7 @@ export function DataTable({ data: initialData }) {
         useSensor(KeyboardSensor, {})
     );
 
+    const tableRef = React.useRef(null);
     const filteredData = React.useMemo(() => {
         if (statusFilter === "all") {
             return data;
@@ -316,6 +390,19 @@ export function DataTable({ data: initialData }) {
     const dataIds = React.useMemo(
         () => data?.map(({ id }) => id) || [],
         [data]
+    );
+
+    const handleDeleteSuccess = React.useCallback(
+        (id) => {
+            // Filter data untuk menghapus item yang baru saja dihapus
+            setData((prevData) => prevData.filter((item) => item.id !== id));
+
+            // Reset ke halaman pertama jika halaman saat ini kosong setelah penghapusan
+            if (table.getRowCount() === 1 && table.getPageIndex() > 0) {
+                table.setPageIndex(0);
+            }
+        },
+        [setData]
     );
 
     const table = useReactTable({
@@ -330,6 +417,9 @@ export function DataTable({ data: initialData }) {
         },
         getRowId: (row) => row.id.toString(),
         enableRowSelection: true,
+        meta: {
+            onDeleteSuccess: handleDeleteSuccess,
+        },
         onRowSelectionChange: setRowSelection,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -342,6 +432,10 @@ export function DataTable({ data: initialData }) {
         getFacetedRowModel: getFacetedRowModel(),
         getFacetedUniqueValues: getFacetedUniqueValues(),
     });
+
+    React.useEffect(() => {
+        tableRef.current = table;
+    }, [table]);
 
     function handleDragEnd(event) {
         const { active, over } = event;
@@ -691,7 +785,6 @@ export function DataTable({ data: initialData }) {
 function TableCellViewer({ item }) {
     const isMobile = useIsMobile();
     const { ziggy } = usePage().props;
-    console.log(item);
 
     return (
         <Sheet>

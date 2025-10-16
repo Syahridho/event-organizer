@@ -41,14 +41,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import LocationInputWithMap from "@/components/location-input-with-map";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
+import ReactQuill from "react-quill";
 
 export default function UpdateEvent() {
     const { ziggy, event, flash } = usePage().props;
-    console.log(usePage().props);
 
     const breadcrumbs = [
         { title: "Dashboard", href: "/dashboard" },
-        { title: "Event", href: "/dashboard/event" },
+        { title: "Events", href: "/dashboard/event" },
         {
             title: event ? "Edit Event" : "Perbarui",
             href: event
@@ -104,8 +104,6 @@ export default function UpdateEvent() {
         ticket_date_end: event?.ticket_date_end ?? null,
         _method: "put",
     });
-
-    console.log(event.tickets);
 
     const debounce = useDebounce(data.location, 500);
 
@@ -171,16 +169,10 @@ export default function UpdateEvent() {
             return;
         }
 
-        // DEBUG: Cek data tickets SEBELUM diproses
-        console.log("=== DEBUG TICKETS ===");
-        console.log("data.tickets:", JSON.stringify(data.tickets, null, 2));
-        console.log("=====================");
-
         const formSubmit = new FormData();
 
         Object.entries(data).forEach(([key, value]) => {
             if (key === "thumbnail") {
-                // Hanya append thumbnail jika bukan string ATAU jika string dimulai dengan /randoms
                 if (value instanceof File) {
                     formSubmit.append(key, value);
                 } else if (
@@ -189,7 +181,6 @@ export default function UpdateEvent() {
                 ) {
                     formSubmit.append(key, value);
                 } else if (typeof value === "string") {
-                    // Thumbnail lama (bukan random), kirim nama filenya saja
                     formSubmit.append(
                         key,
                         value.replace(/^\/storage\/thumbnails\//, "")
@@ -224,12 +215,6 @@ export default function UpdateEvent() {
             }
         });
 
-        // Debug: Lihat data yang akan dikirim
-        console.log("Form data to submit:");
-        for (let [key, value] of formSubmit.entries()) {
-            console.log(key, value);
-        }
-
         post(route("events.update", event.id), formSubmit, {
             forceFormData: true,
         });
@@ -243,14 +228,11 @@ export default function UpdateEvent() {
         if (event?.tickets?.length > 0) {
             setUiState((prev) => ({ ...prev, checkTicket: true }));
 
-            // Set checkbox state saja, JANGAN setData lagi
             const ticketStates = {};
             event.tickets.forEach((ticket) => {
                 ticketStates[ticket.name] = true;
             });
             setTypeTicket(ticketStates);
-
-            // HAPUS bagian setData("tickets", ...) karena sudah di-set di useForm
         }
     }, []);
 
@@ -275,7 +257,7 @@ export default function UpdateEvent() {
 
             <div className="p-4">
                 <div className="mb-6 flex items-center">
-                    <Link href="/dashboard/event">
+                    <Link href="/dashboard/events">
                         <Button variant="ghost" className="cursor-pointer">
                             <ArrowLeft />
                         </Button>
@@ -470,26 +452,22 @@ export default function UpdateEvent() {
                                                 </Label>
                                             </CardTitle>
 
-                                            <Textarea
-                                                as="textarea"
-                                                id="description"
-                                                name="description"
-                                                placeholder="Deskripsi Acara"
-                                                className="resize-none overflow-hidden"
-                                                value={data.description}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "description",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                rows={1}
-                                                onInput={(e) => {
-                                                    e.currentTarget.style.height =
-                                                        "auto";
-                                                    e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
-                                                }}
-                                            />
+                                            <div className="mt-4 space-y-4">
+                                                <div className="h-80">
+                                                    <ReactQuill
+                                                        theme="snow"
+                                                        value={data.description}
+                                                        onChange={(content) =>
+                                                            setData(
+                                                                "description",
+                                                                content
+                                                            )
+                                                        }
+                                                        placeholder="Masukkan deskripsi..."
+                                                        className="h-64"
+                                                    />
+                                                </div>
+                                            </div>
                                         </CardHeader>
                                     </Card>
                                 </Modal>
@@ -835,7 +813,6 @@ export default function UpdateEvent() {
                                                                             if (
                                                                                 newChecked
                                                                             ) {
-                                                                                // Cari ticket existing dari event original
                                                                                 const existingTicket =
                                                                                     event?.tickets?.find(
                                                                                         (
@@ -845,7 +822,6 @@ export default function UpdateEvent() {
                                                                                             ticketName
                                                                                     );
 
-                                                                                // Cek apakah sudah ada di data.tickets
                                                                                 const alreadyInData =
                                                                                     data.tickets.find(
                                                                                         (
@@ -863,7 +839,7 @@ export default function UpdateEvent() {
                                                                                         [
                                                                                             ...data.tickets,
                                                                                             {
-                                                                                                id: existingTicket?.id, // ← ID dari database
+                                                                                                id: existingTicket?.id,
                                                                                                 name: ticketName,
                                                                                                 price:
                                                                                                     existingTicket?.price ||
@@ -949,7 +925,7 @@ export default function UpdateEvent() {
                                                                                                             ticket.name ===
                                                                                                             ticketName
                                                                                                                 ? {
-                                                                                                                      ...ticket, // ← Preserve semua property termasuk ID
+                                                                                                                      ...ticket,
                                                                                                                       price:
                                                                                                                           val ===
                                                                                                                           ""
@@ -1008,7 +984,7 @@ export default function UpdateEvent() {
                                                                                                 ticket.name ===
                                                                                                 ticketName
                                                                                                     ? {
-                                                                                                          ...ticket, // ← Preserve semua property termasuk ID
+                                                                                                          ...ticket,
                                                                                                           quota:
                                                                                                               val ===
                                                                                                               ""

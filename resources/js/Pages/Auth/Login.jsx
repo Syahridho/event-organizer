@@ -1,3 +1,4 @@
+import { usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -16,10 +17,16 @@ import { Head, Link, useForm } from "@inertiajs/react";
 import { LoaderCircle } from "lucide-react";
 
 export default function Login({ status, canResetPassword }) {
+    const { url } = usePage();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get("redirect") || "";
+
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
+        redirect: redirectUrl,
     });
 
     const submit = (e) => {

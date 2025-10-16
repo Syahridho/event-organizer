@@ -21,7 +21,7 @@ const breadcrumbs = [
 
 export default function Show({ auth, chat_with: chatWithUser, messages }) {
     // const { auth, chat_with: chatWithUser, messages } = usePage().props;
-    console.log(auth, chatWithUser, messages);
+
     const scrollRef = useRef(null);
     const [reply, setReply] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);

@@ -11,7 +11,6 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "@/hooks/use-toast";
 import ReactQuill from "react-quill";
-import "quill/dist/quill.snow.css";
 
 const breadcrumbs = [
     {
@@ -21,6 +20,10 @@ const breadcrumbs = [
     {
         title: "Gedung",
         href: "/dashboard/buildings",
+    },
+    {
+        title: "Tambahkan",
+        href: "/dashboard/buildings/create",
     },
 ];
 
@@ -226,7 +229,7 @@ export default function BuildingsCreate() {
                             onClick={() => handleAddPhoto()}
                             className="text-xs px-0 mx-auto"
                         >
-                            Tambahakan lebih banyak foto
+                            Tambahkan lebih banyak foto
                         </Button>
                     </div>
                     <div className="grid w-full items-center gap-3">
@@ -241,7 +244,7 @@ export default function BuildingsCreate() {
                         />
                     </div>
                     <div className="space-y-3">
-                        <Label htmlFor="description">Deskripsi</Label>
+                        <Label htmlFor="description">Deskripsi Gedung</Label>
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
                             <ReactQuill
                                 theme="snow"

@@ -31,7 +31,7 @@ class Building extends Model
 
     public function itemPhotos()
     {
-        return $this->morphMany(ItemPhoto::class, 'item');
+        return $this->hasMany(ItemPhoto::class, 'item_id')->where('item_type', self::class);
     }
 
 }

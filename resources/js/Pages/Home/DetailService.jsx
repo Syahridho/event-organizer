@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { ArrowLeft, MapPin, Star, Share2, Heart, Loader2 } from "lucide-react";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,9 +48,6 @@ const DetailService = () => {
     const { service, ziggy, transaction, user, leaves, photos } =
         usePage().props;
 
-    console.log("Leaves data:", leaves);
-    console.log("Transaction data:", transaction);
-
     const dispatch = useDispatch();
 
     const items = useMemo(
@@ -74,6 +71,7 @@ const DetailService = () => {
     const [isLoading, setIsLoading] = useState({
         snap: false,
         payment: false,
+        cart: false,
     });
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
 
@@ -96,16 +94,12 @@ const DetailService = () => {
         }));
     }, [leaves]);
 
-    console.log(disabledLeaves);
-
     const handleAddToCart = async () => {
-        console.log("hao");
         if (!selectedDate) {
             toast.error("Silahkan pilih tanggal sewa jasa");
             return;
         }
-
-        handleChangeItem(service.id, 1);
+        setIsLoading((prev) => ({ ...prev, cart: true }));
 
         const itemsToAdd = { [service.id]: 1 };
         const rentDaysToAdd = {
@@ -114,18 +108,26 @@ const DetailService = () => {
             }),
         };
 
-        const result = await addItemsToCart({
-            items: itemsToAdd,
-            itemList: [service],
-            rentDays: rentDaysToAdd,
-            dispatch,
-            itemCategory: "service",
-        });
+        try {
+            const result = await addItemsToCart({
+                items: itemsToAdd,
+                itemList: [service],
+                rentDays: rentDaysToAdd,
+                dispatch,
+                itemCategory: "service",
+            });
 
-        if (result.success) {
-            toast.success(`${service.name} ditambahkan ke keranjang!`);
-        } else {
-            toast.warning(result.message);
+            if (result.success) {
+                toast.success(`${service.name} ditambahkan ke keranjang!`);
+                handleChangeItem(service.id, 1);
+            } else {
+                toast.warning(result.message);
+            }
+        } catch (error) {
+            console.error("Gagal menambahkan ke keranjang:", error);
+            toast.error("Terjadi kesalahan saat menghubungi server.");
+        } finally {
+            setIsLoading((prev) => ({ ...prev, cart: false }));
         }
     };
 
@@ -191,8 +193,6 @@ const DetailService = () => {
                     province: selectedAddress.province,
                     postal_code: selectedAddress.postal_code,
                 };
-
-                console.log("Payment Data:", paymentData);
 
                 const response = await axios.post(
                     "/midtrans/token",
@@ -304,7 +304,10 @@ const DetailService = () => {
                 setIsLoadingAddresses(false);
             }
         };
-        loadAddresses();
+
+        if (user) {
+            loadAddresses();
+        }
     }, [setAddresses, setSelectedAddressId, selectedAddressId]);
 
     return (
@@ -313,6 +316,15 @@ const DetailService = () => {
 
             {paymentError && <p className="text-red-500">{paymentError}</p>}
             <div className="max-w-4xl mx-auto px-4 py-8">
+                <Button
+                    onClick={() => window.history.back()}
+                    variant="outline"
+                    size="sm"
+                    className="mb-8 md:mb-6"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+                </Button>
+
                 <div className="grid lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-7 space-y-6">
                         <div className="bg-white rounded-lg overflow-hidden shadow-lg">
@@ -323,10 +335,6 @@ const DetailService = () => {
                                             <CarouselItem>
                                                 <Card className="overflow-hidden">
                                                     <CardContent className="flex items-center justify-center p-0">
-                                                        {console.log(
-                                                            images[activeImage]
-                                                                .url
-                                                        )}
                                                         <img
                                                             src={
                                                                 images[
@@ -369,7 +377,7 @@ const DetailService = () => {
                             ))}
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-lg">
+                        <div className="bg-white rounded-lg shadow-lg border">
                             <div className="p-6">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="space-y-2">
@@ -394,6 +402,7 @@ const DetailService = () => {
                                             Tentang Layanan
                                         </h3>
                                         <div
+                                            className="text-sm text-muted-foreground leading-relaxed"
                                             dangerouslySetInnerHTML={{
                                                 __html: service.description,
                                             }}
@@ -405,7 +414,7 @@ const DetailService = () => {
                     </div>
 
                     <div className="lg:col-span-5 space-y-6">
-                        <div className="bg-white rounded-lg shadow-lg">
+                        <div className="bg-white rounded-lg shadow-lg border">
                             <div className="p-6">
                                 <div className="my-6">
                                     <CustomCalendar
@@ -429,12 +438,24 @@ const DetailService = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <Button
-                                        className="w-full bg-blue-800 hover:bg-blue-500"
-                                        onClick={() => setIsPaymentOpen(true)}
-                                    >
-                                        Sewa Jasa
-                                    </Button>
+                                    {user ? (
+                                        <Button
+                                            className="w-full bg-primary hover:bg-primary/80"
+                                            onClick={() =>
+                                                setIsPaymentOpen(true)
+                                            }
+                                        >
+                                            Sewa Jasa
+                                        </Button>
+                                    ) : (
+                                        <Link
+                                            href={`/login?redirect=${ziggy.location}`}
+                                        >
+                                            <Button className="w-full bg-primary hover:!bg-primary/60">
+                                                Masuk Untuk Sewa Jasa
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -526,11 +547,12 @@ const DetailService = () => {
                         </div>
                     </div>
 
-                    <SheetFooter className="flex-shrink-0 pt-4 border-t space-x-2">
+                    <SheetFooter className="grid grid-cols-10 gap-4 w-full">
                         <Button
                             variant="outline"
                             onClick={() => handleAddToCart()}
-                            className="px-3"
+                            className="col-span-1"
+                            disabled={!selectedDate || isLoading.cart}
                         >
                             <FaShoppingCart className="w-4 h-4" />
                         </Button>
@@ -539,7 +561,7 @@ const DetailService = () => {
                                 setIsPaymentOpen(false);
                                 setIsConfirmOpen(true);
                             }}
-                            className="flex-1"
+                            className="col-span-9"
                         >
                             Bayar
                         </Button>
@@ -615,7 +637,7 @@ const DetailService = () => {
                                 </span>
                             </div>
 
-                            <div className="py-3 border-b">
+                            <div className="py-3">
                                 {selectedAddress ? (
                                     <div className="space-y-2">
                                         <span className="block text-slate-600">
@@ -660,7 +682,7 @@ const DetailService = () => {
                         </div>
                     </div>
 
-                    <AlertDialogFooter className="flex-shrink-0 pt-4 border-t">
+                    <AlertDialogFooter className="flex-shrink-0 pt-4">
                         <AlertDialogCancel
                             onClick={() => {
                                 setIsConfirmOpen(false);

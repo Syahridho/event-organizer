@@ -119,7 +119,6 @@ const HolidayCalendar = ({
     };
 
     const handleDateClick = (dateStr) => {
-        console.log("[v0] Date clicked in calendar:", dateStr);
         if (onDateToggle) {
             onDateToggle(dateStr);
         }

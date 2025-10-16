@@ -16,7 +16,7 @@ const breadcrumbs = [
 
 export default function BuildingAdmin() {
     const { auth, rents } = usePage().props;
-    console.log(rents);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />

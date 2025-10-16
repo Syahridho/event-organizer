@@ -11,7 +11,6 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "sonner";
 import ReactQuill from "react-quill";
-import "quill/dist/quill.snow.css";
 
 const breadcrumbs = [
     {
@@ -19,8 +18,12 @@ const breadcrumbs = [
         href: "/dashboard",
     },
     {
-        title: "Sewa Property",
+        title: "Property",
         href: "/dashboard/rents",
+    },
+    {
+        title: "Tambahkan",
+        href: "/dashboard/rents/create",
     },
 ];
 
@@ -112,7 +115,7 @@ export default function RentProperyCreate() {
                         </Button>
                     </Link>
                     <span className="ms-2 text-lg font-semibold">
-                        Tambahkan Barang Sewaan Anda
+                        Tambahkan Property Sewa Anda
                     </span>
                 </div>
                 <form onSubmit={submit} className="space-y-4">
@@ -219,7 +222,7 @@ export default function RentProperyCreate() {
                             onClick={() => handleAddPhoto()}
                             className="text-xs px-0 mx-auto"
                         >
-                            Tambahakan lebih banyak foto
+                            Tambahkan lebih banyak foto
                         </Button>
                     </div>
                     <div className="grid w-full items-center gap-3">
@@ -227,14 +230,14 @@ export default function RentProperyCreate() {
                         <Input
                             type="name"
                             id="name"
-                            placeholder="Nama Barang"
+                            placeholder="Nama Property"
                             onChange={(e) => setData("name", e.target.value)}
                             value={data.name}
                             required
                         />
                     </div>
                     <div className="space-y-3">
-                        <Label htmlFor="description">Deskripsi</Label>
+                        <Label htmlFor="description">Deskripsi Property</Label>
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
                             <ReactQuill
                                 theme="snow"

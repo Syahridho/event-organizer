@@ -4,92 +4,132 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Event; // ganti atau gabungkan model sesuai kebutuhan
+use App\Models\Event;
 use App\Models\Service;
 use App\Models\Building;
 use App\Models\RentProperties;
+use Illuminate\Support\Facades\DB;
 
 class ListingController extends Controller
 {
+    /**
+     * Menampilkan halaman listing dengan data random dari semua model.
+     * Menggunakan algoritma optimized dengan database-level random sampling.
+     */
     public function index(Request $request)
     {
-        $perPage = 12;
+        $perPage = 12; // Items per page
+        $page = $request->get('page', 1);
 
-        // contoh query; sesuaikan dengan hubungan, eager loading, filters
-        $items = Service::latest()->paginate($perPage);
+        // Optimized: menggunakan UNION ALL dengan random sampling di database level
+        // Lebih cepat karena randomisasi dilakukan di database, bukan di aplikasi
+        $items = DB::query()
+            ->fromSub(function ($query) use ($perPage, $page) {
+                $offset = ($page - 1) * $perPage;
+                $limit = $perPage * 2; // Ambil lebih banyak untuk di-shuffle
 
-        // Kalau request XHR/Fetch, kembalikan JSON (frontend akan fetch next_page_url)
-        if ($request->ajax()) {
-            return response()->json($items);
-        }
+                // Events (tidak punya kolom price, gunakan NULL)
+                $query->select(
+                    'id',
+                    'name',
+                    DB::raw("NULL as price"),
+                    'thumbnail',
+                    'location',
+                    'description',
+                    DB::raw("'event' as type"),
+                    DB::raw("'events' as type_slug"),
+                    'created_at'
+                )
+                ->from('events')
+                ->where('status', 'active')
+                ->inRandomOrder()
+                ->limit($limit)
 
-        // Normal Inertia render untuk initial page load
-        return Inertia::render('Home/Index', [
-            'items' => $items
+                // Services
+                ->unionAll(
+                    DB::table('services')
+                        ->select(
+                            'id',
+                            'name',
+                            'price',
+                            'thumbnail',
+                            'location',
+                            'description',
+                            DB::raw("'service' as type"),
+                            DB::raw("'services' as type_slug"),
+                            'created_at'
+                        )
+                        ->where('status', 'active')
+                        ->inRandomOrder()
+                        ->limit($limit)
+                )
+
+                // Buildings
+                ->unionAll(
+                    DB::table('buildings')
+                        ->select(
+                            'id',
+                            'name',
+                            'price',
+                            'thumbnail',
+                            'location',
+                            'description',
+                            DB::raw("'building' as type"),
+                            DB::raw("'buildings' as type_slug"),
+                            'created_at'
+                        )
+                        ->where('status', 'active')
+                        ->inRandomOrder()
+                        ->limit($limit)
+                )
+
+                // Properties
+                ->unionAll(
+                    DB::table('rent_properties')
+                        ->select(
+                            'id',
+                            'name',
+                            'price',
+                            'thumbnail',
+                            'location',
+                            'description',
+                            DB::raw("'property' as type"),
+                            DB::raw("'properties' as type_slug"),
+                            'created_at'
+                        )
+                        ->where('status', 'active')
+                        ->inRandomOrder()
+                        ->limit($limit)
+                );
+            }, 'combined')
+            ->inRandomOrder() // Final shuffle
+            ->paginate($perPage);
+
+        return Inertia::render('Listing/Index', [
+            'items' => $items,
         ]);
     }
 
-    // optional: jika mau route json terpisah
-    public function indexJson(Request $request)
+    /**
+     * Menampilkan halaman daftar berdasarkan tipe dari URL.
+     */
+    public function show(Request $request, string $type)
     {
-        $perPage = 12;
-        $items = Event::latest()->paginate($perPage);
-        return response()->json($items);
-    }
+        // Petakan 'type' dari URL ke Model dan Komponen React yang sesuai
+        $config = match ($type) {
+            'events'    => ['model' => Event::class, 'component' => 'Home/Events'],
+            'services'   => ['model' => Service::class, 'component' => 'Home/Services'],
+            'buildings'  => ['model' => Building::class, 'component' => 'Home/Building'],
+            'properties' => ['model' => RentProperties::class, 'component' => 'Home/Property'],
+            default      => abort(404), // Tampilkan 404 jika tipe tidak valid
+        };
 
-    public function listEvent(Request $request)
-    {
-        $perPage = 12;
-        $items = Event::latest()->paginate($perPage);
+        // Ambil data dari model yang benar dengan paginasi
+        $items = $config['model']::latest()->paginate(12)->withQueryString();
 
-        if ($request->ajax()) {
-            return response()->json($items);
-        }
-
-        return Inertia::render('Home/Ticket', [
-            'items' => $items
-        ]);
-    }
-
-    public function listService(Request $request)
-    {
-        $perPage = 12;
-        $items = Service::latest()->paginate($perPage);
-
-        if ($request->ajax()) {
-            return response()->json($items);
-        }
-
-        return Inertia::render('Home/Services', [
-            'items' => $items
-        ]);
-    }
-
-    public function listBuilding(Request $request)
-    {
-        $perPage = 12;
-        $items = Building::latest()->paginate($perPage);
-
-        if ($request->ajax()) {
-            return response()->json($items);
-        }
-
-        return Inertia::render('Home/Building', [
-            'items' => $items
-        ]);
-    }
-
-    public function listProperty(Request $request)
-    {
-        $perPage = 12;
-        $items = RentProperties::latest()->paginate($perPage);
-
-        if ($request->ajax()) {
-            return response()->json($items);
-        }
-
-        return Inertia::render('Home/Property', [
-            'items' => $items
+        // Render komponen Inertia yang sesuai dengan datanya
+        return Inertia::render($config['component'], [
+            'items' => $items,
         ]);
     }
 }

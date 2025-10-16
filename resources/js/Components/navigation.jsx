@@ -8,11 +8,11 @@ import {
     User,
     Home,
     Package,
-    Heart,
     MessageCircle,
     CircleUserRound,
     LogOut,
     Search,
+    Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,17 +26,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTheme } from "next-themes";
+import { useDispatch, useSelector } from "react-redux";
+import {
+    setCartItems,
+    selectCartItemCount,
+    clearCart,
+} from "@/Store/cartSlice";
 
 export default function Navigation() {
-    const { auth, ziggy } = usePage().props;
+    const { auth, ziggy, counts } = usePage().props;
     const { setTheme, theme } = useTheme();
+    const dispatch = useDispatch();
 
-    // State untuk search input dan mobile menu
+    console.log(counts);
+
+    const cartItemCount = useSelector(selectCartItemCount);
+
     const [searchKeyword, setSearchKeyword] = useState("");
     const [mobileSearchKeyword, setMobileSearchKeyword] = useState("");
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-    // Ambil keyword dari URL saat component mount atau URL berubah
+    const unreadNotifications = counts?.unread_notifications || 0;
+    const unreadChats = counts?.unread_chats || 0;
+    // ✅ Gunakan cartItemCount dari Redux
+    const cartItems = cartItemCount;
+
+    // ✅ Initialize Redux dari Inertia props saat pertama load
+    useEffect(() => {
+        const initialCartItems = counts?.cart_items;
+
+        if (initialCartItems && initialCartItems.length > 0) {
+            // DEBUG: Log rent_days values saat masuk ke Redux
+            initialCartItems.forEach((item, index) => {
+                if (item.rent_days) {
+                    console.log(`Cart Item ${index} - rent_days:`, {
+                        original: item.rent_days,
+                        type: typeof item.rent_days,
+                        parsed: new Date(item.rent_days).toISOString(),
+                    });
+                }
+            });
+
+            dispatch(setCartItems(initialCartItems));
+        } else if (initialCartItems && initialCartItems.length === 0) {
+            dispatch(clearCart());
+        }
+    }, [counts?.cart_items, dispatch]);
+
     useEffect(() => {
         if (typeof window !== "undefined") {
             const params = new URLSearchParams(window.location.search);
@@ -71,7 +107,6 @@ export default function Navigation() {
         }
     };
 
-    // Desktop Auth Component
     const DesktopAuthButtons = () => {
         if (auth?.user) {
             return (
@@ -91,7 +126,7 @@ export default function Navigation() {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                            <Link href="/account">
+                            <Link href="/profile">
                                 <User className="mr-2 h-4 w-4" />
                                 Profil
                             </Link>
@@ -141,7 +176,6 @@ export default function Navigation() {
             {/* Top Header */}
             <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container flex h-16 items-center justify-between px-4 md:max-w-6xl mx-auto md:px-6">
-                    {/* Logo */}
                     <Link href="/" className="flex items-center space-x-2">
                         <span className="text-xl md:text-2xl font-bold text-primary">
                             Eventnusa
@@ -154,7 +188,6 @@ export default function Navigation() {
                         </Badge>
                     </Link>
 
-                    {/* Search (Desktop) */}
                     <div className="hidden md:flex flex-1 max-w-md mx-6">
                         <form
                             onSubmit={handleDesktopSearch}
@@ -178,32 +211,69 @@ export default function Navigation() {
                         </form>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2">
-                        {/* Chat */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hidden md:flex"
-                        >
-                            <Link href="/chat">
-                                <MessageCircle className="h-5 w-5" />
-                            </Link>
-                        </Button>
+                        {auth?.user && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hidden md:flex relative"
+                                asChild
+                            >
+                                <Link href="/notifications">
+                                    <Bell className="w-5 h-5" />
+                                    {unreadNotifications > 0 && (
+                                        <Badge className="absolute top-1 right-1 h-4 min-w-4 p-0.5 rounded-full bg-slate-800 text-xs flex items-center justify-center">
+                                            {unreadNotifications > 99
+                                                ? "99+"
+                                                : unreadNotifications}
+                                        </Badge>
+                                    )}
+                                </Link>
+                            </Button>
+                        )}
 
-                        {/* Cart */}
-                        <Button variant="ghost" size="icon" asChild>
-                            <Link href="/cart">
-                                <ShoppingCart className="h-5 w-5" />
-                            </Link>
-                        </Button>
+                        {auth?.user && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hidden md:flex relative"
+                                asChild
+                            >
+                                <Link href="/chat">
+                                    <MessageCircle className="h-5 w-5" />
+                                    {unreadChats > 0 && (
+                                        <Badge className="absolute top-1 right-1 h-4 min-w-4 p-0.5 rounded-full bg-slate-800 text-xs flex items-center justify-center">
+                                            {unreadChats > 99
+                                                ? "99+"
+                                                : unreadChats}
+                                        </Badge>
+                                    )}
+                                </Link>
+                            </Button>
+                        )}
 
-                        {/* Desktop Auth */}
+                        {auth?.user && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                asChild
+                                className="hidden md:flex relative"
+                            >
+                                <Link href="/cart">
+                                    <ShoppingCart className="h-5 w-5" />
+                                    {cartItems > 0 && (
+                                        <Badge className="absolute top-1 right-1 h-4 min-w-4 p-0.5 rounded-full bg-slate-800 text-xs flex items-center justify-center">
+                                            {cartItems > 99 ? "99+" : cartItems}
+                                        </Badge>
+                                    )}
+                                </Link>
+                            </Button>
+                        )}
+
                         <div className="hidden md:flex">
                             <DesktopAuthButtons />
                         </div>
 
-                        {/* Mobile Menu */}
                         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                             <SheetTrigger asChild>
                                 <Button
@@ -216,7 +286,6 @@ export default function Navigation() {
                             </SheetTrigger>
                             <SheetContent>
                                 <div className="flex flex-col space-y-4 mt-6">
-                                    {/* Mobile Search */}
                                     <form
                                         onSubmit={handleMobileSearch}
                                         className="flex w-full mb-4"
@@ -240,46 +309,53 @@ export default function Navigation() {
                                         </button>
                                     </form>
 
-                                    {/* Mobile Navigation Links */}
-                                    <Button
-                                        variant="ghost"
-                                        className="justify-start"
-                                        asChild
-                                    >
-                                        <Link href="/">
-                                            <Home className="mr-2 h-4 w-4" />
-                                            Home
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        className="justify-start"
-                                        asChild
-                                    >
-                                        <Link href="/products">
-                                            <Package className="mr-2 h-4 w-4" />
-                                            Produk
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        className="justify-start"
-                                        asChild
-                                    >
-                                        <Link href="/wishlist">
-                                            <Heart className="mr-2 h-4 w-4" />
-                                            Wishlist
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        className="justify-start"
-                                    >
-                                        <MessageCircle className="mr-2 h-4 w-4" />
-                                        Chat
-                                    </Button>
+                                    {auth?.user && (
+                                        <Button
+                                            variant="ghost"
+                                            className="justify-start relative"
+                                            asChild
+                                        >
+                                            <Link
+                                                href="/notifications"
+                                                className="flex items-center w-full"
+                                            >
+                                                <Bell className="mr-2 h-4 w-4" />
+                                                Notifikasi
+                                                {unreadNotifications > 0 && (
+                                                    <Badge className="ml-auto h-4 min-w-4 p-0.5 rounded-full bg-slate-800 text-xs flex items-center justify-center">
+                                                        {unreadNotifications >
+                                                        99
+                                                            ? "99+"
+                                                            : unreadNotifications}
+                                                    </Badge>
+                                                )}
+                                            </Link>
+                                        </Button>
+                                    )}
 
-                                    {/* Mobile Auth */}
+                                    {auth?.user && (
+                                        <Button
+                                            variant="ghost"
+                                            className="justify-start relative"
+                                            asChild
+                                        >
+                                            <Link
+                                                href="/chat"
+                                                className="flex items-center w-full"
+                                            >
+                                                <MessageCircle className="mr-2 h-4 w-4" />
+                                                Chat
+                                                {unreadChats > 0 && (
+                                                    <Badge className="ml-auto h-4 min-w-4 p-0.5 rounded-full bg-slate-800 text-xs flex items-center justify-center">
+                                                        {unreadChats > 99
+                                                            ? "99+"
+                                                            : unreadChats}
+                                                    </Badge>
+                                                )}
+                                            </Link>
+                                        </Button>
+                                    )}
+
                                     {auth?.user ? (
                                         <>
                                             <div className="border-t pt-4 mt-4">
@@ -291,7 +367,7 @@ export default function Navigation() {
                                                     className="justify-start w-full"
                                                     asChild
                                                 >
-                                                    <Link href="/account">
+                                                    <Link href="/profile">
                                                         <User className="mr-2 h-4 w-4" />
                                                         Profil
                                                     </Link>
@@ -350,8 +426,7 @@ export default function Navigation() {
 
             {/* Bottom Navigation - Mobile Only */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg">
-                <div className="grid grid-cols-5 h-16">
-                    {/* Home */}
+                <div className="grid grid-cols-4 h-16">
                     <Link
                         href="/"
                         className={`flex flex-col items-center justify-center text-xs transition-colors ${
@@ -364,23 +439,9 @@ export default function Navigation() {
                         <span className="font-medium">Home</span>
                     </Link>
 
-                    {/* Products */}
-                    <Link
-                        href="/products"
-                        className={`flex flex-col items-center justify-center text-xs transition-colors ${
-                            isActive("/products")
-                                ? "text-primary bg-primary/10"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        <Package className={`h-5 w-5 mb-1`} />
-                        <span className="font-medium">Produk</span>
-                    </Link>
-
-                    {/* Cart */}
                     <Link
                         href="/cart"
-                        className={`flex flex-col items-center justify-center text-xs transition-colors ${
+                        className={`flex flex-col items-center justify-center text-xs transition-colors relative ${
                             isActive("/cart")
                                 ? "text-primary bg-primary/10"
                                 : "text-muted-foreground hover:text-foreground"
@@ -388,28 +449,19 @@ export default function Navigation() {
                     >
                         <div className="relative">
                             <ShoppingCart className={`h-5 w-5 mb-1`} />
+                            {cartItems > 0 && (
+                                <Badge className="absolute -top-1 -right-2 h-4 min-w-4 p-0.5 rounded-full bg-slate-800 text-xs flex items-center justify-center">
+                                    {cartItems > 99 ? "99+" : cartItems}
+                                </Badge>
+                            )}
                         </div>
                         <span className="font-medium">Keranjang</span>
                     </Link>
 
-                    {/* Wishlist */}
                     <Link
-                        href="/wishlist"
+                        href={auth?.user ? "/profile" : "/login"}
                         className={`flex flex-col items-center justify-center text-xs transition-colors ${
-                            isActive("/wishlist")
-                                ? "text-primary bg-primary/10"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        <Heart className={`h-5 w-5 mb-1`} />
-                        <span className="font-medium">Wishlist</span>
-                    </Link>
-
-                    {/* Profile/Account */}
-                    <Link
-                        href={auth?.user ? "/account" : "/login"}
-                        className={`flex flex-col items-center justify-center text-xs transition-colors ${
-                            isActive("/account")
+                            isActive("/profile")
                                 ? "text-primary bg-primary/10"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}

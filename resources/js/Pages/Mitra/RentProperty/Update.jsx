@@ -10,10 +10,12 @@ import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "@/hooks/use-toast";
+import ReactQuill from "react-quill";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
     { title: "Property", href: "/dashboard/rents" },
+    { title: "Edit", href: "/dashboard/rents" },
 ];
 
 export default function RentUpdate() {
@@ -89,8 +91,6 @@ export default function RentUpdate() {
 
         post(route("rents.update", rent.id), formSubmit, {
             forceFormData: true,
-            onProgress: () => console.log(data),
-            onSuccess: () => console.log("Success"),
             onError: (errors) =>
                 console.error("Form submission error:", errors),
         });
@@ -107,7 +107,7 @@ export default function RentUpdate() {
                         </Button>
                     </Link>
                     <span className="ms-2 text-lg font-semibold">
-                        Tambahkan Gedung Anda
+                        Edit Property Anda
                     </span>
                 </div>
 
@@ -203,14 +203,16 @@ export default function RentUpdate() {
                         ))}
                     </div>
 
-                    <Button
-                        type="button"
-                        variant="link"
-                        onClick={handleAddPhoto}
-                        className="text-xs px-0 mx-auto"
-                    >
-                        Tambahkan lebih banyak foto
-                    </Button>
+                    <div className="grid w-full items-center gap-3">
+                        <Button
+                            type="button"
+                            variant="link"
+                            onClick={() => handleAddPhoto()}
+                            className="text-xs px-0 mx-auto"
+                        >
+                            Tambahkan lebih banyak foto
+                        </Button>
+                    </div>
 
                     <div className="grid w-full gap-3">
                         <Label htmlFor="name">Nama Sewa</Label>
@@ -223,15 +225,18 @@ export default function RentUpdate() {
                     </div>
 
                     <div className="grid w-full gap-3">
-                        <Label htmlFor="description">Deskripsi</Label>
-                        <Textarea
-                            id="description"
-                            value={data.description}
-                            onChange={(e) =>
-                                setData("description", e.target.value)
-                            }
-                            required
-                        />
+                        <Label htmlFor="description">Deskripsi Property</Label>
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
+                            <ReactQuill
+                                theme="snow"
+                                value={data.description}
+                                onChange={(content) =>
+                                    setData("description", content)
+                                }
+                                className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
+                                placeholder="Masukkan deskripsi..."
+                            />
+                        </div>
                     </div>
 
                     <div className="grid w-full gap-3">
@@ -263,9 +268,30 @@ export default function RentUpdate() {
                         initialLocationFromDB={rent.location}
                     />
 
-                    <Button type="submit" disabled={processing}>
-                        {processing ? "Loading..." : "Kirim"}
-                    </Button>
+                    <div className="flex justify-end gap-4">
+                        <Link href="/dashboard/rents">
+                            <Button
+                                variant="secondary"
+                                className="cursor-pointer"
+                            >
+                                Batalkan
+                            </Button>
+                        </Link>
+                        <Button
+                            type="submit"
+                            className="cursor-pointer"
+                            disabled={processing}
+                        >
+                            {processing ? (
+                                <>
+                                    <Loader2 className="animate-spin" />{" "}
+                                    Loading...
+                                </>
+                            ) : (
+                                "Edit"
+                            )}
+                        </Button>
+                    </div>
                 </form>
             </div>
         </AppLayout>

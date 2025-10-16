@@ -1,4 +1,3 @@
-// React imports
 import React, { useEffect, useRef, useState, useCallback } from "react";
 
 // Inertia imports
@@ -26,6 +25,7 @@ import {
     Building,
     DollarSign,
     MapPin,
+    Loader2, // Menggunakan Loader2 dari lucide-react untuk spinner
 } from "lucide-react";
 
 // Utils & Layouts
@@ -34,7 +34,7 @@ import MainLayout from "@/Layouts/Main";
 
 // Skeleton Loading Component
 const ItemSkeleton = () => (
-    <div className="p-4 border rounded animate-pulse">
+    <div className="p-4 border rounded animate-pulse hover:shadow-lg transition-all duration-300 overflow-hidden group">
         <div className="aspect-video bg-gray-200 rounded mb-3"></div>
         <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
         <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
@@ -66,25 +66,27 @@ const LazyImage = ({ src, alt, className }) => {
             observer.observe(imgRef.current);
         }
 
-        return () => observer.disconnect();
+        return () => {
+            if (observer && observer.disconnect) {
+                observer.disconnect();
+            }
+        };
     }, []);
 
     return (
-        <div ref={imgRef} className={className}>
+        <div ref={imgRef} className={`${className} relative bg-gray-200`}>
             {inView && (
                 <>
                     {!loaded && (
-                        <div className="w-full h-full bg-gray-200 animate-pulse rounded"></div>
+                        <div className="absolute inset-0 w-full h-full bg-gray-200 animate-pulse rounded"></div>
                     )}
                     <img
                         src={src}
                         alt={alt}
-                        className={`w-full h-full object-cover rounded transition-opacity duration-300 ${
+                        className={`w-full h-full object-cover rounded transition-opacity duration-500 ${
                             loaded ? "opacity-100" : "opacity-0"
                         }`}
                         onLoad={() => setLoaded(true)}
-                        loading="lazy"
-                        style={{ display: loaded ? "block" : "none" }}
                     />
                 </>
             )}
@@ -94,11 +96,11 @@ const LazyImage = ({ src, alt, className }) => {
 
 export default function HomeService() {
     const { props } = usePage();
+    // Diasumsikan props memiliki struktur { items: { data: [...], next_page_url: '...' }, ziggy: { url: '...' } }
     const { ziggy } = props;
 
-    // Buat base URL dari ziggy
-    // const baseUrl = `${ziggy.url}${ziggy.port ? `:${ziggy.port}` : ""}`;
-    const baseUrl = ziggy.url;
+    // Menggunakan fallback jika ziggy.url tidak tersedia
+    const baseUrl = ziggy?.url ?? "http://localhost";
 
     const initialItems = props.items?.data ?? [];
     const initialNext = props.items?.next_page_url ?? null;
@@ -126,7 +128,31 @@ export default function HomeService() {
                 },
             });
 
-            if (!res.ok) throw new Error("Network response was not ok");
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error(
+                    `Fetch failed with status ${res.status}. Response text:`,
+                    errorText
+                );
+                // Penting: Set ended ke true agar tidak mencoba fetch berulang kali
+                setEnded(true);
+                throw new Error(
+                    `Network response was not ok, status: ${res.status}`
+                );
+            }
+
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const errorText = await res.text();
+                console.error(
+                    "Expected JSON but received:",
+                    errorText.substring(0, 200) + "..."
+                );
+                // Penting: Set ended ke true agar tidak mencoba fetch berulang kali
+                setEnded(true);
+                throw new Error("Received non-JSON response from server.");
+            }
+
             const json = await res.json();
 
             setItems((prev) => [...prev, ...json.data]);
@@ -134,6 +160,7 @@ export default function HomeService() {
             if (!json.next_page_url) setEnded(true);
         } catch (err) {
             console.error("Fetch next page failed:", err);
+            setEnded(true);
         } finally {
             setLoading(false);
             isFetchingRef.current = false;
@@ -150,7 +177,7 @@ export default function HomeService() {
     }, []);
 
     useEffect(() => {
-        if (!sentinelRef.current || initialLoad) return;
+        if (!sentinelRef.current || initialLoad || ended) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -165,8 +192,10 @@ export default function HomeService() {
 
         observer.observe(sentinelRef.current);
         return () => observer.disconnect();
-    }, [fetchNext, nextPageUrl, loading, initialLoad]);
+    }, [fetchNext, nextPageUrl, loading, initialLoad, ended]);
 
+    // Mengembalikan fungsi formatPrice ke dalam utilitas jika ada
+    // Jika tidak, biarkan di sini:
     const formatPrice = (price) => {
         return new Intl.NumberFormat("id-ID").format(price);
     };
@@ -175,11 +204,12 @@ export default function HomeService() {
         if (!thumbnail) return `${baseUrl}/storage/randoms/3.webp`;
         return thumbnail.startsWith("http")
             ? thumbnail
-            : `${baseUrl}/storage${thumbnail}`;
+            : `${baseUrl}/storage/thumbnails/${thumbnail}`;
     };
 
     const truncateDescription = (desc) => {
         if (!desc) return "";
+        // Diasumsikan formatTanggalIndo dan getJamMenit diimpor dari @/Utils/formatDateTime
         const text = desc.replace(/<\/?[^>]+(>|$)/g, "");
         return text.length > 120 ? text.slice(0, 120) + "..." : text;
     };
@@ -187,14 +217,16 @@ export default function HomeService() {
     return (
         <>
             <Head title="Ticket" />
-            <div className="min-h-screen mx-auto xl:max-w-[950px] p-4">
+            <div className="min-h-screen mx-auto xl:max-w-[950px] p-4 pt-12">
                 <div>
-                    <h1 className="text-2xl font-semibold mb-6">Daftar Jasa</h1>
+                    <h1 className="text-2xl font-semibold mb-6 text-gray-800">
+                        Daftar Jasa
+                    </h1>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {initialLoad
                             ? // Show skeleton loading for initial load
-                              Array.from({ length: 12 }, (_, i) => (
+                              Array.from({ length: 9 }, (_, i) => (
                                   <ItemSkeleton key={`skeleton-${i}`} />
                               ))
                             : items.map((item) => (
@@ -202,21 +234,21 @@ export default function HomeService() {
                                       key={item.id}
                                       href={`/services/${item.id}`}
                                   >
-                                      <div className="border rounded hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                                      <div className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
                                           <LazyImage
                                               src={getImageUrl(item.thumbnail)}
                                               alt={item.name}
                                               className="aspect-video w-full overflow-hidden"
                                           />
-                                          <div className="p-4 space-y-0.5">
-                                              <h3 className="font-semibold text-sm leading-tight group-hover:text-blue-600 transition-colors">
+                                          <div className="p-4 space-y-2">
+                                              <h3 className="font-bold text-base leading-tight group-hover:text-blue-600 transition-colors">
                                                   {item.name}
                                               </h3>
 
-                                              <div className="space-y-2">
-                                                  {item.price && (
+                                              <div className="space-y-1">
+                                                  {item.price !== undefined && (
                                                       <div className="flex items-center gap-2 text-green-600">
-                                                          <span className="font-semibold text-xs">
+                                                          <span className="font-extrabold text-sm">
                                                               Rp{" "}
                                                               {formatPrice(
                                                                   item.price
@@ -226,7 +258,7 @@ export default function HomeService() {
                                                   )}
 
                                                   {item.location && (
-                                                      <div className="flex items-center gap-2 text-gray-600">
+                                                      <div className="flex items-center gap-2 text-gray-500">
                                                           <MapPin className="h-4 w-4" />
                                                           <span className="text-sm">
                                                               {item.location}
@@ -241,7 +273,7 @@ export default function HomeService() {
 
                         {/* Loading skeletons for pagination */}
                         {loading &&
-                            Array.from({ length: 6 }, (_, i) => (
+                            Array.from({ length: 3 }, (_, i) => (
                                 <ItemSkeleton key={`loading-${i}`} />
                             ))}
                     </div>
@@ -249,23 +281,23 @@ export default function HomeService() {
                     {/* Sentinel untuk infinite scroll */}
                     <div
                         ref={sentinelRef}
-                        className="h-20 mt-6 flex items-center justify-center"
+                        className="h-20 mt-8 flex items-center justify-center"
                     >
                         {!initialLoad &&
                             (loading ? (
-                                <div className="flex items-center space-x-2">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                <div className="flex items-center space-x-2 text-blue-600">
+                                    <Loader2 className="h-6 w-6 animate-spin" />
                                     <span className="text-sm">
                                         Memuat lebih banyak...
                                     </span>
                                 </div>
                             ) : ended ? (
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-sm text-gray-400">
                                     Semua item telah dimuat
                                 </div>
                             ) : (
                                 nextPageUrl && (
-                                    <div className="text-sm text-muted-foreground">
+                                    <div className="text-sm text-gray-500">
                                         Scroll untuk memuat lebih banyak
                                     </div>
                                 )

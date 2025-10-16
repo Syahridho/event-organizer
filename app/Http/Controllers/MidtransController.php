@@ -237,12 +237,27 @@ class MidtransController extends Controller
 
                 $rentDays = null;
                 if (isset($itemData['rent_days'])) {
-                    // Gunakan nilai asli tanpa parsing zona waktu
-                    $rentDays = $itemData['rent_days']; // "2025-09-19"
-                    Log::info('Rent days parsing', [
-                        'original' => $itemData['rent_days'],
-                        'saved' => $rentDays
-                    ]);
+                    // OPTIMIZED: Parse date string langsung tanpa timezone conversion
+                    try {
+                        // Ambil hanya tanggal YYYY-MM-DD, buang timezone info
+                        $rentDays = substr($itemData['rent_days'], 0, 10);
+
+                        // Validasi format
+                        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $rentDays)) {
+                            throw new \Exception("Invalid date format");
+                        }
+
+                        Log::info('Rent days parsing', [
+                            'original' => $itemData['rent_days'],
+                            'saved' => $rentDays,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to parse rent_days', [
+                            'original' => $itemData['rent_days'],
+                            'error' => $e->getMessage()
+                        ]);
+                        throw new \Exception("Invalid rent_days format: {$itemData['rent_days']}");
+                    }
                 }
 
                 $validatedItems[] = [

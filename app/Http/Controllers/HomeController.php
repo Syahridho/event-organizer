@@ -78,89 +78,78 @@ class HomeController extends Controller
     }
 
     public function showEvent($id)
-{
-    // Load event dengan relasi
-    $event = Event::with(['user', 'speakers'])->findOrFail($id);
+    {
+        $event = Event::with(['user', 'speakers'])->findOrFail($id);
     
-    // Query manual untuk mendapatkan sold_count yang akurat
-    $tickets = DB::table('tickets')
-        ->leftJoin('transaction_items', function($join) {
-            $join->on('tickets.id', '=', 'transaction_items.item_id')
-                 ->where('transaction_items.item_type', '=', 'ticket');
-        })
-        ->leftJoin('transactions', function($join) {
-            $join->on('transaction_items.transaction_id', '=', 'transactions.id')
-                 ->whereIn('transactions.status', ['settlement']);
-        })
-        ->where('tickets.event_id', $id)
-        ->select(
-            'tickets.*',
-            DB::raw('COALESCE(SUM(transaction_items.qty), 0) as sold_count')
-        )
-        ->groupBy(
-            'tickets.id',
-            'tickets.event_id', 
-            'tickets.name', 
-            'tickets.price', 
-            'tickets.quota',
-            'tickets.created_at',
-            'tickets.updated_at'
-        )
-        ->get();
-    
-    // Attach tickets ke event sebagai collection
-    $event->setRelation('tickets', $tickets);
-    
-    // Buat array asosiatif berdasarkan nama tiket
-    $ticketsByName = [];
-    $totalRemaining = 0;
-    
-    foreach ($tickets as $ticket) {
-        $remaining = max(0, $ticket->quota - $ticket->sold_count);
-        $isSoldOut = $remaining <= 0;
+        $tickets = DB::table('tickets')
+            ->where('tickets.event_id', $id)
+            ->select(
+                'tickets.*',
+                
+                DB::raw('(
+                    SELECT COALESCE(SUM(ti.qty), 0)
+                    FROM transaction_items as ti
+                    JOIN transactions as t ON t.id = ti.transaction_id
+                    WHERE ti.item_id = tickets.id
+                    AND ti.item_type = \'ticket\'
+                    -- Hanya hitung yang statusnya SETTLEMENT
+                    AND t.status IN (\'settlement\') 
+                ) as sold_count')
+            )
+            ->get();
+
+        $event->setRelation('tickets', $tickets);
         
-        $ticketsByName[$ticket->name] = [
-            'id' => $ticket->id,
-            'name' => $ticket->name,
-            'price' => $ticket->price,
-            'quota' => $ticket->quota,
-            'sold_count' => (int) $ticket->sold_count,
-            'remaining' => $remaining,
-            'is_sold_out' => $isSoldOut,
-        ];
+        // Buat array asosiatif berdasarkan nama tiket
+        $ticketsByName = [];
+        $totalRemaining = 0;
         
-        $totalRemaining += $remaining;
+        foreach ($tickets as $ticket) {
+            $remaining = max(0, $ticket->quota - $ticket->sold_count);
+            $isSoldOut = $remaining <= 0;
+            
+            $ticketsByName[$ticket->name] = [
+                'id' => $ticket->id,
+                'name' => $ticket->name,
+                'price' => $ticket->price,
+                'quota' => $ticket->quota,
+                'sold_count' => (int) $ticket->sold_count,
+                'remaining' => $remaining,
+                'is_sold_out' => $isSoldOut,
+            ];
+            
+            $totalRemaining += $remaining;
+            
+            
+            $ticket->quantity = $ticket->quota;
+            $ticket->remaining = $remaining;
+            $ticket->is_sold_out = $isSoldOut;
+        }
         
-        // Tetap set property untuk kompatibilitas dengan code existing
-        $ticket->quantity = $ticket->quota;
-        $ticket->remaining = $remaining;
-        $ticket->is_sold_out = $isSoldOut;
+        $userId = auth()->id();
+        $alreadyRegistered = false;
+        $freeTicketId = $tickets->where('name', 'Free')->pluck('id')->first();
+
+        if ($userId) {
+            $alreadyRegistered = DB::table('transactions')
+                ->join('transaction_items', 'transactions.id', '=', 'transaction_items.transaction_id')
+                ->where('transactions.user_id', $userId)
+                ->where('transaction_items.item_type', 'ticket') 
+                ->when($freeTicketId, function ($query, $freeTicketId) {
+                    return $query->where('transaction_items.item_id', $freeTicketId);
+                })
+                ->whereIn('transactions.status', ['settlement'])
+                ->exists();
+        }
+
+        return Inertia::render('Home/DetailEvent', [
+            'id' => $id,
+            'event' => $event,
+            'ticketsByName' => $ticketsByName,
+            'alreadyRegistered' => $alreadyRegistered,
+            'totalRemainingTickets' => $totalRemaining,
+        ]);
     }
-    
-    $userId = auth()->id();
-    $alreadyRegistered = false;
-
-    if ($userId) {
-        $alreadyRegistered = DB::table('transactions')
-            ->join('transaction_items', 'transactions.id', '=', 'transaction_items.transaction_id')
-            ->where('transactions.user_id', $userId)
-            ->where('transaction_items.item_type', 'ticket') 
-            ->whereIn('transaction_items.item_id', $tickets->pluck('id'))
-            ->whereIn('transactions.status', ['settlement'])
-            ->exists();
-    }
-
-    // dd($ticketsByName);
-
-
-    return Inertia::render('Home/DetailEvent', [
-        'id' => $id,
-        'event' => $event,
-        'ticketsByName' => $ticketsByName,
-        'alreadyRegistered' => $alreadyRegistered,
-        'totalRemainingTickets' => $totalRemaining,
-    ]);
-}
 
     public function showService($id)
     {

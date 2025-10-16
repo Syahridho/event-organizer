@@ -53,8 +53,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
     const [isLoading, setIsLoading] = React.useState(false);
 
     const handleSave = async () => {
-        console.log(pajakType, pajakAmount);
-
         try {
             setIsLoading(true);
 
@@ -81,10 +79,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
             setIsLoading(false);
         }
     };
-
-    React.useEffect(() => {
-        console.log(pajakType, pajakAmount);
-    }, [pajakType, pajakAmount]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

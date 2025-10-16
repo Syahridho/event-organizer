@@ -9,7 +9,7 @@ import RightSideBoxChat from "@/components/RightSideBoxChat.jsx";
 
 export default function Show() {
     const { auth, chat_with: chatWithUser, messages } = usePage().props;
-    console.log(auth, chatWithUser, messages);
+
     const scrollRef = useRef(null);
     const [reply, setReply] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);

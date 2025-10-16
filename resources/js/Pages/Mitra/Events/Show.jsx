@@ -46,8 +46,6 @@
 //         }
 //     };
 
-//     console.log(usePage().props);
-
 //     return (
 //         <AppLayout breadcrumbs={breadcrumbs}>
 //             <Head title="Dashboard" />

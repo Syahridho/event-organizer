@@ -1,28 +1,45 @@
-import { usePage, router, Head } from "@inertiajs/react";
+import { usePage, router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import { formatRupiah } from "@/Utils/formatRupiah";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import {
     FaArrowLeft,
     FaCreditCard,
     FaShoppingBag,
     FaMapMarkerAlt,
-    FaTimes,
     FaPlus,
     FaEdit,
     FaTrash,
+    FaExternalLinkAlt,
+    FaTicketAlt,
+    FaCalendarAlt,
 } from "react-icons/fa";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 
 export default function CheckoutPage() {
     const { checkoutData, ziggy, user } = usePage().props;
-    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    console.log(checkoutData);
 
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
+    const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
     const [addressForm, setAddressForm] = useState({
         label: "",
         recipient_name: user?.name || "",
@@ -36,40 +53,75 @@ export default function CheckoutPage() {
         is_default: false,
     });
 
-    const handleAddressFormChange = (field, value) => {
-        setAddressForm((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
-    };
-
-    const handleProvinceChange = (provinceId) => {
-        setAddressForm((prev) => ({
-            ...prev,
-            province: provinceId,
-            city: "",
-            district: "",
-        }));
-        fetchCities(provinceId); // panggil API ambil kota
-    };
-
-    const handleCityChange = (cityId) => {
-        setAddressForm((prev) => ({
-            ...prev,
-            city: cityId,
-            district: "",
-        }));
-    };
-
-    // Midtrans hook
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
+
+    // Check if address is required based on item types
+    const isAddressRequired = useMemo(() => {
+        if (!checkoutData?.items) return false;
+        return checkoutData.items.some(
+            (item) => item.type === "service" || item.type === "property"
+        );
+    }, [checkoutData]);
 
     const selectedAddress = useMemo(() => {
         return addresses.find((addr) => addr.id === selectedAddressId);
     }, [addresses, selectedAddressId]);
 
-    // Memuat alamat pengguna
-    const loadAddresses = async () => {
+    // Format date helper with WIB timezone
+    const formatDate = (dateString) => {
+        if (!dateString) return null;
+        try {
+            // Parse tanggal dengan timezone Jakarta (WIB)
+            const date = new Date(dateString);
+            const options = {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                timeZone: "Asia/Jakarta",
+            };
+            return date.toLocaleDateString("id-ID", options);
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    // Format rent days date (only date, no time) - OPTIMIZED
+    const formatRentDays = (dateString) => {
+        if (!dateString) return null;
+        try {
+            // Parse YYYY-MM-DD langsung tanpa timezone conversion
+            const [year, month, day] = dateString.split('T')[0].split('-');
+            const date = new Date(year, month - 1, day);
+
+            const options = {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            };
+            return date.toLocaleDateString("id-ID", options);
+        } catch (e) {
+            console.error('Error formatting rent_days:', e, dateString);
+            return dateString;
+        }
+    };
+
+    // Get product detail URL helper
+    const getProductDetailUrl = (item) => {
+        const typeMap = {
+            ticket: "events",
+            service: "services",
+            building: "buildings",
+            property: "properties",
+        };
+        const path = typeMap[item.type] || "events";
+        return `/${path}/${item.id}`;
+    };
+
+    // Load addresses
+    const loadAddresses = useCallback(async () => {
+        setIsLoadingAddresses(true);
         try {
             const response = await axios.get("/addresses/ajax/get");
             setAddresses(response.data.data);
@@ -81,11 +133,13 @@ export default function CheckoutPage() {
             }
         } catch (error) {
             console.error("Error loading addresses:", error);
-            alert("Gagal memuat alamat");
+            toast.error("Gagal memuat alamat. Silakan refresh halaman.");
+        } finally {
+            setIsLoadingAddresses(false);
         }
-    };
+    }, []);
 
-    // Membuka modal alamat
+    // Open address modal
     const openAddressModal = useCallback(
         (address = null) => {
             if (address) {
@@ -122,7 +176,7 @@ export default function CheckoutPage() {
         [addresses.length, user]
     );
 
-    // Menutup modal alamat
+    // Close address modal
     const closeAddressModal = useCallback(() => {
         setShowAddressModal(false);
         setEditingAddress(null);
@@ -140,27 +194,27 @@ export default function CheckoutPage() {
         });
     }, [user]);
 
-    // Simpan alamat
+    // Save address
     const saveAddress = async () => {
         try {
             if (!addressForm.recipient_name.trim()) {
-                alert("Nama penerima harus diisi");
+                toast.error("Nama penerima harus diisi");
                 return;
             }
             if (!addressForm.address_line.trim()) {
-                alert("Alamat lengkap harus diisi");
+                toast.error("Alamat lengkap harus diisi");
                 return;
             }
             if (!addressForm.phone.trim()) {
-                alert("Nomor telepon harus diisi");
+                toast.error("Nomor telepon harus diisi");
                 return;
             }
             if (!addressForm.province) {
-                alert("Provinsi harus dipilih");
+                toast.error("Provinsi harus dipilih");
                 return;
             }
             if (!addressForm.city) {
-                alert("Kota harus dipilih");
+                toast.error("Kota harus dipilih");
                 return;
             }
 
@@ -170,11 +224,13 @@ export default function CheckoutPage() {
                     `/addresses/ajax/${editingAddress.id}`,
                     addressForm
                 );
+                toast.success("Alamat berhasil diperbarui");
             } else {
                 response = await axios.post(
                     "/addresses/ajax/store",
                     addressForm
                 );
+                toast.success("Alamat berhasil ditambahkan");
             }
 
             await loadAddresses();
@@ -185,21 +241,18 @@ export default function CheckoutPage() {
             }
         } catch (error) {
             console.error("Error saving address:", error);
-            alert(
-                "Gagal menyimpan alamat: " +
-                    (error.response?.data?.message || error.message)
+            toast.error(
+                error.response?.data?.message ||
+                    "Gagal menyimpan alamat. Silakan coba lagi."
             );
         }
     };
 
-    // Hapus alamat
+    // Delete address
     const deleteAddress = async (addressId) => {
-        if (!confirm("Apakah Anda yakin ingin menghapus alamat ini?")) {
-            return;
-        }
-
         try {
             await axios.delete(`/addresses/ajax/${addressId}`);
+            toast.success("Alamat berhasil dihapus");
             await loadAddresses();
 
             if (selectedAddressId === addressId) {
@@ -207,26 +260,35 @@ export default function CheckoutPage() {
             }
         } catch (error) {
             console.error("Error deleting address:", error);
-            alert("Gagal menghapus alamat");
+            toast.error("Gagal menghapus alamat");
         }
     };
 
-    // Handle kembali ke keranjang
+    // Handle back to cart
     const handleBackToCart = useCallback(() => {
         router.visit("/cart");
     }, []);
 
+    // Handle payment
     const handlePayment = useCallback(
         async (e) => {
             if (e) e.preventDefault();
 
+            // Validate address requirement
+            if (isAddressRequired && !selectedAddressId) {
+                toast.error(
+                    "Silakan pilih alamat pengiriman untuk item service atau property"
+                );
+                return;
+            }
+
             if (checkoutData.total < 1000) {
-                setPaymentError("Minimum pembayaran adalah Rp. 1.000");
+                toast.error("Minimum pembayaran adalah Rp. 1.000");
                 return;
             }
 
             if (!snapLoaded || !window.snap) {
-                setPaymentError(
+                toast.error(
                     "Sistem pembayaran belum siap. Silakan refresh halaman."
                 );
                 return;
@@ -236,7 +298,6 @@ export default function CheckoutPage() {
             setIsProcessingPayment(true);
 
             try {
-                // Fungsi untuk mapping type frontend ke backend enum
                 const mapItemType = (frontendType) => {
                     const typeMapping = {
                         ticket: "ticket",
@@ -247,7 +308,6 @@ export default function CheckoutPage() {
                     return typeMapping[frontendType] || "ticket";
                 };
 
-                // Prepare payment data
                 const paymentData = {
                     items: checkoutData.items.map((item) => ({
                         id: parseInt(item.id),
@@ -262,8 +322,6 @@ export default function CheckoutPage() {
                     email: user.email,
                 };
 
-                // Tambahkan alamat jika ada yang dipilih
-                console.log(selectedAddress);
                 if (selectedAddress) {
                     paymentData.shipping_address = {
                         recipient_name: selectedAddress.recipient_name,
@@ -275,9 +333,7 @@ export default function CheckoutPage() {
                         postal_code: selectedAddress.postal_code,
                     };
                 }
-                console.log("Payment Data:", paymentData);
 
-                // Create payment transaction
                 const response = await axios.post(
                     "/midtrans/token",
                     paymentData,
@@ -293,20 +349,17 @@ export default function CheckoutPage() {
                     }
                 );
 
-                const { token: snapToken, order_id } = response.data;
+                const { token: snapToken } = response.data;
 
                 if (!snapToken) {
                     throw new Error("Token pembayaran tidak diterima");
                 }
 
-                // Open Midtrans payment popup
                 window.snap.pay(snapToken, {
                     skipOrderSummary: false,
                     onSuccess: async (result) => {
-                        console.log("Payment success:", result);
                         setIsProcessingPayment(false);
 
-                        // Hapus cart setelah sukses
                         await axios.delete("/cart/clear-after-checkout", {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
@@ -317,13 +370,13 @@ export default function CheckoutPage() {
                             },
                         });
 
+                        toast.success("Pembayaran berhasil!");
                         router.visit("/purchase", {
                             method: "get",
                             preserveState: false,
                         });
                     },
                     onPending: async (result) => {
-                        console.log("Payment pending:", result);
                         setIsProcessingPayment(false);
 
                         await axios.delete("/cart/clear-after-checkout", {
@@ -336,17 +389,17 @@ export default function CheckoutPage() {
                             },
                         });
 
+                        toast.info("Pembayaran pending, menunggu konfirmasi");
                         router.visit("/purchase", {
                             method: "get",
-                            // data: { order_id: result.order_id || order_id },
                             preserveState: false,
                         });
                     },
                     onError: (error) => {
                         console.error("Payment error:", error);
                         setIsProcessingPayment(false);
-                        setPaymentError(
-                            "Terjadi kesalahan dalam proses pembayaran. Silakan coba lagi."
+                        toast.error(
+                            "Terjadi kesalahan dalam proses pembayaran"
                         );
                         router.visit("/purchase", {
                             method: "get",
@@ -375,7 +428,7 @@ export default function CheckoutPage() {
                 setIsProcessingPayment(false);
 
                 let errorMessage =
-                    "Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.";
+                    "Terjadi kesalahan saat memproses pembayaran";
 
                 if (error.response?.data?.message) {
                     errorMessage = error.response.data.message;
@@ -390,34 +443,45 @@ export default function CheckoutPage() {
                     )}`;
                 }
 
-                setPaymentError(errorMessage);
+                toast.error(errorMessage);
             }
         },
-        [checkoutData, user, selectedAddress, snapLoaded]
+        [
+            checkoutData,
+            user,
+            selectedAddress,
+            snapLoaded,
+            isAddressRequired,
+            selectedAddressId,
+        ]
     );
 
-    // Memuat provinsi saat modal dibuka
+    const TYPE_LABELS = {
+        ticket: "Tiket Event",
+        service: "Layanan",
+        building: "Gedung",
+        property: "Properti",
+    };
 
-    // Load user addresses
+    const getTypeLabel = (type) => TYPE_LABELS[type] || type;
+
     useEffect(() => {
         loadAddresses();
-    }, []);
+    }, [loadAddresses]);
 
-    // Redirect jika tidak ada data checkout
     useEffect(() => {
         if (
             !checkoutData ||
             !checkoutData.items ||
             checkoutData.items.length === 0
         ) {
-            alert(
+            toast.error(
                 "Data checkout tidak ditemukan. Silakan pilih item dari keranjang."
             );
             router.visit("/cart");
         }
     }, [checkoutData]);
 
-    // Show loading jika data belum ada
     if (!checkoutData) {
         return (
             <div className="max-w-4xl mx-auto py-10 px-4">
@@ -434,6 +498,7 @@ export default function CheckoutPage() {
     return (
         <div className="max-w-4xl mx-auto py-10 px-4">
             <Head title="Proses Pembayaran" />
+
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
                 <Button
@@ -448,163 +513,175 @@ export default function CheckoutPage() {
                 <h1 className="text-2xl font-bold">Checkout</h1>
             </div>
 
-            {/* Payment Error Display */}
-            {paymentError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-                    <div className="flex items-center gap-2">
-                        <svg
-                            className="w-5 h-5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                        {paymentError}
-                    </div>
-                </div>
-            )}
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Shipping Address Section */}
-                    <div className="bg-white rounded-lg border p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold flex items-center gap-2">
-                                <FaMapMarkerAlt className="w-5 h-5 text-green-600" />
-                                Alamat Pengiriman
-                            </h2>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openAddressModal()}
-                                className="flex items-center gap-2"
-                            >
-                                <FaPlus className="w-4 h-4" />
-                                Tambah Alamat
-                            </Button>
-                        </div>
-
-                        {addresses.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                <FaMapMarkerAlt className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                                <p>Belum ada alamat tersimpan</p>
-                                <p className="text-sm">
-                                    Klik "Tambah Alamat" untuk menambahkan
-                                </p>
+                    {/* Shipping Address Section - Only show if required */}
+                    {isAddressRequired && (
+                        <div className="bg-white rounded-lg border p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-semibold flex items-center gap-2">
+                                    <FaMapMarkerAlt className="w-5 h-5 text-green-600" />
+                                    Alamat Pengiriman
+                                    <span className="text-red-500 text-sm">
+                                        *
+                                    </span>
+                                </h2>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openAddressModal()}
+                                    className="flex items-center gap-2"
+                                >
+                                    <FaPlus className="w-4 h-4" />
+                                    Tambah Alamat
+                                </Button>
                             </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {addresses.map((address) => (
-                                    <div
-                                        key={address.id}
-                                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                                            selectedAddressId === address.id
-                                                ? "border-blue-500 bg-blue-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        onClick={() =>
-                                            setSelectedAddressId(address.id)
-                                        }
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-start gap-3">
-                                                <input
-                                                    type="radio"
-                                                    name="selectedAddress"
-                                                    checked={
-                                                        selectedAddressId ===
-                                                        address.id
-                                                    }
-                                                    onChange={() =>
-                                                        setSelectedAddressId(
+
+                            {isLoadingAddresses ? (
+                                <div className="space-y-3">
+                                    {[1, 2].map((i) => (
+                                        <div
+                                            key={i}
+                                            className="border rounded-lg p-4"
+                                        >
+                                            <Skeleton className="h-4 w-24 mb-2" />
+                                            <Skeleton className="h-5 w-32 mb-2" />
+                                            <Skeleton className="h-4 w-40 mb-1" />
+                                            <Skeleton className="h-4 w-full" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : addresses.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <FaMapMarkerAlt className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                                    <p>Belum ada alamat tersimpan</p>
+                                    <p className="text-sm">
+                                        Klik "Tambah Alamat" untuk menambahkan
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {addresses.map((address) => (
+                                        <div
+                                            key={address.id}
+                                            className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                                                selectedAddressId === address.id
+                                                    ? "border-blue-500 bg-blue-50 shadow-sm"
+                                                    : "border-gray-200 hover:border-gray-300"
+                                            }`}
+                                            onClick={() =>
+                                                setSelectedAddressId(address.id)
+                                            }
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start gap-3 flex-1">
+                                                    <input
+                                                        type="radio"
+                                                        name="selectedAddress"
+                                                        checked={
+                                                            selectedAddressId ===
                                                             address.id
-                                                        )
-                                                    }
-                                                    className="mt-1"
-                                                />
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        {address.label && (
-                                                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                                                                {address.label}
-                                                            </span>
-                                                        )}
-                                                        {address.is_default && (
-                                                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-                                                                Default
-                                                            </span>
+                                                        }
+                                                        onChange={() =>
+                                                            setSelectedAddressId(
+                                                                address.id
+                                                            )
+                                                        }
+                                                        className="mt-1"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            {address.label && (
+                                                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                                                                    {
+                                                                        address.label
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                            {address.is_default && (
+                                                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
+                                                                    Default
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="font-medium text-gray-900">
+                                                            {
+                                                                address.recipient_name
+                                                            }
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            {address.phone}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600 mt-1">
+                                                            {
+                                                                address.address_line
+                                                            }
+                                                            , {address.district}
+                                                            , {address.city},{" "}
+                                                            {address.province},{" "}
+                                                            {
+                                                                address.postal_code
+                                                            }
+                                                        </p>
+                                                        {address.note && (
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Catatan:{" "}
+                                                                {address.note}
+                                                            </p>
                                                         )}
                                                     </div>
-                                                    <p className="font-medium text-gray-900">
-                                                        {address.recipient_name}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        {address.phone}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600 mt-1">
-                                                        {address.address_line},{" "}
-                                                        {address.district},{" "}
-                                                        {address.city},{" "}
-                                                        {address.province},{" "}
-                                                        {address.postal_code}
-                                                    </p>
-                                                    {address.note && (
-                                                        <p className="text-xs text-gray-500 mt-1">
-                                                            Catatan:{" "}
-                                                            {address.note}
-                                                        </p>
-                                                    )}
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openAddressModal(
+                                                                address
+                                                            );
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                                    >
+                                                        <FaEdit className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (
+                                                                confirm(
+                                                                    "Apakah Anda yakin ingin menghapus alamat ini?"
+                                                                )
+                                                            ) {
+                                                                deleteAddress(
+                                                                    address.id
+                                                                );
+                                                            }
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                                    >
+                                                        <FaTrash className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openAddressModal(
-                                                            address
-                                                        );
-                                                    }}
-                                                    className="p-2 text-gray-400 hover:text-blue-600"
-                                                >
-                                                    <FaEdit className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        deleteAddress(
-                                                            address.id
-                                                        );
-                                                    }}
-                                                    className="p-2 text-gray-400 hover:text-red-600"
-                                                >
-                                                    <FaTrash className="w-4 h-4" />
-                                                </button>
-                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Order Items */}
                     <div className="bg-white rounded-lg border p-6">
                         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <FaShoppingBag className="w-5 h-5 text-green-600" />
-                            Item Pesanan ({checkoutData.items?.length || 0})
+                            Pesanan ({checkoutData.items?.length || 0})
                         </h2>
 
                         <div className="space-y-4">
                             {checkoutData.items?.map((item) => (
                                 <div
                                     key={item.cart_id}
-                                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-md"
+                                    className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                                 >
                                     <div className="flex-shrink-0">
                                         <img
@@ -632,32 +709,64 @@ export default function CheckoutPage() {
                                                 e.currentTarget.src =
                                                     "/images/fallback-thumbnail.jpg";
                                             }}
-                                            className="w-16 h-16 object-cover rounded-md border"
+                                            className="w-24 h-24 object-cover rounded-lg border shadow-sm"
                                         />
                                     </div>
 
                                     <div className="flex-1">
-                                        <h4 className="font-semibold text-gray-900">
-                                            {item.name}
-                                        </h4>
-                                        {item.type && (
-                                            <p className="text-sm text-gray-500">
-                                                {item.type}
-                                            </p>
-                                        )}
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-sm text-gray-600">
-                                                {formatRupiah(item.price)} ×{" "}
-                                                {item.quantity}
-                                            </span>
-                                        </div>
-                                    </div>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 space-y-1.5">
+                                                <Link
+                                                    href={getProductDetailUrl(item)}
+                                                    className="font-semibold text-sm text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1 group line-clamp-2"
+                                                >
+                                                    {item.name}
+                                                    <FaExternalLinkAlt className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                                                </Link>
 
-                                    <div className="text-right font-semibold">
-                                        Rp.{" "}
-                                        {formatRupiah(
-                                            item.price * item.quantity
-                                        )}
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {/* Type Badge */}
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded font-medium">
+                                                        {getTypeLabel(item.type)}
+                                                    </span>
+
+                                                    {/* Ticket Name */}
+                                                    {item.type === "ticket" && item.ticket_name && (
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+                                                            <FaTicketAlt className="w-2.5 h-2.5" />
+                                                            {item.ticket_name}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Event Date - Compact */}
+                                                {item.type === "ticket" && item.event_date && (
+                                                    <div className="flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                                                        <FaCalendarAlt className="w-3 h-3 flex-shrink-0" />
+                                                        <span className="font-medium">{formatDate(item.event_date)}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Rent Days - Compact */}
+                                                {["service", "building", "property"].includes(item.type) && item.rent_days && (
+                                                    <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 px-2 py-1 rounded">
+                                                        <FaCalendarAlt className="w-3 h-3 flex-shrink-0" />
+                                                        <span className="font-medium">{formatRentDays(item.rent_days)}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Price Info */}
+                                                <div className="text-xs text-gray-600">
+                                                    Rp {formatRupiah(item.price)} × {item.quantity}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right">
+                                                <div className="font-bold text-sm text-blue-600">
+                                                    Rp {formatRupiah(item.price * item.quantity)}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -667,34 +776,38 @@ export default function CheckoutPage() {
 
                 {/* Order Summary */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white rounded-lg border p-6 sticky top-4">
+                    <div className="bg-white rounded-lg border p-6 sticky top-4 shadow-sm">
                         <h2 className="text-lg font-semibold mb-4">
                             Ringkasan Pesanan
                         </h2>
 
                         <div className="space-y-3">
-                            <div className="flex justify-between">
+                            <div className="flex justify-between text-gray-600">
                                 <span>
                                     Subtotal ({checkoutData.items?.length || 0}{" "}
                                     item)
                                 </span>
-                                <span>
-                                    Rp. {formatRupiah(checkoutData.total || 0)}
+                                <span className="font-medium">
+                                    {formatRupiah(checkoutData.total || 0)}
                                 </span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between text-gray-600">
                                 <span>Biaya Admin</span>
-                                <span>Rp. {formatRupiah(0)}</span>
+                                <span className="font-medium">
+                                    {formatRupiah(0)}
+                                </span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between text-gray-600">
                                 <span>Pajak</span>
-                                <span>Rp. {formatRupiah(0)}</span>
+                                <span className="font-medium">
+                                    {formatRupiah(0)}
+                                </span>
                             </div>
                             <hr className="my-3" />
                             <div className="flex justify-between font-bold text-lg">
                                 <span>Total Pembayaran</span>
                                 <span className="text-blue-600">
-                                    Rp. {formatRupiah(checkoutData.total || 0)}
+                                    {formatRupiah(checkoutData.total || 0)}
                                 </span>
                             </div>
                         </div>
@@ -703,17 +816,21 @@ export default function CheckoutPage() {
                             className="w-full mt-6"
                             size="lg"
                             onClick={handlePayment}
-                            disabled={isProcessingPayment || !snapLoaded}
+                            disabled={
+                                isProcessingPayment ||
+                                !snapLoaded ||
+                                (isAddressRequired && !selectedAddressId)
+                            }
                         >
                             {isProcessingPayment ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Memproses Pembayaran...
+                                    Memproses...
                                 </div>
                             ) : !snapLoaded ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Memuat Sistem Pembayaran...
+                                    Loading...
                                 </div>
                             ) : (
                                 <>
@@ -723,271 +840,254 @@ export default function CheckoutPage() {
                             )}
                         </Button>
 
-                        {!snapLoaded && (
-                            <p className="text-xs text-gray-500 text-center mt-2">
-                                Memuat sistem pembayaran Midtrans...
+                        {isAddressRequired && !selectedAddressId && (
+                            <p className="text-xs text-red-500 text-center mt-2">
+                                Silakan pilih alamat pengiriman
                             </p>
                         )}
 
-                        <div className="mt-4 text-xs text-gray-500 text-center">
-                            <p>Pembayaran aman dengan Midtrans</p>
-                            <p>
-                                Support: Transfer Bank, E-Wallet, Kartu Kredit
+                        {!snapLoaded && (
+                            <p className="text-xs text-gray-500 text-center mt-2">
+                                Memuat sistem pembayaran...
                             </p>
+                        )}
+
+                        <div className="mt-4 text-xs text-gray-500 text-center space-y-1">
+                            <p className="font-medium">
+                                Pembayaran aman terpercaya
+                            </p>
+                            <p>Transfer Bank • E-Wallet • Kartu Kredit</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Address Modal */}
-            {showAddressModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between p-6 border-b">
-                            <h3 className="text-lg font-semibold">
-                                {editingAddress
-                                    ? "Edit Alamat"
-                                    : "Tambah Alamat"}
-                            </h3>
-                            <button
-                                onClick={closeAddressModal}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <FaTimes className="w-5 h-5" />
-                            </button>
+            <Dialog open={showAddressModal} onOpenChange={setShowAddressModal}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingAddress ? "Edit Alamat" : "Tambah Alamat"}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        {/* Label + Nama Penerima */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="label">Label Alamat</Label>
+                                <Input
+                                    id="label"
+                                    value={addressForm.label}
+                                    onChange={(e) =>
+                                        setAddressForm((prev) => ({
+                                            ...prev,
+                                            label: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Rumah, Kantor, dll."
+                                    maxLength={255}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="recipient_name">
+                                    Nama Penerima{" "}
+                                    <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="recipient_name"
+                                    value={addressForm.recipient_name}
+                                    onChange={(e) =>
+                                        setAddressForm((prev) => ({
+                                            ...prev,
+                                            recipient_name: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Nama penerima"
+                                    maxLength={255}
+                                    required
+                                />
+                            </div>
                         </div>
 
-                        <div className="p-6 space-y-4">
-                            {/* Label + Nama Penerima */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Label Alamat
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={addressForm.label}
-                                        onChange={(e) =>
-                                            handleAddressFormChange(
-                                                "label",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Rumah, Kantor, dll."
-                                        maxLength={255}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Nama Penerima *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={addressForm.recipient_name}
-                                        onChange={(e) =>
-                                            handleAddressFormChange(
-                                                "recipient_name",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Nama penerima"
-                                        maxLength={255}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Provinsi + Kota */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Provinsi
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={addressForm.province}
-                                        onChange={(e) =>
-                                            handleAddressFormChange(
-                                                "province",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Contoh: Jawa Barat"
-                                        maxLength={255}
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Kota / Kabupaten
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={addressForm.city}
-                                        onChange={(e) =>
-                                            handleAddressFormChange(
-                                                "city",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Contoh: Bandung"
-                                        maxLength={255}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Kecamatan */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Kecamatan
-                                </label>
-                                <input
-                                    type="text"
-                                    value={addressForm.district}
+                        {/* Provinsi + Kota */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="province">
+                                    Provinsi{" "}
+                                    <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="province"
+                                    value={addressForm.province}
                                     onChange={(e) =>
-                                        handleAddressFormChange(
-                                            "district",
-                                            e.target.value
-                                        )
+                                        setAddressForm((prev) => ({
+                                            ...prev,
+                                            province: e.target.value,
+                                            city: "",
+                                            district: "",
+                                        }))
                                     }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Contoh: Cileunyi"
+                                    placeholder="Contoh: Jawa Barat"
                                     maxLength={255}
                                     required
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Alamat Lengkap *
-                                </label>
-                                <textarea
-                                    value={addressForm.address_line}
+                            <div className="space-y-2">
+                                <Label htmlFor="city">
+                                    Kota / Kabupaten{" "}
+                                    <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="city"
+                                    value={addressForm.city}
                                     onChange={(e) =>
-                                        handleAddressFormChange(
-                                            "address_line",
-                                            e.target.value
-                                        )
+                                        setAddressForm((prev) => ({
+                                            ...prev,
+                                            city: e.target.value,
+                                        }))
                                     }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Jl. Contoh No. 123, RT/RW, Kelurahan"
-                                    rows={3}
-                                    maxLength={500}
+                                    placeholder="Contoh: Bandung"
+                                    maxLength={255}
                                     required
                                 />
                             </div>
+                        </div>
 
-                            {/* Kode Pos + Nomor HP */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Kode Pos
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={addressForm.postal_code}
-                                        onChange={(e) =>
-                                            handleAddressFormChange(
-                                                "postal_code",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="12345"
-                                        maxLength={10}
-                                    />
-                                </div>
+                        {/* Kecamatan */}
+                        <div className="space-y-2">
+                            <Label htmlFor="district">Kecamatan</Label>
+                            <Input
+                                id="district"
+                                value={addressForm.district}
+                                onChange={(e) =>
+                                    setAddressForm((prev) => ({
+                                        ...prev,
+                                        district: e.target.value,
+                                    }))
+                                }
+                                placeholder="Contoh: Cileunyi"
+                                maxLength={255}
+                            />
+                        </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Nomor Telepon *
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={addressForm.phone}
-                                        onChange={(e) =>
-                                            handleAddressFormChange(
-                                                "phone",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="08123456789"
-                                        maxLength={20}
-                                        required
-                                    />
-                                </div>
-                            </div>
+                        {/* Alamat Lengkap */}
+                        <div className="space-y-2">
+                            <Label htmlFor="address_line">
+                                Alamat Lengkap{" "}
+                                <span className="text-red-500">*</span>
+                            </Label>
+                            <Textarea
+                                id="address_line"
+                                value={addressForm.address_line}
+                                onChange={(e) =>
+                                    setAddressForm((prev) => ({
+                                        ...prev,
+                                        address_line: e.target.value,
+                                    }))
+                                }
+                                placeholder="Jl. Contoh No. 123, RT/RW, Kelurahan"
+                                rows={3}
+                                maxLength={500}
+                                required
+                            />
+                        </div>
 
-                            {/* Catatan */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Catatan Tambahan
-                                </label>
-                                <textarea
-                                    value={addressForm.note}
+                        {/* Kode Pos + Nomor HP */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="postal_code">Kode Pos</Label>
+                                <Input
+                                    id="postal_code"
+                                    value={addressForm.postal_code}
                                     onChange={(e) =>
-                                        handleAddressFormChange(
-                                            "note",
-                                            e.target.value
-                                        )
+                                        setAddressForm((prev) => ({
+                                            ...prev,
+                                            postal_code: e.target.value,
+                                        }))
                                     }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Patokan, instruksi khusus, dll."
-                                    rows={2}
-                                    maxLength={500}
+                                    placeholder="12345"
+                                    maxLength={10}
                                 />
                             </div>
 
-                            {/* Default */}
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="is_default"
-                                    checked={addressForm.is_default}
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">
+                                    Nomor Telepon{" "}
+                                    <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    value={addressForm.phone}
                                     onChange={(e) =>
-                                        handleAddressFormChange(
-                                            "is_default",
-                                            e.target.checked
-                                        )
+                                        setAddressForm((prev) => ({
+                                            ...prev,
+                                            phone: e.target.value,
+                                        }))
                                     }
-                                    className="mr-2"
+                                    placeholder="08123456789"
+                                    maxLength={20}
+                                    required
                                 />
-                                <label
-                                    htmlFor="is_default"
-                                    className="text-sm text-gray-700"
-                                >
-                                    Jadikan alamat default
-                                </label>
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 p-6 border-t bg-gray-50">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={closeAddressModal}
+                        {/* Catatan */}
+                        <div className="space-y-2">
+                            <Label htmlFor="note">Catatan Tambahan</Label>
+                            <Textarea
+                                id="note"
+                                value={addressForm.note}
+                                onChange={(e) =>
+                                    setAddressForm((prev) => ({
+                                        ...prev,
+                                        note: e.target.value,
+                                    }))
+                                }
+                                placeholder="Patokan, instruksi khusus, dll."
+                                rows={2}
+                                maxLength={500}
+                            />
+                        </div>
+
+                        {/* Default Checkbox */}
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="is_default"
+                                checked={addressForm.is_default}
+                                onCheckedChange={(checked) =>
+                                    setAddressForm((prev) => ({
+                                        ...prev,
+                                        is_default: checked,
+                                    }))
+                                }
+                            />
+                            <Label
+                                htmlFor="is_default"
+                                className="text-sm font-normal cursor-pointer"
                             >
-                                Batal
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={saveAddress}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                                Simpan Alamat
-                            </Button>
+                                Jadikan alamat default
+                            </Label>
                         </div>
                     </div>
-                </div>
-            )}
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={closeAddressModal}
+                        >
+                            Batal
+                        </Button>
+                        <Button type="button" onClick={saveAddress}>
+                            Simpan Alamat
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

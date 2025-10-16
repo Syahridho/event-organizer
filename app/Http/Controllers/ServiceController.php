@@ -92,7 +92,9 @@ class ServiceController extends Controller
 
     public function edit($id)
     {
-        $service = Service::find($id);
+
+        $service = Service::findOrFail($id);
+
         return Inertia::render('Mitra/Services/Update', [
             'id' => $id,
             'service' => $service,
@@ -148,6 +150,7 @@ class ServiceController extends Controller
 
                         $service->itemPhotos()->create([
                             'photo' => $filename,
+                            'item_type' => Service::class,
                             'caption' => $request->input("itemPhoto.$index.caption"),
                         ]);
                     }
@@ -163,3 +166,4 @@ class ServiceController extends Controller
         }
     }
 }
+

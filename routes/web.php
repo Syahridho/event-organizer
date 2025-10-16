@@ -48,10 +48,9 @@ use App\Http\Controllers\TicketController;
 Route::get('/', [HomeController::class, 'index'])->name('welcome');
 
 // Product listing pages
-Route::get('/tickets', [ListingController::class, 'listEvent'])->name('home.tickets');
-Route::get('/services', [ListingController::class, 'listService'])->name('home.services');
-Route::get('/buildings', [ListingController::class, 'listBuilding'])->name('home.buildings');
-Route::get('/properties', [ListingController::class, 'listProperty'])->name('home.properties'); // FIXED: Changed from /propertys to /properties
+Route::get('/{type}', [ListingController::class, 'show'])
+    ->whereIn('type', ['events', 'services', 'buildings', 'properties'])
+    ->name('listings.show');
 
 // Search functionality
 Route::get('/search', [HomeController::class, 'search'])->name('search');

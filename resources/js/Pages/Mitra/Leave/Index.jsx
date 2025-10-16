@@ -55,8 +55,6 @@ export default function Index({
 }) {
     const ziggy = { url: "" };
 
-    console.log(services);
-
     const formatPrice = (price) => {
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
@@ -105,19 +103,16 @@ export default function Index({
     };
 
     const handleEdit = (id) => {
-        console.log(`Edit service ${id}`);
         toast.success(`Edit service ${id} - This would navigate to edit page`);
     };
 
     const handleDelete = (id) => {
         if (confirm("Apakah Anda yakin ingin menghapus layanan ini?")) {
-            console.log(`Delete service ${id}`);
             toast.success(`Service ${id} deleted - This would call delete API`);
         }
     };
 
     const handleView = (id) => {
-        console.log(`View service ${id}`);
         toast.success(
             `View service ${id} - This would navigate to detail page`
         );

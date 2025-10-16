@@ -108,7 +108,6 @@ const allPossibleStatuses = [
 ];
 
 export default function MitraTransactionDashboard({ transactionItems }) {
-    console.log(transactionItems);
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedItem, setSelectedItem] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);

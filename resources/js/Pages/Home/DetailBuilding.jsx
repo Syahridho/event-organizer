@@ -8,7 +8,7 @@ import {
     Loader2,
     Users,
 } from "lucide-react";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,9 +55,11 @@ const DetailBuilding = () => {
     const { building, ziggy, transaction, user, leaves, photos } =
         usePage().props;
 
-    console.log("Building data:", building);
-
     const dispatch = useDispatch();
+    const [latitude, longitude] =
+        building?.pin?.split(",") ?? "0.5761133,101.4252478";
+
+    const embedSrc = `https://maps.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
 
     const items = useMemo(
         () => [{ id: building.id, price: building.price }],
@@ -79,6 +81,7 @@ const DetailBuilding = () => {
     const [isLoading, setIsLoading] = useState({
         snap: false,
         payment: false,
+        cart: false,
     });
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
 
@@ -98,13 +101,12 @@ const DetailBuilding = () => {
     }, [leaves]);
 
     const handleAddToCart = async () => {
-        console.log(selectedDate);
         if (!selectedDate) {
             toast.error("Silahkan pilih tanggal sewa gedung");
             return;
         }
 
-        handleChangeItem(building.id, 1);
+        setIsLoading((prev) => ({ ...prev, cart: true }));
 
         const itemsToAdd = { [building.id]: 1 };
         const rentDaysToAdd = {
@@ -112,19 +114,26 @@ const DetailBuilding = () => {
                 timeZone: "Asia/Jakarta",
             }),
         };
+        try {
+            const result = await addItemsToCart({
+                items: itemsToAdd,
+                itemList: [building],
+                rentDays: rentDaysToAdd,
+                dispatch,
+                itemCategory: "building",
+            });
 
-        const result = await addItemsToCart({
-            items: itemsToAdd,
-            itemList: [building],
-            rentDays: rentDaysToAdd,
-            dispatch,
-            itemCategory: "building",
-        });
-
-        if (result.success) {
-            toast.success(`${building.name} ditambahkan ke keranjang!`);
-        } else {
-            toast.warning(result.message);
+            if (result.success) {
+                toast.success(`${building.name} ditambahkan ke keranjang!`);
+                handleChangeItem(building.id, 1);
+            } else {
+                toast.warning(result.message);
+            }
+        } catch (error) {
+            console.error("Gagal menambahkan ke keranjang:", error);
+            toast.error("Terjadi kesalahan saat menghubungi server.");
+        } finally {
+            setIsLoading((prev) => ({ ...prev, cart: false }));
         }
     };
 
@@ -170,8 +179,6 @@ const DetailBuilding = () => {
                     email: user.email,
                     note: note,
                 };
-
-                console.log("Payment Data:", paymentData);
 
                 const response = await axios.post(
                     "/midtrans/token",
@@ -271,6 +278,14 @@ const DetailBuilding = () => {
 
             {paymentError && <p className="text-red-500">{paymentError}</p>}
             <div className="max-w-4xl mx-auto px-4 py-8">
+                <Button
+                    onClick={() => window.history.back()}
+                    variant="outline"
+                    size="sm"
+                    className="mb-8 md:mb-6"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+                </Button>
                 <div className="grid lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-7 space-y-6">
                         <div className="bg-white rounded-lg overflow-hidden shadow-lg">
@@ -326,7 +341,7 @@ const DetailBuilding = () => {
                             ))}
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-lg">
+                        <div className="bg-white rounded-lg border shadow-lg">
                             <div className="p-6">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="space-y-2">
@@ -360,52 +375,35 @@ const DetailBuilding = () => {
                                             Deskripsi Gedung
                                         </h3>
                                         <div
+                                            className="text-sm text-muted-foreground leading-relaxed"
                                             dangerouslySetInnerHTML={{
                                                 __html: building.description,
                                             }}
                                         />
                                     </div>
 
-                                    {building.item_photos &&
-                                        building.item_photos.length > 0 && (
-                                            <div>
-                                                <h3 className="font-semibold text-lg mb-3">
-                                                    Galeri Foto
-                                                </h3>
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                                    {building.item_photos.map(
-                                                        (photo, index) => (
-                                                            <div
-                                                                key={photo.id}
-                                                                className="space-y-2"
-                                                            >
-                                                                <img
-                                                                    src={`${ziggy.url}/storage/item-photos/${photo.photo}`}
-                                                                    alt={
-                                                                        photo.caption
-                                                                    }
-                                                                    className="w-full h-32 object-cover rounded-lg"
-                                                                />
-                                                                {photo.caption && (
-                                                                    <p className="text-sm text-slate-600">
-                                                                        {
-                                                                            photo.caption
-                                                                        }
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        )
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
+                                    <section className="mb-8">
+                                        <h2 className="text-2xl font-bold mb-4">
+                                            Lokasi
+                                        </h2>
+                                        <div className="w-full max-w-2xl h-64 sm:h-80 rounded-lg overflow-hidden shadow-md border">
+                                            <iframe
+                                                src={embedSrc}
+                                                className="w-full h-full border-0"
+                                                allowFullScreen
+                                                loading="lazy"
+                                                referrerPolicy="no-referrer-when-downgrade"
+                                                title={`Lokasi: ${building.name}`}
+                                            />
+                                        </div>
+                                    </section>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="lg:col-span-5 space-y-6">
-                        <div className="bg-white rounded-lg shadow-lg">
+                        <div className="bg-white rounded-lg shadow-lg border">
                             <div className="p-6">
                                 <div className="my-6">
                                     <CustomCalendar
@@ -432,12 +430,24 @@ const DetailBuilding = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <Button
-                                        className="w-full bg-blue-800 hover:bg-blue-500"
-                                        onClick={() => setIsPaymentOpen(true)}
-                                    >
-                                        Sewa Gedung
-                                    </Button>
+                                    {user ? (
+                                        <Button
+                                            className="w-full bg-primary hover:bg-primary/80"
+                                            onClick={() =>
+                                                setIsPaymentOpen(true)
+                                            }
+                                        >
+                                            Sewa Gedung
+                                        </Button>
+                                    ) : (
+                                        <Link
+                                            href={`/login?redirect=${ziggy.location}`}
+                                        >
+                                            <Button className="w-full bg-primary hover:!bg-primary/60">
+                                                Masuk Untuk Sewa Gedung
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -496,12 +506,12 @@ const DetailBuilding = () => {
                             />
                         </div>
                     </div>
-
-                    <SheetFooter className="flex-shrink-0 pt-4 border-t space-x-2">
+                    <SheetFooter className="grid grid-cols-10 gap-4 w-full">
                         <Button
                             variant="outline"
                             onClick={() => handleAddToCart()}
-                            className="px-3"
+                            className="col-span-1"
+                            disabled={!selectedDate || isLoading.cart}
                         >
                             <FaShoppingCart className="w-4 h-4" />
                         </Button>
@@ -510,7 +520,7 @@ const DetailBuilding = () => {
                                 setIsPaymentOpen(false);
                                 setIsConfirmOpen(true);
                             }}
-                            className="flex-1"
+                            className="col-span-9"
                         >
                             Bayar
                         </Button>
@@ -605,14 +615,14 @@ const DetailBuilding = () => {
                                 </div>
                             )}
 
-                            <div className="flex justify-between py-3 mt-2 border-t font-semibold text-base">
+                            <div className="flex justify-between py-3 mt-2 font-semibold text-base">
                                 <span>Total</span>
                                 <span>{formatPrice(building.price)}</span>
                             </div>
                         </div>
                     </div>
 
-                    <AlertDialogFooter className="flex-shrink-0 pt-4 border-t">
+                    <AlertDialogFooter className="flex-shrink-0 pt-4">
                         <AlertDialogCancel
                             onClick={() => {
                                 setIsConfirmOpen(false);

@@ -17,7 +17,6 @@ export const useMidtrans = () => {
             import.meta.env.VITE_MIDTRANS_CLIENT_KEY
         );
         script.onload = () => {
-            console.log("✅ Midtrans script loaded successfully");
             setSnapLoaded(true);
             snapScriptRef.current = script;
         };

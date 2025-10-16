@@ -66,25 +66,27 @@ const LazyImage = ({ src, alt, className }) => {
             observer.observe(imgRef.current);
         }
 
-        return () => observer.disconnect();
+        return () => {
+            if (observer && observer.disconnect) {
+                observer.disconnect();
+            }
+        };
     }, []);
 
     return (
-        <div ref={imgRef} className={className}>
+        <div ref={imgRef} className={`${className} relative bg-gray-200`}>
             {inView && (
                 <>
                     {!loaded && (
-                        <div className="w-full h-full bg-gray-200 animate-pulse rounded"></div>
+                        <div className="absolute inset-0 w-full h-full bg-gray-200 animate-pulse rounded"></div>
                     )}
                     <img
                         src={src}
                         alt={alt}
-                        className={`w-full h-full object-cover rounded transition-opacity duration-300 ${
+                        className={`w-full h-full object-cover rounded transition-opacity duration-500 ${
                             loaded ? "opacity-100" : "opacity-0"
                         }`}
                         onLoad={() => setLoaded(true)}
-                        loading="lazy"
-                        style={{ display: loaded ? "block" : "none" }}
                     />
                 </>
             )}
@@ -96,8 +98,6 @@ export default function HomeProperty() {
     const { props } = usePage();
     const { ziggy } = props;
 
-    // Buat base URL dari ziggy
-    // const baseUrl = `${ziggy.url}${ziggy.port ? `:${ziggy.port}` : ""}`;
     const baseUrl = ziggy.url;
 
     const initialItems = props.items?.data ?? [];
@@ -175,7 +175,7 @@ export default function HomeProperty() {
         if (!thumbnail) return `${baseUrl}/storage/randoms/3.webp`;
         return thumbnail.startsWith("http")
             ? thumbnail
-            : `${baseUrl}/storage${thumbnail}`;
+            : `${baseUrl}/storage/thumbnails/${thumbnail}`;
     };
 
     const truncateDescription = (desc) => {
@@ -186,7 +186,7 @@ export default function HomeProperty() {
 
     return (
         <>
-            <Head title="Ticket" />
+            <Head title="Properti" />
             <div className="min-h-screen mx-auto xl:max-w-[950px] p-4">
                 <div>
                     <h1 className="text-2xl font-semibold mb-6">

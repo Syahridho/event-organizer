@@ -23,7 +23,6 @@ export function formatTanggalIndo(dateString) {
         const parsedDate = new Date(dateString);
         return format(parsedDate, "d MMMM yyyy", { locale: id });
     } catch (e) {
-        console.log(e);
         return "Tanggal tidak valid";
     }
 }

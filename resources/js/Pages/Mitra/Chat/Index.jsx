@@ -19,7 +19,7 @@ const breadcrumbs = [
 
 export default function MitraChat() {
     const { chat_with } = usePage().props;
-    console.log(chat_with);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             {/* <Head title="Dashboard Mitra" /> */}
