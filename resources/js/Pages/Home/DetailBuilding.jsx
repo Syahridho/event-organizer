@@ -50,10 +50,14 @@ import CustomCalendar from "@/components/custom-calendar";
 import { getBookedDatesWithUser } from "@/Utils/bookedDates";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import MainLayout from "@/Layouts/Main";
+import ReviewSection from "@/Components/ReviewSection";
+import { createPaymentPayload } from "@/Utils/PaymentHelper";
 
 const DetailBuilding = () => {
-    const { building, ziggy, transaction, user, leaves, photos } =
+    const { building, ziggy, transaction, user, leaves, photos, tax_info } =
         usePage().props;
+
+    console.log(transaction, user);
 
     const dispatch = useDispatch();
     const [latitude, longitude] =
@@ -160,25 +164,24 @@ const DetailBuilding = () => {
             }
 
             try {
-                const paymentData = {
-                    items: [
-                        {
-                            id: Number(building.id),
-                            type: "building",
-                            price: Number(building.price),
-                            quantity: 1,
-                            rent_days: selectedDate.toLocaleDateString(
-                                "en-CA",
-                                { timeZone: "Asia/Jakarta" }
-                            ),
-                            name: building.name,
-                        },
-                    ],
-                    amount: Number(building.price),
-                    name: user.name,
-                    email: user.email,
-                    note: note,
+                // Create building item with rent_days for payment
+                const buildingItem = {
+                    ...building,
+                    rent_days: selectedDate.toLocaleDateString("en-CA", {
+                        timeZone: "Asia/Jakarta",
+                    }),
                 };
+
+                // Use PaymentHelper to create payment payload
+                const paymentData = createPaymentPayload(
+                    buildingItem,
+                    1,
+                    user,
+                    null // Building doesn't use shipping address
+                );
+
+                // Add note to payment data
+                paymentData.note = note;
 
                 const response = await axios.post(
                     "/midtrans/token",
@@ -397,6 +400,15 @@ const DetailBuilding = () => {
                                             />
                                         </div>
                                     </section>
+
+                                    {/* Review Section */}
+                                    <section className="mt-8">
+                                        <ReviewSection
+                                            itemType="App\Models\Building"
+                                            itemId={building.id}
+                                            user={user}
+                                        />
+                                    </section>
                                 </div>
                             </div>
                         </div>
@@ -427,6 +439,16 @@ const DetailBuilding = () => {
                                     <p className="text-xs text-slate-500 mt-1">
                                         Kapasitas: {building.capacity} orang
                                     </p>
+                                    {/* {building.tax_amount > 0 && (
+                                        <div className="text-xs text-slate-500 mt-1">
+                                            Pajak{" "}
+                                            {tax_info?.type === "percent"
+                                                ? `${tax_info?.value}%`
+                                                : formatPrice(
+                                                      tax_info?.value || 0
+                                                  )}
+                                        </div>
+                                    )} */}
                                 </div>
 
                                 <div className="space-y-4">
@@ -563,11 +585,28 @@ const DetailBuilding = () => {
                             </div>
 
                             <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Harga</span>
+                                <span className="text-slate-600">
+                                    Harga Dasar
+                                </span>
                                 <span className="font-medium">
                                     {formatPrice(building.price)} / hari
                                 </span>
                             </div>
+
+                            {building.tax_amount > 0 && (
+                                <div className="flex justify-between py-2 border-b">
+                                    <span className="text-slate-600">
+                                        Pajak (
+                                        {tax_info?.type === "percent"
+                                            ? `${tax_info?.value}%`
+                                            : "Fixed"}
+                                        )
+                                    </span>
+                                    <span className="font-medium">
+                                        {formatPrice(building.tax_amount)}
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="flex justify-between py-2 border-b">
                                 <span className="text-slate-600">Tanggal</span>
@@ -617,7 +656,11 @@ const DetailBuilding = () => {
 
                             <div className="flex justify-between py-3 mt-2 font-semibold text-base">
                                 <span>Total</span>
-                                <span>{formatPrice(building.price)}</span>
+                                <span>
+                                    {formatPrice(
+                                        building.final_price || building.price
+                                    )}
+                                </span>
                             </div>
                         </div>
                     </div>

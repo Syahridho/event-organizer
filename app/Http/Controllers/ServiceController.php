@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Helpers\TaxHelper;
 
 class ServiceController extends Controller
 {
@@ -164,6 +165,36 @@ class ServiceController extends Controller
                 'error' => 'Gagal memperbarui layanan: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Show service detail with tax calculation
+     */
+    public function show($id)
+    {
+        $service = Service::with(['itemPhotos'])->findOrFail($id);
+
+        // Calculate tax-inclusive price
+        $finalPrice = TaxHelper::calculateFinalPrice($service->price);
+        
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
+
+        return Inertia::render('Mitra/Services/Show', [
+            'id' => $id,
+            'service' => [
+                'id' => $service->id,
+                'name' => $service->name,
+                'price' => $service->price,
+                'final_price' => $finalPrice, // Tax-inclusive price
+                'tax_amount' => round($finalPrice - $service->price, 2),
+                'description' => $service->description,
+                'location' => $service->location,
+                'thumbnail' => $service->thumbnail,
+                'item_photos' => $service->itemPhotos,
+            ],
+            'tax_info' => $taxInfo,
+        ]);
     }
 }
 

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Helpers\TaxHelper;
 
 class BuildingController extends Controller
 {
@@ -164,5 +165,36 @@ class BuildingController extends Controller
            } catch (\Exception $e) {
             return Redirect::back()->withErrors(['error' => 'Gagal menghapus gedung: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Show building detail with tax calculation
+     */
+    public function show($id)
+    {
+        $building = Building::with(['itemPhotos'])->findOrFail($id);
+
+        // Calculate tax-inclusive price
+        $finalPrice = TaxHelper::calculateFinalPrice($building->price);
+        
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
+
+        return Inertia::render('Mitra/Buildings/Show', [
+            'id' => $id,
+            'building' => [
+                'id' => $building->id,
+                'name' => $building->name,
+                'price' => $building->price,
+                'final_price' => $finalPrice, // Tax-inclusive price
+                'tax_amount' => round($finalPrice - $building->price, 2),
+                'description' => $building->description,
+                'location' => $building->location,
+                'capacity' => $building->capacity,
+                'thumbnail' => $building->thumbnail,
+                'item_photos' => $building->itemPhotos,
+            ],
+            'tax_info' => $taxInfo,
+        ]);
     }
 }

@@ -8,11 +8,12 @@ use App\Models\Event;
 use App\Models\Building;
 use App\Models\Service;
 use App\Models\ItemPhoto;
-use Illuminate\Http\Request; 
-use App\Models\RentProperties;
+use Illuminate\Http\Request;
+use App\Models\RentProperty;
 use App\Models\TransactionItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Helpers\TaxHelper;
 
 class HomeController extends Controller
 {
@@ -27,7 +28,7 @@ class HomeController extends Controller
         $buildings = Building::where('status', 'active')
             ->get();
 
-        $propertys = RentProperties::where('status', 'active')
+        $propertys = RentProperty::where('status', 'active')
             ->get();
 
         return  Inertia::render('Welcome', [
@@ -52,7 +53,7 @@ class HomeController extends Controller
             ->latest()
             ->get();
             
-        $propertys = RentProperties::where('status', 'active')
+        $propertys = RentProperty::where('status', 'active')
             ->latest()
             ->get();
 
@@ -93,14 +94,16 @@ class HomeController extends Controller
                     WHERE ti.item_id = tickets.id
                     AND ti.item_type = \'ticket\'
                     -- Hanya hitung yang statusnya SETTLEMENT
-                    AND t.status IN (\'settlement\') 
+                    AND t.status IN (\'settlement\')
                 ) as sold_count')
             )
             ->get();
 
-        $event->setRelation('tickets', $tickets);
-        
-        // Buat array asosiatif berdasarkan nama tiket
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
+
+        // Process tickets with tax calculation
+        $processedTickets = [];
         $ticketsByName = [];
         $totalRemaining = 0;
         
@@ -108,23 +111,29 @@ class HomeController extends Controller
             $remaining = max(0, $ticket->quota - $ticket->sold_count);
             $isSoldOut = $remaining <= 0;
             
-            $ticketsByName[$ticket->name] = [
+            // Calculate tax-inclusive price for paid tickets
+            $finalPrice = $ticket->price > 0 ? TaxHelper::calculateFinalPrice($ticket->price) : 0;
+            $taxAmount = $ticket->price > 0 ? round($finalPrice - $ticket->price, 2) : 0;
+            
+            $ticketData = [
                 'id' => $ticket->id,
                 'name' => $ticket->name,
                 'price' => $ticket->price,
+                'final_price' => $finalPrice, // Tax-inclusive price
+                'tax_amount' => $taxAmount,
                 'quota' => $ticket->quota,
                 'sold_count' => (int) $ticket->sold_count,
                 'remaining' => $remaining,
                 'is_sold_out' => $isSoldOut,
+                'quantity' => $ticket->quota,
             ];
             
+            $processedTickets[] = $ticketData;
+            $ticketsByName[$ticket->name] = $ticketData;
             $totalRemaining += $remaining;
-            
-            
-            $ticket->quantity = $ticket->quota;
-            $ticket->remaining = $remaining;
-            $ticket->is_sold_out = $isSoldOut;
         }
+
+        $event->setRelation('tickets', collect($processedTickets));
         
         $userId = auth()->id();
         $alreadyRegistered = false;
@@ -134,7 +143,7 @@ class HomeController extends Controller
             $alreadyRegistered = DB::table('transactions')
                 ->join('transaction_items', 'transactions.id', '=', 'transaction_items.transaction_id')
                 ->where('transactions.user_id', $userId)
-                ->where('transaction_items.item_type', 'ticket') 
+                ->where('transaction_items.item_type', 'ticket')
                 ->when($freeTicketId, function ($query, $freeTicketId) {
                     return $query->where('transaction_items.item_id', $freeTicketId);
                 })
@@ -148,6 +157,7 @@ class HomeController extends Controller
             'ticketsByName' => $ticketsByName,
             'alreadyRegistered' => $alreadyRegistered,
             'totalRemainingTickets' => $totalRemaining,
+            'tax_info' => $taxInfo,
         ]);
     }
 
@@ -187,14 +197,36 @@ class HomeController extends Controller
         ->orderBy('day_of_week', 'asc')
         ->get();
 
+        // Calculate tax-inclusive price
+        $finalPrice = TaxHelper::calculateFinalPrice($service->price);
+        
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
+
+        // Prepare service data with tax information
+        $serviceData = [
+            'id' => $service->id,
+            'name' => $service->name,
+            'price' => $service->price,
+            'final_price' => $finalPrice, // Tax-inclusive price
+            'tax_amount' => round($finalPrice - $service->price, 2),
+            'description' => $service->description,
+            'location' => $service->location,
+            'thumbnail' => $service->thumbnail,
+            'status' => $service->status,
+            'user_id' => $service->user_id,
+            'created_at' => $service->created_at,
+            'updated_at' => $service->updated_at,
+        ];
     
         return Inertia::render('Home/DetailService', [
             'id' => $id,
-            'service' => $service,
+            'service' => $serviceData,
             'user' => Auth::user(),
             'transaction' => $transaction,
             'leaves' => $leaves,
             'photos' => $photos,
+            'tax_info' => $taxInfo,
         ]);
     }
 
@@ -235,13 +267,38 @@ class HomeController extends Controller
         ->orderBy('day_of_week', 'asc')
         ->get();
 
+        // Calculate tax-inclusive price
+        $finalPrice = TaxHelper::calculateFinalPrice($building->price);
+        
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
+
+        // Prepare building data with tax information
+        $buildingData = [
+            'id' => $building->id,
+            'name' => $building->name,
+            'price' => $building->price,
+            'final_price' => $finalPrice, // Tax-inclusive price
+            'tax_amount' => round($finalPrice - $building->price, 2),
+            'description' => $building->description,
+            'location' => $building->location,
+            'thumbnail' => $building->thumbnail,
+            'capacity' => $building->capacity,
+            'pin' => $building->pin,
+            'status' => $building->status,
+            'user_id' => $building->user_id,
+            'created_at' => $building->created_at,
+            'updated_at' => $building->updated_at,
+        ];
+
         return Inertia::render('Home/DetailBuilding', [
             'id' => $id,
-            'building' => $building,
+            'building' => $buildingData,
             'user' => Auth::user(),
             'transaction' => $transaction,
             'leaves' => $leaves,
             'photos' => $photos,
+            'tax_info' => $taxInfo,
         ]);
     }
 
@@ -255,17 +312,17 @@ class HomeController extends Controller
             ->with('transaction.user')
             ->get();
 
-        $property = RentProperties::findOrFail($id);
+        $property = RentProperty::findOrFail($id);
 
         $photos = ItemPhoto::where('item_id', $id)
-        ->where('item_type', 'App\Models\RentProperties')
+        ->where('item_type', 'App\Models\RentProperty')
         ->get();
 
         $userId = auth()->id();
 
         $leaves = Leave::where('user_id', $userId)
         ->where('item_id', $id)
-        ->where('item_type', 'rent_properties')
+        ->where('item_type', 'rent_property')
         ->where(function($query) {
             $query->where(function($q) {
                 // Cuti tanggal spesifik yang masih akan datang
@@ -282,15 +339,41 @@ class HomeController extends Controller
         ->orderBy('day_of_week', 'asc')
         ->get();
 
-        $user = auth();
+        // Calculate tax-inclusive price
+        $finalPrice = TaxHelper::calculateFinalPrice($property->price);
+        
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
+
+        // Prepare property data with tax information
+        $propertyData = [
+            'id' => $property->id,
+            'name' => $property->name,
+            'price' => $property->price,
+            'final_price' => $finalPrice, // Tax-inclusive price
+            'tax_amount' => round($finalPrice - $property->price, 2),
+            'description' => $property->description,
+            'location' => $property->location,
+            'thumbnail' => $property->thumbnail,
+            'area' => $property->area,
+            'bedrooms' => $property->bedrooms,
+            'bathrooms' => $property->bathrooms,
+            'facilities' => $property->facilities,
+            'pin' => $property->pin,
+            'status' => $property->status,
+            'user_id' => $property->user_id,
+            'created_at' => $property->created_at,
+            'updated_at' => $property->updated_at,
+        ];
 
         return Inertia::render('Home/DetailProperty', [
             'id' => $id,
-            'property' => $property,
+            'property' => $propertyData,
             'user' => Auth::user(),
             'transaction' => $transaction,
             'leaves' => $leaves,
             'photos' => $photos,
+            'tax_info' => $taxInfo,
         ]);
     }
 
@@ -338,7 +421,7 @@ class HomeController extends Controller
                 'type' => 'service',
             ]);
         } elseif ($type === 'property') {
-            $results = RentProperties::when($keyword, fn($q) => 
+            $results = RentProperty::when($keyword, fn($q) => 
                 $q->where('name', 'like', "%{$keyword}%")
             )->get()->map(fn($item) => [
                 'id' => $item->id,
@@ -367,7 +450,7 @@ class HomeController extends Controller
                     'price' => $i->price ?? null,
                     'type' => 'service',
                 ]))
-                ->merge(RentProperties::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
+                ->merge(RentProperty::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
                     'id' => $i->id,
                     'name' => $i->name,
                     'price' => $i->price ?? null,

@@ -3,6 +3,7 @@ import LocationInputWithMap from "@/components/location-input-with-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
@@ -35,6 +36,8 @@ export default function RentProperyCreate() {
         price: "",
         pin: [0.5071, 101.4478],
         location: "",
+        picked_up: false,
+        delivered: false,
         itemPhoto: [],
     });
 
@@ -78,10 +81,19 @@ export default function RentProperyCreate() {
             return;
         }
 
+        if (!data.delivered && !data.picked_up) {
+            toast.warning(
+                "Pilih salah satu opsi (Diantar/Dijemput) atau keduanya."
+            );
+            return;
+        }
+
         const formSubmit = new FormData();
 
         Object.entries(data).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
+            if (key === "delivered" || key === "picked_up") {
+                formSubmit.append(key, value ? "1" : "0");
+            } else if (Array.isArray(value)) {
                 value.forEach((item, idx) => {
                     if (typeof item === "object" && item !== null) {
                         Object.entries(item).forEach(([k, v]) => {
@@ -282,6 +294,48 @@ export default function RentProperyCreate() {
                                 handleSwitch("isLoadingSearch", val)
                             }
                         />
+                    </div>
+
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold leading-none">
+                            Opsi Pengambilan/Pengantaran
+                        </h3>
+
+                        <div className="flex items-center space-x-2 ">
+                            <Checkbox
+                                id="delivered"
+                                name="delivered"
+                                checked={data.delivered}
+                                onCheckedChange={(checked) =>
+                                    setData("delivered", checked)
+                                }
+                            />
+                            <Label
+                                htmlFor="delivered"
+                                className="font-normal cursor-pointer text-muted-foreground"
+                            >
+                                Bisa Diantar (Delivery)
+                            </Label>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="picked_up"
+                                    name="picked_up"
+                                    checked={data.picked_up}
+                                    onCheckedChange={(checked) =>
+                                        setData("picked_up", checked)
+                                    }
+                                />
+                                <Label
+                                    htmlFor="picked_up"
+                                    className="font-normal cursor-pointer text-muted-foreground"
+                                >
+                                    Bisa Dijemput (Pick-up)
+                                </Label>
+                            </div>
+                        </div>
                     </div>
                     <div className="flex justify-end gap-4">
                         <Link href="/dashboard/rents">

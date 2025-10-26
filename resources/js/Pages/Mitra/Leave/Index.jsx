@@ -49,7 +49,7 @@ export default function Index({
     title,
     services,
     buildings = [],
-    properties = [],
+    propertys = [],
     leaves = [],
     pagination = {},
 }) {
@@ -121,19 +121,19 @@ export default function Index({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedItemType, setSelectedItemType] = useState("all"); // all, service, building, rent_properties
+    const [selectedItemType, setSelectedItemType] = useState("all"); // all, service, building, rent_property
     const [isLoading, setIsLoading] = useState(false);
 
     const allItems = useMemo(
         () => [
             ...services.map((item) => ({ ...item, item_type: "service" })),
             ...buildings.map((item) => ({ ...item, item_type: "building" })),
-            ...properties.map((item) => ({
+            ...propertys.map((item) => ({
                 ...item,
-                item_type: "rent_properties",
+                item_type: "rent_property",
             })),
         ],
-        [services, buildings, properties]
+        [services, buildings, propertys]
     );
 
     const filteredItems = useMemo(() => {
@@ -165,7 +165,7 @@ export default function Index({
         const labels = {
             service: "Layanan",
             building: "Gedung",
-            rent_properties: "Properti Sewa",
+            rent_property: "Properti Sewa",
         };
         return labels[itemType] || itemType;
     };
@@ -176,7 +176,7 @@ export default function Index({
                 "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-100",
             building:
                 "bg-green-100 text-green-800 border-green-300 hover:bg-green-100",
-            rent_properties:
+            rent_property:
                 "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-100",
         };
         return (
@@ -233,7 +233,7 @@ export default function Index({
                                 <SelectItem value="all">Semua Tipe</SelectItem>
                                 <SelectItem value="service">Layanan</SelectItem>
                                 <SelectItem value="building">Gedung</SelectItem>
-                                <SelectItem value="rent_properties">
+                                <SelectItem value="rent_property">
                                     Properti Sewa
                                 </SelectItem>
                             </SelectContent>
@@ -260,7 +260,7 @@ export default function Index({
                     </Card>
                     <Card className="p-4">
                         <div className="text-2xl font-bold text-purple-600">
-                            {properties.length}
+                            {propertys.length}
                         </div>
                         <div className="text-sm text-gray-600">
                             Total Properti

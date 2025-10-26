@@ -168,11 +168,7 @@ export default function SearchPage({ products, keyword, type }) {
                     {products.map((product) => (
                         <Link
                             key={`${product.type}-${product.id}`}
-                            href={`/${
-                                product.type === "property"
-                                    ? "properties"
-                                    : product.type + "s"
-                            }/${product.id}`}
+                            href={`/${product.type + "s"}/${product.id}`}
                         >
                             <div className="border rounded-lg hover:shadow-lg transition-all duration-300 overflow-hidden group bg-white">
                                 <div className="relative aspect-[4/3] overflow-hidden">

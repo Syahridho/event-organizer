@@ -24,7 +24,11 @@ class Cart extends Model
     protected $casts = [
         'is_unavailable' => 'boolean',
         'item_qty' => 'integer',
-    ]; 
+    ];
+
+    // CRITICAL: Append dynamic attributes untuk sold-out detection
+    // Attributes ini akan di-set oleh CartController setelah query
+    protected $appends = [];
 
     public function user()
     {

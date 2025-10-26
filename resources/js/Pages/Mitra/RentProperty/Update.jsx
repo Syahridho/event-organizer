@@ -3,13 +3,14 @@ import LocationInputWithMap from "@/components/location-input-with-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import ReactQuill from "react-quill";
 
 const breadcrumbs = [
@@ -20,7 +21,7 @@ const breadcrumbs = [
 
 export default function RentUpdate() {
     const { rent, ziggy } = usePage().props;
-
+    console.log(rent);
     const { data, setData, processing, post } = useForm({
         name: rent?.name ?? "",
         thumbnail: rent?.thumbnail ?? null,
@@ -28,10 +29,14 @@ export default function RentUpdate() {
         capacity: rent?.capacity ?? "",
         price: rent?.price ? formatRupiahInput(rent.price) : "",
         pin: rent?.pin ? rent.pin.split(",").map(Number) : [0.5071, 101.4478],
+        delivered: !!rent?.delivered,
+        picked_up: !!rent?.picked_up,
         location: rent?.location ?? "",
         itemPhoto: rent?.item_photos ?? [],
         _method: "put",
     });
+
+    console.log(data);
 
     const [uiState, setUiState] = useState({ isLoadingSearch: false });
 
@@ -43,10 +48,7 @@ export default function RentUpdate() {
     const handleAddPhoto = () => {
         const last = data.itemPhoto.at(-1);
         if (last && !last.photo) {
-            toast({
-                title: "Isi kolom yang kosong terlebih dahulu",
-                variant: "destructive",
-            });
+            toast.warning("Isi kolom yang kosong terlebih dahulu");
             return;
         }
         setData("itemPhoto", [...data.itemPhoto, { photo: null, caption: "" }]);
@@ -63,17 +65,23 @@ export default function RentUpdate() {
         e.preventDefault();
 
         if (data.itemPhoto.some((item) => !item.photo)) {
-            toast({
-                title: "Isi semua foto tambahan terlebih dahulu",
-                variant: "destructive",
-            });
+            toast.warning("Isi semua foto tambahan terlebih dahulu");
+            return;
+        }
+
+        if (!data.delivered && !data.picked_up) {
+            toast.warning(
+                "Pilih salah satu opsi (Diantar/Dijemput) atau keduanya."
+            );
             return;
         }
 
         const formSubmit = new FormData();
 
         Object.entries(data).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
+            if (key === "delivered" || key === "picked_up") {
+                formSubmit.append(key, value ? "1" : "0");
+            } else if (Array.isArray(value)) {
                 value.forEach((item, idx) => {
                     if (item && typeof item === "object") {
                         Object.entries(item).forEach(([k, v]) => {
@@ -267,6 +275,49 @@ export default function RentUpdate() {
                         }
                         initialLocationFromDB={rent.location}
                     />
+
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold leading-none">
+                            Opsi Pengambilan/Pengantaran
+                        </h3>
+
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="delivered"
+                                name="delivered"
+                                value="1"
+                                checked={data.delivered}
+                                onCheckedChange={(checked) =>
+                                    setData("delivered", checked)
+                                }
+                            />
+                            <Label
+                                htmlFor="delivered"
+                                className="font-normal cursor-pointer text-muted-foreground"
+                            >
+                                Bisa Diantar (Delivery)
+                            </Label>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="picked_up"
+                                    name="picked_up"
+                                    checked={data.picked_up}
+                                    onCheckedChange={(checked) =>
+                                        setData("picked_up", checked)
+                                    }
+                                />
+                                <Label
+                                    htmlFor="picked_up"
+                                    className="font-normal cursor-pointer text-muted-foreground"
+                                >
+                                    Bisa Dijemput (Pick-up)
+                                </Label>
+                            </div>
+                        </div>
+                    </div>
 
                     <div className="flex justify-end gap-4">
                         <Link href="/dashboard/rents">

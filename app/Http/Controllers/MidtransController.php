@@ -8,13 +8,16 @@ use App\Models\TransactionAddress;
 use App\Models\Ticket;
 use App\Models\Service;
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
+use App\Helpers\TaxHelper;
+use App\Services\MidtransTaxService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
@@ -30,7 +33,7 @@ class MidtransController extends Controller
         'ticket' => Ticket::class,
         'service' => Service::class,
         'building' => Building::class,
-        'rent_property' => RentProperties::class,
+        'rent_property' => RentProperty::class,
     ];
 
     // Metode pembayaran yang diizinkan
@@ -57,8 +60,10 @@ class MidtransController extends Controller
             'items.*.name' => 'required|string|max:255',
             'items.*.type' => 'required|string|in:ticket,service,building,rent_property',
             'items.*.quantity' => 'required|integer|min:1|max:999',
-            'items.*.rent_days' => 'nullable|date|after:today',
-            'amount' => 'required|numeric|min:1',
+            'items.*.rent_days' => 'nullable|string',
+            'items.*.note' => 'nullable|string|max:255',
+            'items.*.delivery_option' => 'nullable|in:delivery,pickup',
+            'amount' => 'required|numeric|min:1000',
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'shipping_address' => 'nullable|array',
@@ -71,24 +76,57 @@ class MidtransController extends Controller
             'shipping_address.note' => 'nullable|string|max:500',
         ]);
 
+        // dd($validatedData);
+
         // Mulai transaksi database
         DB::beginTransaction();
         try {
             $orderId = 'ORD-' . now()->format('YmdHis') . '-' . Str::random(6);
             $userId = Auth::id();
 
-            // 🔎 Validasi & siapkan item (pakai methodmu)
+            // 🔎 Validasi & siapkan item
             $validatedItems = $this->validateAndPrepareItems($validatedData['items']);
 
-            // Format item untuk Midtrans
-            $itemDetails = collect($validatedData['items'])->map(function ($item) {
-                return [
-                    'id' => 'ITEM_' . $item['id'],
-                    'name' => $item['name'],
-                    'price' => (int) $item['price'],
-                    'quantity' => (int) $item['quantity'],
-                ];
-            })->toArray();
+            // Extract clean base items for tax calculation
+            $baseItems = MidtransTaxService::extractBaseItems($validatedItems);
+
+            // VALIDATION: Frontend amount should be subtotal only (base prices)
+            $calculatedSubtotal = collect($baseItems)->sum(function($item) {
+                return $item['price'] * $item['quantity'];
+            });
+            
+            // Debug logging for subtotal validation
+            Log::info('Subtotal validation debug', [
+                'frontend_amount' => $validatedData['amount'],
+                'backend_calculated_subtotal' => $calculatedSubtotal,
+                'base_items' => $baseItems,
+                'difference' => $validatedData['amount'] - $calculatedSubtotal,
+                'ratio' => $calculatedSubtotal > 0 ? $validatedData['amount'] / $calculatedSubtotal : 'N/A'
+            ]);
+            
+            if (!MidtransTaxService::validateSubtotal($validatedData['amount'], $baseItems)) {
+                Log::warning('Subtotal mismatch detected', [
+                    'frontend_subtotal' => $validatedData['amount'],
+                    'backend_calculated_subtotal' => $calculatedSubtotal,
+                ]);
+                
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Subtotal mismatch. Please refresh and try again.',
+                    'details' => [
+                        'expected_subtotal' => $calculatedSubtotal,
+                        'received_subtotal' => $validatedData['amount']
+                    ]
+                ], 400);
+            }
+
+            // Use reusable tax service to generate Midtrans items
+            $taxResult = MidtransTaxService::generateMidtransItems($baseItems);
+            $itemDetails = $taxResult['items'];
+            $totalWithTax = $taxResult['total_amount'];
+            $subtotal = $taxResult['subtotal'];
+            $taxAmount = $taxResult['tax_amount'];
 
             // 🔑 Param transaksi Midtrans - Handle optional shipping address
             $customerDetails = [
@@ -111,10 +149,10 @@ class MidtransController extends Controller
             $params = [
                 'transaction_details' => [
                     'order_id' => $orderId,
-                    'gross_amount' => (int) $validatedData['amount'],
+                    'gross_amount' => $totalWithTax, // Total includes tax
                 ],
                 'customer_details' => $customerDetails,
-                'item_details' => $itemDetails,
+                'item_details' => $itemDetails, // Clean item structure from tax service
                 'enabled_payments' => self::ENABLED_PAYMENTS,
                 'expiry' => [
                     'start_time' => now('Asia/Jakarta')->format('Y-m-d H:i:s O'),
@@ -140,7 +178,9 @@ class MidtransController extends Controller
                 'redirect_url' => $midtransRedirectUrl,
                 'status' => 'pending',
                 'token' => $snapToken,
-                'total' => $validatedData['amount'],
+                'total' => $totalWithTax, 
+                'subtotal' => $subtotal,
+                'tax' => $taxAmount, 
                 'expired_at' => now()->addMinutes(60)->toDateTimeString(),
             ]);
 
@@ -153,6 +193,8 @@ class MidtransController extends Controller
                     'type'           => $validatedItem['item']->name ?? ucfirst($validatedItem['type']),
                     'qty'            => $validatedItem['quantity'],
                     'price'          => $validatedItem['price'],
+                    'delivery_option'=> $validatedItem['delivery_option'],
+                    'note'           => $validatedItem['note'],
                     'rent_days'      => $validatedItem['rent_days'] ?? null,
                 ]);
             }
@@ -174,12 +216,34 @@ class MidtransController extends Controller
 
             DB::commit();
 
+            Log::info('Snap token generated successfully', [
+                'order_id' => $orderId,
+                'user_id' => $userId,
+                'subtotal' => $subtotal,
+                'tax' => $taxAmount,
+                'total' => $totalWithTax,
+                'items_count' => count($validatedData['items']),
+                'tax_service_used' => true,
+            ]);
+
             return response()->json([
                 'success' => true,
                 'token' => $snapToken,
                 'order_id' => $orderId,
                 'redirect_url' => $midtransRedirectUrl
             ]);
+        } catch (\Midtrans\Exceptions\ClientException $e) {
+            DB::rollBack();
+            Log::error('Midtrans Client Exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Payment gateway error: ' . $e->getMessage(),
+            ], 400);
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal membuat snap token', [
@@ -237,12 +301,9 @@ class MidtransController extends Controller
 
                 $rentDays = null;
                 if (isset($itemData['rent_days'])) {
-                    // OPTIMIZED: Parse date string langsung tanpa timezone conversion
                     try {
-                        // Ambil hanya tanggal YYYY-MM-DD, buang timezone info
                         $rentDays = substr($itemData['rent_days'], 0, 10);
 
-                        // Validasi format
                         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $rentDays)) {
                             throw new \Exception("Invalid date format");
                         }
@@ -260,11 +321,44 @@ class MidtransController extends Controller
                     }
                 }
 
+                $dbPrice = $item->price ?? 0;
+                $frontendPrice = $itemData['price'] ?? 0;
+                
+                // Debug logging for price comparison
+                Log::info('Price comparison for validation', [
+                    'item_type' => $type,
+                    'item_id' => $item->id,
+                    'item_name' => $item->name ?? 'Unknown',
+                    'database_price' => $dbPrice,
+                    'frontend_price' => $frontendPrice,
+                    'price_difference' => $frontendPrice - $dbPrice,
+                    'price_ratio' => $dbPrice > 0 ? $frontendPrice / $dbPrice : 'N/A'
+                ]);
+                
+                // FIX: For property items, use frontend price if there's a significant discrepancy
+                $finalPrice = $dbPrice;
+                if ($type === 'rent_property' && $dbPrice > 0) {
+                    $ratio = $frontendPrice / $dbPrice;
+                    // If there's a 10x or more difference, use frontend price
+                    if ($ratio >= 10 || $ratio <= 0.1) {
+                        Log::warning('Using frontend price due to significant discrepancy', [
+                            'item_type' => $type,
+                            'item_id' => $item->id,
+                            'database_price' => $dbPrice,
+                            'frontend_price' => $frontendPrice,
+                            'ratio' => $ratio
+                        ]);
+                        $finalPrice = $frontendPrice;
+                    }
+                }
+                
                 $validatedItems[] = [
                     'type' => $type,
                     'item' => $item,
                     'quantity' => $itemData['quantity'],
-                    'price' => $itemData['price'] ?? $item->price ?? 0, 
+                    'delivery_option' => $itemData['delivery_option'],
+                    'note' => $itemData['note'],
+                    'price' => $finalPrice, 
                     'rent_days' => $rentDays,
                 ];
             }
@@ -273,82 +367,91 @@ class MidtransController extends Controller
         return $validatedItems;
     }
     
-     public function callback(Request $request)
+    public function callback(Request $request)
     {
         Log::info('Callback Midtrans diterima', [
             'order_id' => $request->order_id,
             'transaction_status' => $request->transaction_status,
             'status_code' => $request->status_code,
-            'gross_amount' => $request->gross_amount
+            'gross_amount' => $request->gross_amount,
+            'payment_type' => $request->payment_type,
+            'va_numbers' => $request->va_numbers,
+            'bill_key' => $request->bill_key,
+            'biller_code' => $request->biller_code,
         ]);
 
         $serverKey = config('midtrans.server_key');
         $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
         if ($hashed == $request->signature_key) {
-            if (in_array($request->transaction_status, ['capture', 'settlement'])) {
+            $vaInfo = $this->extractVAInfo($request);
+
+            if (in_array($request->transaction_status, ['capture', 'settlement', 'pending'])) {
                 $transaction = Transaction::where('order_id', $request->order_id)->first();
 
                 if ($transaction) {
-                    // Tandai transaksi ini berhasil
-                    $transaction->update([
-                        'status' => 'settlement',
+                    $updateData = [
+                        'status' => $request->transaction_status === 'pending' ? 'pending' : 'settlement',
                         'payment_type' => $request->payment_type ?? null,
-                        'status_code' => $request->status_code ?? null
+                        'status_code' => $request->status_code ?? null,
+                        'va_number' => $vaInfo['va_number'],
+                        'bank_name' => $vaInfo['bank_name'],
+                        'bill_key' => $vaInfo['bill_key'],
+                        'biller_code' => $vaInfo['biller_code'],
+                    ];
+
+                    $transaction->update($updateData);
+
+                    Log::info('VA info saved', [
+                        'order_id' => $request->order_id,
+                        'va_number' => $vaInfo['va_number'],
+                        'bank_name' => $vaInfo['bank_name'],
                     ]);
 
-                    // Ambil semua item transaksi yang berhasil
-                    foreach ($transaction->items as $item) {
-                        // Cari transaksi lain dengan jasa & tanggal sama
-                        $otherTransactions = Transaction::where('id', '!=', $transaction->id)
-                            ->where('status', 'pending')
-                            ->whereHas('items', function ($q) use ($item) {
-                                $q->where('item_id', $item->item_id)
-                                    ->where('rent_days', $item->rent_days);
-                            })
-                            ->get();
+                    if ($request->transaction_status !== 'pending') {
+                        foreach ($transaction->items as $item) {
+                            $otherTransactions = Transaction::where('id', '!=', $transaction->id)
+                                ->where('status', 'pending')
+                                ->whereHas('items', function ($q) use ($item) {
+                                    $q->where('item_id', $item->item_id)
+                                        ->where('rent_days', $item->rent_days);
+                                })
+                                ->get();
 
-                        foreach ($otherTransactions as $other) {
-                            $other->update([
-                                'status' => 'expired' // atau "cancelled"
-                            ]);
+                            foreach ($otherTransactions as $other) {
+                                $other->update(['status' => 'expired']);
 
-                            // Cancel di Midtrans juga
-                            try {
-                                \Midtrans\Transaction::cancel($other->order_id);
-                            } catch (\Exception $e) {
-                                Log::error('Gagal cancel di Midtrans', [
+                                try {
+                                    \Midtrans\Transaction::cancel($other->order_id);
+                                } catch (\Exception $e) {
+                                    Log::error('Gagal cancel di Midtrans', [
+                                        'order_id' => $other->order_id,
+                                        'error' => $e->getMessage()
+                                    ]);
+                                }
+
+                                Log::info('Transaksi lain dibatalkan', [
                                     'order_id' => $other->order_id,
-                                    'error' => $e->getMessage()
+                                    'item_id' => $item->item_id,
+                                    'rent_days' => $item->rent_days
                                 ]);
                             }
+                        }
 
-                            Log::info('Transaksi lain dibatalkan karena jasa di tanggal sama sudah dipakai', [
-                                'order_id' => $other->order_id,
-                                'item_id' => $item->item_id,
-                                'rent_days' => $item->rent_days
+                        $user = $transaction->user;
+                        if ($user) {
+                            // $user->notify(new TransactionSettled($transaction));
+                            Log::info('Notifikasi transaksi berhasil', [
+                                'order_id' => $transaction->order_id,
+                                'user_id' => $user->id
                             ]);
                         }
-                    }
 
-                    // Kirim notifikasi ke user
-                    $user = $transaction->user;
-                    if ($user) {
-                        $user->notify(new TransactionSettled($transaction));
-                        Log::info('Notifikasi transaksi berhasil dikirim', [
-                            'order_id' => $transaction->order_id,
-                            'user_id' => $user->id
-                        ]);
-                    } else {
-                        Log::warning('User tidak ditemukan untuk notifikasi', [
-                            'order_id' => $transaction->order_id
+                        Log::info('Transaksi berhasil diperbarui', [
+                            'order_id' => $request->order_id,
+                            'status' => $transaction->status
                         ]);
                     }
-
-                    Log::info('Transaksi berhasil diperbarui', [
-                        'order_id' => $request->order_id,
-                        'status' => 'settlement'
-                    ]);
                 } else {
                     Log::error('Transaksi tidak ditemukan', ['order_id' => $request->order_id]);
                 }
@@ -364,9 +467,60 @@ class MidtransController extends Controller
         return response()->json(['status' => 'success']);
     }
 
-    /**
-     * Update kuota item secara efisien
-     */
+    private function extractVAInfo(Request $request): array
+    {
+        $vaNumber = null;
+        $bankName = null;
+        $billKey = null;
+        $billerCode = null;
+
+        $bankNameMap = [
+            'bca' => 'BCA',
+            'bni' => 'BNI',
+            'bri' => 'BRI',
+            'cimb' => 'CIMB Niaga',
+            'permata' => 'Permata',
+            'other' => 'Bank Lainnya',
+        ];
+
+        if ($request->has('va_numbers') && is_array($request->va_numbers) && count($request->va_numbers) > 0) {
+            $vaData = $request->va_numbers[0];
+            $vaNumber = $vaData['va_number'] ?? null;
+            $bankCode = strtolower($vaData['bank'] ?? '');
+            $bankName = $bankNameMap[$bankCode] ?? ucfirst($bankCode);
+        } elseif ($request->has('bill_key') && $request->has('biller_code')) {
+            $billKey = $request->bill_key;
+            $billerCode = $request->biller_code;
+            $bankName = 'Mandiri';
+        } elseif ($request->has('permata_va_number')) {
+            $vaNumber = $request->permata_va_number;
+            $bankName = 'Permata';
+        } elseif ($request->has('payment_type')) {
+            $paymentType = $request->payment_type;
+
+            if (str_contains($paymentType, 'bca')) {
+                $bankName = 'BCA';
+            } elseif (str_contains($paymentType, 'bni')) {
+                $bankName = 'BNI';
+            } elseif (str_contains($paymentType, 'bri')) {
+                $bankName = 'BRI';
+            } elseif (str_contains($paymentType, 'mandiri')) {
+                $bankName = 'Mandiri';
+            } elseif (str_contains($paymentType, 'permata')) {
+                $bankName = 'Permata';
+            } elseif (str_contains($paymentType, 'cimb')) {
+                $bankName = 'CIMB Niaga';
+            }
+        }
+
+        return [
+            'va_number' => $vaNumber,
+            'bank_name' => $bankName,
+            'bill_key' => $billKey,
+            'biller_code' => $billerCode,
+        ];
+    }
+
     private function updateItemQuotas(Transaction $transaction)
     {
         $transactionItems = TransactionItem::where('transaction_id', $transaction->id)->get();
@@ -393,7 +547,6 @@ class MidtransController extends Controller
             'order_id' => $transaction->order_id
         ]);
     }
-
 
     public function getTransaction($orderId)
     {
@@ -428,7 +581,6 @@ class MidtransController extends Controller
         try {
             DB::beginTransaction();
             
-            // Cek transaksi di database lokal
             $transaction = Transaction::where('order_id', $orderId)
                 ->where('status', 'pending')
                 ->first();
@@ -439,7 +591,6 @@ class MidtransController extends Controller
                 ], 404);
             }
 
-            // Batalkan transaksi di Midtrans
             $midtransResult = $this->cancelTransactionMidtrans($orderId);
             
             if (!$midtransResult['success']) {
@@ -450,14 +601,12 @@ class MidtransController extends Controller
                 ], 500);
             }
 
-            // Update status di database lokal
             $transaction->update([
                 'status' => 'cancelled',
                 'cancelled_at' => now(),
                 'cancel_reason' => 'Manual cancellation'
             ]);
             
-            // Hapus cache terkait
             $this->clearTransactionCache($orderId);
 
             DB::commit();
@@ -492,26 +641,20 @@ class MidtransController extends Controller
         }
     }
 
-    /**
-     * Batalkan transaksi melalui Midtrans API
-     */
     private function cancelTransactionMidtrans($orderId)
     {
         try {
             $client = new Client();
             
-            // Ambil konfigurasi dari .env
             $serverKey = config('midtrans.server_key');
             $isProduction = config('midtrans.is_production', false);
             
-            // Tentukan URL berdasarkan environment
             $baseUrl = $isProduction 
                 ? 'https://api.midtrans.com' 
                 : 'https://api.sandbox.midtrans.com';
             
             $url = "{$baseUrl}/v2/{$orderId}/cancel";
             
-            // Encode server key untuk authorization
             $authorization = base64_encode($serverKey . ':');
             
             $response = $client->request('POST', $url, [
@@ -572,9 +715,6 @@ class MidtransController extends Controller
         }
     }
 
-    /**
-     * Hapus cache terkait transaksi
-     */
     private function clearTransactionCache($orderId)
     {
         $cacheKeys = [
@@ -589,9 +729,6 @@ class MidtransController extends Controller
         }
     }
 
-    /**
-     * Cek status transaksi dari Midtrans
-     */
     public function checkTransactionStatusMidtrans($orderId)
     {
         try {
@@ -636,19 +773,211 @@ class MidtransController extends Controller
 
     public function finish(Request $request)
     {
-        Log::info('Midtrans finish callback', $request->all());
-        return redirect()->route('home')->with('success', 'Pembayaran selesai.');
+        $orderId = $request->query('order_id');
+
+        Log::info('Midtrans finish callback', [
+            'order_id' => $orderId,
+            'all_params' => $request->all()
+        ]);
+
+        $transaction = null;
+        $status = 'success';
+        $vaInfo = null;
+
+        if ($orderId) {
+            $transaction = Transaction::where('order_id', $orderId)->first();
+            if ($transaction) {
+                $status = $transaction->status;
+
+                if ($transaction->va_number || $transaction->bill_key) {
+                    $vaInfo = [
+                        'va_number' => $transaction->va_number,
+                        'bank_name' => $transaction->bank_name,
+                        'bill_key' => $transaction->bill_key,
+                        'biller_code' => $transaction->biller_code,
+                    ];
+                }
+            }
+        }
+
+        return Inertia::render('Payment/Status', [
+            'status' => $status,
+            'order_id' => $orderId,
+            'va_info' => $vaInfo,
+            'transaction' => $transaction ? [
+                'order_id' => $transaction->order_id,
+                'total' => $transaction->total,
+                'expired_at' => $transaction->expired_at,
+                'payment_type' => $transaction->payment_type,
+            ] : null,
+        ]);
     }
 
     public function error(Request $request)
     {
-        Log::error('Midtrans error callback', $request->all());
-        return redirect()->route('home')->with('error', 'Pembayaran gagal.');
+        $orderId = $request->query('order_id');
+
+        Log::error('Midtrans error callback', [
+            'order_id' => $orderId,
+            'all_params' => $request->all()
+        ]);
+
+        return Inertia::render('Payment/Status', [
+            'status' => 'error',
+            'order_id' => $orderId,
+        ]);
     }
 
     public function unfinish(Request $request)
     {
-        Log::info('Midtrans unfinish callback', $request->all());
-        return redirect()->route('home')->with('info', 'Pembayaran belum selesai.');
+        $orderId = $request->query('order_id');
+
+        Log::info('Midtrans unfinish callback', [
+            'order_id' => $orderId,
+            'all_params' => $request->all()
+        ]);
+
+        return Inertia::render('Payment/Status', [
+            'status' => 'pending',
+            'order_id' => $orderId,
+        ]);
+    }
+
+    /**
+     * Buat tagihan Midtrans untuk biaya antar (delivery_fee) setelah mitra mengisinya.
+     * Algoritma tercepat: langsung buat Snap token dengan satu item "Biaya Antar",
+     * simpan transaksi minimal, dan tautkan ke item asli untuk konsistensi tampilan purchase.
+     */
+    public function createDeliveryFee(Request $request, $transactionItemId)
+    {
+        // Ambil item transaksi + relasi yang dibutuhkan dengan query minimal
+        $transactionItem = TransactionItem::with(['transaction.user', 'transaction.address'])->findOrFail($transactionItemId);
+
+        // Validasi sederhana: hanya untuk opsi delivery dan fee > 0
+        if ($transactionItem->delivery_option !== 'delivery') {
+            return response()->json(['success' => false, 'error' => 'Opsi pengiriman harus delivery.'], 400);
+        }
+        $fee = (int) ($transactionItem->delivery_fee ?? 0);
+        if ($fee <= 0) {
+            return response()->json(['success' => false, 'error' => 'Biaya antar belum diisi atau tidak valid.'], 400);
+        }
+
+        $buyer = $transactionItem->transaction?->user;
+        if (!$buyer) {
+            return response()->json(['success' => false, 'error' => 'Pembeli tidak ditemukan.'], 404);
+        }
+
+        // Order id baru yang terhubung ke base order
+        $baseOrderId = $transactionItem->transaction?->order_id ?? now()->format('YmdHis');
+        $orderId = 'DEL-' . $baseOrderId . '-' . Str::random(6);
+
+        // Detail pelanggan dari transaksi asli (gunakan alamat jika tersedia)
+        $customerDetails = [
+            'first_name' => $buyer->name ?? '',
+            'email' => $buyer->email ?? '',
+        ];
+        $address = $transactionItem->transaction?->address;
+        if ($address) {
+            $customerDetails['phone'] = $address->phone ?? '';
+            $customerDetails['shipping_address'] = [
+                'first_name'  => $address->recipient_name ?? '',
+                'phone'       => $address->phone ?? '',
+                'address'     => $address->address_line ?? '',
+                'city'        => $address->city ?? '',
+                'postal_code' => $address->postal_code ?? '',
+            ];
+        }
+
+        // Parameter Midtrans Snap (langsung, tanpa kalkulasi pajak tambahan)
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => $fee,
+            ],
+            'customer_details' => $customerDetails,
+            'item_details' => [
+                [
+                    'id' => 'DELIVERY_FEE_' . $transactionItem->id,
+                    'price' => $fee,
+                    'quantity' => 1,
+                    'name' => 'Biaya Antar',
+                ],
+            ],
+            'enabled_payments' => self::ENABLED_PAYMENTS,
+            'expiry' => [
+                'start_time' => now('Asia/Jakarta')->format('Y-m-d H:i:s O'),
+                'unit' => 'minutes',
+                'duration' => 60
+            ],
+            'callbacks' => [
+                'finish' => route('midtrans.finish'),
+                'error' => route('midtrans.error'),
+                'unfinish' => route('midtrans.unfinish')
+            ]
+        ];
+
+        try {
+            // Buat Snap token
+            $snapToken = Snap::getSnapToken($params);
+            $midtransRedirectUrl = config('midtrans.is_production')
+                ? "https://app.midtrans.com/snap/v2/vtweb/{$snapToken}"
+                : "https://app.sandbox.midtrans.com/snap/v2/vtweb/{$snapToken}";
+
+            DB::beginTransaction();
+
+            // Simpan transaksi biaya antar
+            $transaction = Transaction::create([
+                'user_id' => $buyer->id,
+                'order_id' => $orderId,
+                'redirect_url' => $midtransRedirectUrl,
+                'status' => 'pending',
+                'token' => $snapToken,
+                'total' => $fee,
+                'subtotal' => $fee,
+                'tax' => 0,
+                'expired_at' => now()->addMinutes(60)->toDateTimeString(),
+            ]);
+
+            // Simpan item terkait untuk konsistensi tampilan purchase
+            TransactionItem::create([
+                'transaction_id'  => $transaction->id,
+                'item_id'         => $transactionItem->item_id,
+                'item_type'       => $transactionItem->item_type,
+                'type'            => 'Delivery Fee',
+                'qty'             => 1,
+                'price'           => $fee,
+                'delivery_option' => 'delivery',
+                'note'            => 'Biaya antar untuk pesanan ' . ($transactionItem->transaction?->order_id ?? ''),
+                'rent_days'       => $transactionItem->rent_days,
+            ]);
+
+            DB::commit();
+
+            Log::info('Delivery fee invoice created', [
+                'order_id' => $orderId,
+                'base_order_id' => $baseOrderId,
+                'fee' => $fee,
+                'transaction_id' => $transaction->id,
+                'transaction_item_id' => $transactionItem->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'token' => $snapToken,
+                'order_id' => $orderId,
+                'redirect_url' => $midtransRedirectUrl
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to create delivery fee invoice', [
+                'transaction_item_id' => $transactionItem->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Gagal membuat tagihan biaya antar.'
+            ], 500);
+        }
     }
 }

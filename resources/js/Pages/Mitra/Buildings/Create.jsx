@@ -9,7 +9,7 @@ import { formatRupiahInput } from "@/Utils/formatRupiah";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import ReactQuill from "react-quill";
 
 const breadcrumbs = [
@@ -56,10 +56,7 @@ export default function BuildingsCreate() {
         if (data.itemPhoto.length > 0) {
             const lastPhoto = data.itemPhoto[data.itemPhoto.length - 1];
             if (!lastPhoto.photo) {
-                toast({
-                    title: "Isi kolom yang kosong terlebih dahulu",
-                    variant: "destructive",
-                });
+                toast.warning("Isi kolom yang kosong terlebih dahulu");
                 return;
             }
         }

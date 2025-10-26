@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Leave;
 use App\Models\Service;
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -22,7 +22,7 @@ class LeaveController extends Controller
         // Get all items with pagination
         $services = Service::where('user_id', $userId)->latest()->get();
         $buildings = Building::where('user_id', $userId)->latest()->get() ?? [];
-        $properties = RentProperties::where('user_id', $userId)->latest()->get() ?? [];
+        $property = RentProperty::where('user_id', $userId)->latest()->get() ?? [];
         
         // Get leaves with optimized query
         $leaves = Leave::where('user_id', $userId)
@@ -35,10 +35,10 @@ class LeaveController extends Controller
             'title' => 'Manajemen Cuti',
             'services' => $services,
             'buildings' => $buildings,
-            'properties' => $properties,
+            'property' => $property,
             'leaves' => $leaves,
             'pagination' => [
-                'total' => $services->count() + count($buildings) + count($properties),
+                'total' => $services->count() + count($buildings) + count($property),
                 'per_page' => 10
             ]
         ]);
@@ -48,7 +48,7 @@ class LeaveController extends Controller
     {
         $request->validate([
             'item_id' => 'required|integer',
-            'item_type' => 'required|string|in:service,building,rent_properties',
+            'item_type' => 'required|string|in:service,building,rent_property',
             'date' => 'nullable|date|after_or_equal:today',
             'day_of_week' => 'nullable|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu'
         ], [
@@ -108,7 +108,7 @@ class LeaveController extends Controller
         $request->validate([
             'user_id'   => 'required|exists:users,id',
             'item_id'   => 'required|integer',
-            'item_type' => 'required|string|in:service,building,rent_properties',
+            'item_type' => 'required|string|in:service,building,rent_property',
             'dates'     => 'required|array|min:1',
             'dates.*'   => 'date|after_or_equal:today',
         ], [
@@ -216,7 +216,7 @@ class LeaveController extends Controller
         $request->validate([
             'user_id'   => 'required|exists:users,id',
             'item_id' => 'required|integer',
-            'item_type' => 'required|string|in:service,building,rent_properties',
+            'item_type' => 'required|string|in:service,building,rent_property',
             'dates' => 'required|array|min:1',
             'dates.*' => 'date'
         ]);
@@ -271,7 +271,7 @@ class LeaveController extends Controller
         try {
             $request->validate([
                 'item_id' => 'required|integer',
-                'item_type' => 'required|string|in:service,building,rent_properties',
+                'item_type' => 'required|string|in:service,building,rent_property',
                 'day_of_week' => 'required|string|in:Minggu,Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
             ]);
     
@@ -366,7 +366,7 @@ class LeaveController extends Controller
                 ->select(['id', 'name', 'location', 'price', 'status', 'thumbnail', 'created_at'])
                 ->latest()
                 ->get() ?? [],
-            'properties' => RentProperties::where('user_id', $userId)
+            'property' => RentProperty::where('user_id', $userId)
                 ->select(['id', 'name', 'location', 'price', 'status', 'thumbnail', 'created_at'])
                 ->latest()
                 ->get() ?? [],
@@ -423,7 +423,7 @@ class LeaveController extends Controller
         $request->validate([
             'date' => 'required|date',
             'item_id' => 'required|integer',
-            'item_type' => 'required|string|in:service,building,rent_properties'
+            'item_type' => 'required|string|in:service,building,rent_property'
         ]);
 
 
@@ -456,7 +456,7 @@ class LeaveController extends Controller
         $itemType = $request->query('type');
 
         // ✅ Validasi item type
-        if (!in_array($itemType, ['service', 'building', 'rent_properties'])) {
+        if (!in_array($itemType, ['service', 'building', 'rent_property'])) {
             abort(404, 'Invalid item type');
         }
 
@@ -466,7 +466,7 @@ class LeaveController extends Controller
         $item = match ($itemType) {
             'service'         => Service::where('id', $itemId)->where('user_id', $userId)->first(),
             'building'        => Building::where('id', $itemId)->where('user_id', $userId)->first(),
-            'rent_properties' => RentProperties::where('id', $itemId)->where('user_id', $userId)->first(),
+            'rent_property' => RentProperty::where('id', $itemId)->where('user_id', $userId)->first(),
             default           => null,
         };
 
@@ -505,7 +505,7 @@ class LeaveController extends Controller
     {
         $request->validate([
             'item_id' => 'required|integer',
-            'item_type' => 'required|string|in:service,building,rent_properties',
+            'item_type' => 'required|string|in:service,building,rent_property',
             'day_of_week' => 'required|string'
         ]);
 

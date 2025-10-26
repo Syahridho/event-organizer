@@ -29,7 +29,16 @@ export default function ChatInputMessage(props) {
 
     const submitHandler = (e) => {
         e.preventDefault();
-        post(route("chat.store", chatWithUser.uuid), {
+        // Check if we're on the admin or mitra chat page
+        const isAdminChat = route().current() === "admin.chat.show";
+        const isMitraChat = route().current() === "mitra.chat.show";
+        const routeName = isAdminChat
+            ? "admin.chat.store"
+            : isMitraChat
+            ? "mitra.chat.store"
+            : "chat.store";
+
+        post(route(routeName, chatWithUser.uuid), {
             onStart: () => {
                 reset();
                 e.target.style.height = "auto";

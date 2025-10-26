@@ -6,6 +6,8 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\AdminSetting;
+use App\Helpers\TaxHelper;
+use Illuminate\Support\Facades\Cache;
 
 class AdminSettingController extends Controller
 {
@@ -37,6 +39,10 @@ class AdminSettingController extends Controller
 
         $setting->update($validated);
 
+        // Clear cache when settings updated
+        TaxHelper::clearCache();
+        Cache::forget('admin_dashboard_data');
+
         return redirect()->back()->with('success', 'Pengaturan berhasil diperbarui!');
     }
 
@@ -50,6 +56,10 @@ class AdminSettingController extends Controller
         $setting = AdminSetting::first();
         $setting->update($validated);
 
-        return redirect()->route('admin.settings.index');
+        // Clear cache when tax updated
+        TaxHelper::clearCache();
+        Cache::forget('admin_dashboard_data');
+
+        return redirect()->route('admin.settings.index')->with('success', 'Pajak berhasil diperbarui!');
     }
 }

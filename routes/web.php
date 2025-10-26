@@ -39,7 +39,8 @@ use App\Http\Controllers\RentController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\AddressController;
-use App\Http\Controllers\LeaveController; 
+use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TicketController;
 
@@ -49,7 +50,7 @@ Route::get('/', [HomeController::class, 'index'])->name('welcome');
 
 // Product listing pages
 Route::get('/{type}', [ListingController::class, 'show'])
-    ->whereIn('type', ['events', 'services', 'buildings', 'properties'])
+    ->whereIn('type', ['events', 'services', 'buildings', 'propertys'])
     ->name('listings.show');
 
 // Search functionality
@@ -63,7 +64,7 @@ Route::get('/home/json', [ListingController::class, 'indexJson'])->name('home.js
 Route::get('/events/{id}', [HomeController::class, 'showEvent'])->name('events.show');
 Route::get('/services/{id}', [HomeController::class, 'showService'])->name('services.show');
 Route::get('/buildings/{id}', [HomeController::class, 'showBuilding'])->name('buildings.show');
-Route::get('/properties/{id}', [HomeController::class, 'showProperty'])->name('properties.show'); // FIXED: Changed from /propertys
+Route::get('/propertys/{id}', [HomeController::class, 'showProperty'])->name('propertys.show'); // FIXED: Changed from /propertys
 
 // Midtrans payment routes
 Route::middleware(['auth'])->group(function () {
@@ -88,12 +89,15 @@ Route::get('/midtrans/finish', [MidtransController::class, 'finish'])->name('mid
 Route::get('/midtrans/error', [MidtransController::class, 'error'])->name('midtrans.error');
 Route::get('/midtrans/unfinish', [MidtransController::class, 'unfinish'])->name('midtrans.unfinish');
 
+Route::get('/partner/register', [PartnerController::class, 'index'])->name('partner.create');
+Route::post('/partner/register', [PartnerController::class, 'store'])->name('partner.store');
+
+Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+
 // Authenticated user routes
 Route::middleware(['auth', 'verified'])->group(function () {    
     
 
-    Route::post('/partner/register', [PartnerController::class, 'store'])->name('partner.store');
-    Route::get('/partner/register', [PartnerController::class, 'create'])->name('partner.create');
 
     Route::post('/tickets/check-availability', [TicketController::class, 'checkAvailability'])->name('tickets.check-availability');
 
@@ -161,12 +165,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{id}', [PurchaseController::class, 'show'])->name('show');
     });
 
-    // Checkout process
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/event/free', [EventController::class, 'eventFree'])->name('event.free');
-    Route::post('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+        // Checkout process
+        Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+        // New Inertia review page before payment: pass transaction id via route param
+        Route::get('/checkout/{transaction}', [CheckoutController::class, 'showByTransaction'])->name('checkout.show');
+        Route::post('/event/free', [EventController::class, 'eventFree'])->name('event.free');
+        // Legacy POST checkout payload retained under distinct name
+        Route::post('/checkout', [CheckoutController::class, 'show'])->name('checkout.store');
 
     Route::post('/rating/{orderId}', [RatingController::class, 'store'])->name('mitra.rating.store');
+
+    // Review routes (optimized with validation for purchase)
+    Route::get('/reviews/can-review', [ReviewController::class, 'canReview'])->name('reviews.canReview');
+    Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+    Route::put('/reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 
     // Admin routes
     Route::middleware(['role:admin'])->group(function () {
@@ -196,10 +209,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admin/mitra', [AdminPartnerController::class, 'index'])->name('admin.partners.index');
 
         Route::post('/admin/partners/{mitra}/approve', [AdminPartnerController::class, 'approve'])->name('admin.partners.approve');
-        Route::post('/admin/partners/{mitra}/reject', [AdminPartnerController::class, 'reject'])->name('admin.partners.reject');    
+        Route::post('/admin/partners/{mitra}/reject', [AdminPartnerController::class, 'reject'])->name('admin.partners.reject');
 
         Route::get('/admin/partners/{mitra}/view-pdf/{type}', [AdminPartnerController::class, 'viewPdf'])->name('admin.partners.view-pdf');
         Route::get('/admin/partners/{mitra}/download-pdf/{type}', [AdminPartnerController::class, 'downloadPdf'])->name('admin.partners.download-pdf');
+
+        // Admin chat routes
+        Route::get('/admin/dashboard/chat', [ChatController::class, 'adminChat'])->name('admin.chat');
+        Route::get('/admin/dashboard/chat/{user:uuid}', [ChatController::class, 'adminShow'])->name('admin.chat.show');
+        Route::post('/admin/dashboard/chat/{user:uuid}', [ChatController::class, 'chat'])->name('admin.chat.store');
+        
+        // Admin dashboard chat routes (alternative paths)
+        Route::get('/admin/dashboard/{uuid}', [ChatController::class, 'adminShow'])->name('admin.dashboard.chat.show');
+        Route::post('/admin/dashboard/{uuid}', [ChatController::class, 'chat'])->name('admin.dashboard.chat.store');
 
     });
 
@@ -236,9 +258,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/mitra/transactions/{transactionItem}/work', [MitraTransactionController::class, 'work'])->name('mitra.transactions.work');
         Route::post('/mitra/transactions/{transactionItem}/complete', [MitraTransactionController::class, 'complete'])->name('mitra.transactions.complete');
 
+        // Create Midtrans invoice for delivery fee after mitra fills it
+        Route::post('/midtrans/delivery-fee/{transactionItem}', [MidtransController::class, 'createDeliveryFee'])->name('midtrans.delivery_fee.create');
+
         Route::get('/dashboard/notifications', [NotificationController::class, 'showMitra'])->name('notification.mitra');
         Route::get('/dashboard/chat', [ChatController::class, 'mitraChat'])->name('mitra.chat');
         Route::get('/dashboard/chat/{user:uuid}', [ChatController::class, 'mitraShow'])->name('mitra.chat.show');
+        Route::post('/dashboard/chat/{user:uuid}', [ChatController::class, 'chat'])->name('mitra.chat.store');
 
         Route::get('/dashboard/withdraw',[WithDrawController::class, 'index'])->name('mitra.withdraw.index');
         Route::post('/mitra/withdraw', [WithDrawController::class, 'store'])->name('mitra.withdraw');
@@ -258,6 +284,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/profile', 'edit')->name('profile.edit');
         Route::patch('/profile', 'update')->name('profile.update');
         Route::delete('/profile', 'destroy')->name('profile.destroy');
+        Route::delete('/profile/photo', 'destroyPhoto')->name('profile.photo.destroy');
     });
 
     // Chat functionality

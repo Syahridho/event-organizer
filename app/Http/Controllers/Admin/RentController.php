@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
@@ -13,13 +13,13 @@ class RentController extends Controller
     public function index()
     {
         return Inertia::render('Admin/RentProperty/Index', [
-            'rents' => RentProperties::latest()->get(),
+            'rents' => RentProperty::latest()->get(),
         ]);
     }
 
     public function banned($id)
     {
-        $rent = RentProperties::findOrFail($id);
+        $rent = RentProperty::findOrFail($id);
         $rent->status = 'banned';
         $rent->save();
 

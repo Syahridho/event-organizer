@@ -706,7 +706,13 @@ export default function CreateEvent() {
                                             htmlFor="ticket"
                                             className="leading-none font-medium"
                                         >
-                                            Custom tiket
+                                            Custom tiket{" "}
+                                            <span className="text-sm text-muted-foreground">
+                                                (Jika tidak dikustomisasi,
+                                                Pengaturan Tiket Default adalah
+                                                GRATIS (Harga Rp 0) dengan Kuota
+                                                Tidak Dibatasi.)
+                                            </span>
                                         </Label>
                                         <Switch
                                             id="ticket"

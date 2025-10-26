@@ -10,12 +10,15 @@ import { Toaster } from "sonner";
 import { Provider } from "react-redux";
 import { store } from "./Store";
 import Initializer from "./hooks/useInitializeTheme";
+import OnlineStatusProvider from "./components/OnlineStatusProvider";
 
 function AppWrapper({ App, props }) {
     return (
         <Provider store={store}>
             <Initializer />
-            <App {...props} />
+            <OnlineStatusProvider>
+                <App {...props} />
+            </OnlineStatusProvider>
             <Toaster position="bottom-right" richColors />
         </Provider>
     );

@@ -14,37 +14,43 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'Member',
-            'email' => 'qwe@gmail.com',
-            'username' => 'member',
-            'password' => Hash::make('qweqweqwe'),
-            'role' => 'member',
-            'email_verified_at' => now(),
-            'uuid' => str()->uuid(),
-            'last_seen_at' => now(),
-        ]);
+        User::updateOrCreate(
+            ['username' => 'member'],
+            [
+                'name' => 'Member',
+                'email' => 'qwe@gmail.com',
+                'password' => Hash::make('qweqweqwe'),
+                'role' => 'member',
+                'email_verified_at' => now(),
+                'uuid' => str()->uuid(),
+                'last_seen_at' => now(),
+            ]
+        );
 
-        User::create([
-            'name' => 'Mitra',
-            'email' => 'asd@gmail.com',
-            'username' => 'mitra',
-            'password' => Hash::make('asdasdasd'),
-            'role' => 'mitra',
-            'email_verified_at' => now(),
-            'uuid' => str()->uuid(),
-            'last_seen_at' => now(),
-        ]);
+        User::updateOrCreate(
+            ['username' => 'mitra'],
+            [
+                'name' => 'Mitra',
+                'email' => 'asd@gmail.com',
+                'password' => Hash::make('asdasdasd'),
+                'role' => 'mitra',
+                'email_verified_at' => now(),
+                'uuid' => str()->uuid(),
+                'last_seen_at' => now(),
+            ]
+        );
 
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin@gmail.com',
-            'username' => 'admin',
-            'password' => Hash::make('admin'),
-            'role' => 'admin',
-            'email_verified_at' => now(),
-            'uuid' => str()->uuid(),
-            'last_seen_at' => now(),
-        ]);
+        User::updateOrCreate(
+            ['username' => 'admin'],
+            [
+                'name' => 'Admin',
+                'email' => 'admin@gmail.com',
+                'password' => Hash::make('admin'),
+                'role' => 'admin',
+                'email_verified_at' => now(),
+                'uuid' => str()->uuid(),
+                'last_seen_at' => now(),
+            ]
+        );
     }
 }

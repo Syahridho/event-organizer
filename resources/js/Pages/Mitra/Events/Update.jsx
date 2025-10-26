@@ -1107,7 +1107,7 @@ export default function UpdateEvent() {
                                 </div>
                             </div>
                             <div className="flex justify-end gap-4">
-                                <Link href="/dashboard/event">
+                                <Link href="/dashboard/events">
                                     <Button
                                         variant="secondary"
                                         className="cursor-pointer"

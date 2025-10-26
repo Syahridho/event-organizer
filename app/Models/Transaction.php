@@ -20,6 +20,11 @@ class Transaction extends Model
         'expired_at',
         'payment_type',
         'total',
+        'tax',
+        'va_number',
+        'bank_name',
+        'bill_key', 
+        'biller_code',
     ];
 
     public function user()

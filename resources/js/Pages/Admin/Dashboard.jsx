@@ -1,13 +1,19 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head } from "@inertiajs/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     BarChart,
     Bar,
     XAxis,
     YAxis,
+    CartesianGrid,
     Tooltip,
     ResponsiveContainer,
+    Legend,
+    LineChart,
+    Line,
+    Area,
+    AreaChart,
 } from "recharts";
 import {
     Table,
@@ -17,11 +23,37 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import {
+    TrendingUp,
+    Calendar,
+    DollarSign,
+    Activity
+} from "lucide-react";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
     { title: "Admin", href: "/admin/dashboard" },
 ];
+
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3">
+                <p className="text-sm font-semibold text-slate-700 mb-1">
+                    {label}
+                </p>
+                <p className="text-sm text-slate-600">
+                    Penjualan:{" "}
+                    <span className="font-bold text-primary">
+                        Rp {payload[0].value.toLocaleString("id-ID")}
+                    </span>
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
 
 export default function AdminDashboard({
     auth,
@@ -29,122 +61,259 @@ export default function AdminDashboard({
     chartData,
     recentTransactions,
 }) {
+    // Calculate weekly trend
+    const weeklySales = chartData?.reduce((sum, item) => sum + item.sales, 0) || 0;
+    const avgDailySales = chartData?.length > 0 ? weeklySales / chartData.length : 0;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
 
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
                 {/* Statistik */}
-                <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Event Aktif</CardTitle>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-slate-600">
+                                    Event Aktif
+                                </CardTitle>
+                                <Activity className="h-4 w-4 text-blue-600" />
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-2xl font-bold">
-                                {stats?.events}
+                            <p className="text-2xl sm:text-3xl font-bold text-slate-800">
+                                {stats?.events || 0}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Event yang sedang berjalan
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Pending Payment</CardTitle>
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-slate-600">
+                                    Pending Payment
+                                </CardTitle>
+                                <Calendar className="h-4 w-4 text-amber-600" />
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-2xl font-bold">
-                                {stats?.pendingPayments}
+                            <p className="text-2xl sm:text-3xl font-bold text-slate-800">
+                                {stats?.pendingPayments || 0}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Menunggu pembayaran
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Total Transaksi</CardTitle>
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-slate-600">
+                                    Total Transaksi
+                                </CardTitle>
+                                <TrendingUp className="h-4 w-4 text-green-600" />
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-2xl font-bold">
-                                {stats?.totalTransactions}
+                            <p className="text-2xl sm:text-3xl font-bold text-slate-800">
+                                {stats?.totalTransactions || 0}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Semua transaksi
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Pendapatan Bulan Ini</CardTitle>
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-slate-600">
+                                    Pendapatan Bulan Ini
+                                </CardTitle>
+                                <DollarSign className="h-4 w-4 text-emerald-600" />
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-2xl font-bold">
-                                Rp {stats?.revenueThisMonth.toLocaleString()}
+                            <p className="text-xl sm:text-2xl font-bold text-slate-800">
+                                Rp {(stats?.revenueThisMonth || 0).toLocaleString("id-ID")}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Revenue bulan {new Date().toLocaleDateString("id-ID", { month: "long" })}
                             </p>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Grafik */}
-                <Card>
+                {/* Grafik Penjualan Mingguan */}
+                <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle>Penjualan Mingguan</CardTitle>
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <CardTitle className="text-xl sm:text-2xl font-bold">
+                                    Penjualan Mingguan
+                                </CardTitle>
+                                <CardDescription className="mt-1">
+                                    Trend penjualan 7 hari terakhir
+                                </CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs text-slate-500">Total Minggu Ini</p>
+                                <p className="text-lg font-bold text-primary">
+                                    Rp {weeklySales.toLocaleString("id-ID")}
+                                </p>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={chartData}>
-                                <XAxis dataKey="day" />
-                                <YAxis />
-                                <Tooltip />
-                                <Bar
-                                    dataKey="sales"
-                                    fill="#3b82f6"
-                                    radius={[8, 8, 0, 0]}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <div className="space-y-4">
+                            {/* Bar Chart */}
+                            <div>
+                                <ResponsiveContainer width="100%" height={350}>
+                                    <BarChart
+                                        data={chartData}
+                                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                    >
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            stroke="#e2e8f0"
+                                            vertical={false}
+                                        />
+                                        <XAxis
+                                            dataKey="day"
+                                            tick={{ fill: "#64748b", fontSize: 12 }}
+                                            axisLine={{ stroke: "#cbd5e1" }}
+                                        />
+                                        <YAxis
+                                            tick={{ fill: "#64748b", fontSize: 12 }}
+                                            axisLine={{ stroke: "#cbd5e1" }}
+                                            tickFormatter={(value) =>
+                                                `${(value / 1000).toFixed(0)}k`
+                                            }
+                                        />
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Bar
+                                            dataKey="sales"
+                                            fill="url(#colorGradient)"
+                                            radius={[8, 8, 0, 0]}
+                                            animationDuration={800}
+                                        />
+                                        <defs>
+                                            <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                                                <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.8} />
+                                            </linearGradient>
+                                        </defs>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Stats Summary */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t">
+                                <div className="text-center">
+                                    <p className="text-xs text-slate-500">Rata-rata Harian</p>
+                                    <p className="text-lg font-semibold text-slate-800">
+                                        Rp {avgDailySales.toLocaleString("id-ID", {
+                                            maximumFractionDigits: 0
+                                        })}
+                                    </p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xs text-slate-500">Hari Terbaik</p>
+                                    <p className="text-lg font-semibold text-green-600">
+                                        {chartData?.length > 0
+                                            ? chartData.reduce((max, item) =>
+                                                item.sales > max.sales ? item : max
+                                              ).day
+                                            : "-"}
+                                    </p>
+                                </div>
+                                <div className="text-center col-span-2 sm:col-span-1">
+                                    <p className="text-xs text-slate-500">Total Transaksi</p>
+                                    <p className="text-lg font-semibold text-blue-600">
+                                        {chartData?.length || 0} hari
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
                 {/* Transaksi Terbaru */}
-                <Card>
+                <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle>Transaksi Terbaru</CardTitle>
+                        <CardTitle className="text-xl sm:text-2xl font-bold">
+                            Transaksi Terbaru
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                            5 transaksi terakhir dari semua event
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>ID</TableHead>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Event</TableHead>
-                                    <TableHead>Jumlah</TableHead>
-                                    <TableHead>Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recentTransactions?.map((tx) => (
-                                    <TableRow key={tx.id}>
-                                        <TableCell>{tx.id}</TableCell>
-                                        <TableCell>{tx.user}</TableCell>
-                                        <TableCell>{tx.event}</TableCell>
-                                        <TableCell>
-                                            Rp {tx.amount.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <span
-                                                className={`px-2 py-1 rounded text-xs ${
-                                                    tx.status === "paid"
-                                                        ? "bg-green-100 text-green-600"
-                                                        : tx.status ===
-                                                          "pending"
-                                                        ? "bg-yellow-100 text-yellow-600"
-                                                        : "bg-red-100 text-red-600"
-                                                }`}
-                                            >
-                                                {tx.status}
-                                            </span>
-                                        </TableCell>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="font-semibold">ID</TableHead>
+                                        <TableHead className="font-semibold">User</TableHead>
+                                        <TableHead className="font-semibold">Event</TableHead>
+                                        <TableHead className="font-semibold text-right">Jumlah</TableHead>
+                                        <TableHead className="font-semibold text-center">Status</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentTransactions?.length > 0 ? (
+                                        recentTransactions.map((tx) => (
+                                            <TableRow
+                                                key={tx.id}
+                                                className="hover:bg-slate-50 transition-colors"
+                                            >
+                                                <TableCell className="font-medium">
+                                                    #{tx.id}
+                                                </TableCell>
+                                                <TableCell>{tx.user}</TableCell>
+                                                <TableCell className="max-w-xs truncate">
+                                                    {tx.event}
+                                                </TableCell>
+                                                <TableCell className="text-right font-semibold">
+                                                    Rp {tx.amount.toLocaleString("id-ID")}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <span
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                            tx.status === "paid"
+                                                                ? "bg-green-100 text-green-800"
+                                                                : tx.status === "pending"
+                                                                ? "bg-yellow-100 text-yellow-800"
+                                                                : "bg-red-100 text-red-800"
+                                                        }`}
+                                                    >
+                                                        {tx.status === "paid"
+                                                            ? "Lunas"
+                                                            : tx.status === "pending"
+                                                            ? "Pending"
+                                                            : "Dibatalkan"}
+                                                    </span>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={5}
+                                                className="text-center py-8 text-slate-500"
+                                            >
+                                                Belum ada transaksi
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

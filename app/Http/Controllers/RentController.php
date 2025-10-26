@@ -3,20 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\ItemPhoto;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use App\Helpers\TaxHelper;
 
 class RentController extends Controller
 {
       public function index() 
     {
         return Inertia::render('Mitra/RentProperty/Index', [
-            'rentPropertys' => RentProperties::where('user_id', Auth::id())->latest()->get()
+            'rentPropertys' => RentProperty::where('user_id', Auth::id())->latest()->get()
         ]);
     }
 
@@ -37,7 +38,7 @@ class RentController extends Controller
         }
 
     
-        $rent = RentProperties::create([
+        $rent = RentProperty::create([
             'user_id' => Auth::id(),
             'name' => $request->name,
             'thumbnail' => $photo,
@@ -45,6 +46,8 @@ class RentController extends Controller
             'location' => $request->location,
             'price' => intval(str_replace('.', '', $request->price)),
             'pin' => implode(',', $request->pin),
+            'delivered' => $request->delivered,
+            'picked_up' => $request->picked_up,
             'status' => "active",
         ]);
 
@@ -57,7 +60,7 @@ class RentController extends Controller
 
                     ItemPhoto::create([
                         'item_id' => $rent->id,
-                        'item_type' => RentProperties::class,
+                        'item_type' => RentProperty::class,
                         'photo' => $filename,
                         'caption' => $request->input("itemPhoto.$index.caption"),
                     ]);
@@ -71,7 +74,7 @@ class RentController extends Controller
 
     public function edit($id)
     {
-        $rent = RentProperties::findOrFail($id);
+        $rent = RentProperty::findOrFail($id);
         return Inertia::render('Mitra/RentProperty/Update', [
             'id' => $id,
             'rent' => $rent,
@@ -83,7 +86,7 @@ class RentController extends Controller
 
         try {
             // dd($request->price);
-            $rent = RentProperties::findOrFail($id);
+            $rent = RentProperty::findOrFail($id);
 
             if ($request->hasFile('thumbnail')) {
                 if ($rent->thumbnail && Storage::disk('public')->exists('thumbnails/' . $rent->thumbnail)) {
@@ -101,6 +104,8 @@ class RentController extends Controller
             $rent->location = $request->location;
             $rent->pin = implode(',', $request->pin);
             $rent->price = intval(str_replace('.', '', $request->price));
+            $rent->delivered = $request->delivered;
+            $rent->picked_up = $request->picked_up;
             $rent->save();
 
             $keepIds = collect($request->input('itemPhoto'))
@@ -129,7 +134,7 @@ class RentController extends Controller
 
                         $rent->itemPhotos()->create([
                             'photo' => $filename,
-                            'item_type' => RentProperties::class,
+                            'item_type' => RentProperty::class,
                             'caption' => $request->input("itemPhoto.$index.caption"),
                         ]);
                     }
@@ -148,7 +153,7 @@ class RentController extends Controller
       public function destroy($id)
     {
         try {
-            $rent = RentProperties::with('itemPhotos')->findOrFail($id);
+            $rent = RentProperty::with('itemPhotos')->findOrFail($id);
 
             Storage::disk('public')->delete('thumbnails/' . $rent->thumbnail);
 
@@ -163,5 +168,35 @@ class RentController extends Controller
            } catch (\Exception $e) {
             return Redirect::back()->withErrors(['error' => 'Gagal menghapus jasa: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Show rent property detail with tax calculation
+     */
+    public function show($id)
+    {
+        $rent = RentProperty::with(['itemPhotos'])->findOrFail($id);
+
+        // Calculate tax-inclusive price
+        $finalPrice = TaxHelper::calculateFinalPrice($rent->price);
+        
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
+
+        return Inertia::render('Mitra/RentProperty/Show', [
+            'id' => $id,
+            'rent' => [
+                'id' => $rent->id,
+                'name' => $rent->name,
+                'price' => $rent->price,
+                'final_price' => $finalPrice, // Tax-inclusive price
+                'tax_amount' => round($finalPrice - $rent->price, 2),
+                'description' => $rent->description,
+                'location' => $rent->location,
+                'thumbnail' => $rent->thumbnail,
+                'item_photos' => $rent->itemPhotos,
+            ],
+            'tax_info' => $taxInfo,
+        ]);
     }
 }

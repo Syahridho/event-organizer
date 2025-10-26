@@ -77,7 +77,7 @@ const mobileMenuItems = [
     },
     {
         label: "Property",
-        href: "#properties",
+        href: "#property",
         icon: GrFanOption,
         description: "Perlengkapan Acara",
     },
@@ -173,7 +173,7 @@ const ItemCard = ({ item, type, baseUrl }) => {
     }, [item, type]);
 
     const getHref = useCallback(() => {
-        const path = type === "propertys" ? "properties" : type;
+        const path = type === "propertys" ? "propertys" : type;
         return `/${path}/${item.id}`;
     }, [type, item.id]);
 
@@ -250,7 +250,7 @@ const CategorySection = ({ title, items, type, baseUrl, id }) => {
                     {/* 3. Tombol diperbaiki di sini */}
                     <Link
                         className="hidden md:flex items-center gap-2"
-                        href={route("listings.show", { type: id })}
+                        href={route("listings.show", { type: type })}
                     >
                         Lihat Semua
                         <ChevronRight className="w-4 h-4" />
@@ -705,7 +705,7 @@ export default function Welcome() {
 
                 <div className="bg-secondary/5">
                     <CategorySection
-                        id="properties"
+                        id="property"
                         title="Solusi Sewa Perlengkapan Acara"
                         items={propertys}
                         type="propertys"

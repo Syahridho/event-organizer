@@ -6,7 +6,7 @@ export const getModelType = (category) => {
         workshop: "App\\Models\\Workshop",
         service: "App\\Models\\Service",
         building: "App\\Models\\Building",
-        property: "App\\Models\\RentProperties",
+        property: "App\\Models\\RentProperty",
     };
 
     return modelMap[category] || null;

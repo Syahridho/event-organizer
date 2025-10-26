@@ -1,16 +1,38 @@
 import React from "react";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, usePage, router } from "@inertiajs/react";
 import ProfilePictureOnChat from "@/components/ProfilePictureOnChat.jsx";
 import clsx from "clsx";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
+import {
+    getUserStatusIndo,
+    formatRelativeTime,
+    formatChatTime,
+} from "@/Utils/Formatters.js";
 
 export default function ChatListUser() {
     const { chat_with: chatWithUser, auth, ziggy } = usePage().props;
-
     const { data: users } = usePage().props.users;
+    const { isUserOnline } = useOnlineStatusContext();
 
     const pathname = ziggy?.location || window.location.pathname;
+    const isAdminDashboard = pathname.startsWith("/admin/dashboard/chat");
     const isMitraDashboard = pathname.startsWith("/dashboard/chat");
-    const routeName = isMitraDashboard ? "mitra.chat.show" : "chat.show";
+
+    const routeName = isAdminDashboard
+        ? "admin.chat.show"
+        : isMitraDashboard
+        ? "mitra.chat.show"
+        : "chat.show";
+
+    const handleChatNavigation = (userUuid) => {
+        // Use router.visit for more controlled navigation
+        router.visit(route(routeName, userUuid), {
+            preserveScroll: true,
+            preserveState: true,
+            replace: false,
+            method: "get",
+        });
+    };
 
     return (
         <>
@@ -32,16 +54,25 @@ export default function ChatListUser() {
                     else if (receiveMessage) chat = receiveMessage;
                     else if (sendMessage) chat = sendMessage;
 
+                    // Fastest UI Integration: Local Status Determination
+                    const isUserOnline = isUserOnline(user.id);
+
+                    // Single Formatter Call: Integrate global status with local data
+                    const statusText = getUserStatusIndo(
+                        user.last_seen_at,
+                        isUserOnline
+                    );
+
                     return (
-                        <Link
+                        <div
                             preserveScroll
                             key={user.uuid}
-                            href={route(routeName, user.uuid)}
+                            onClick={() => handleChatNavigation(user.uuid)}
                             className={clsx(
                                 user.id === chatWithUser?.id
                                     ? "bg-slate-200/60"
                                     : "bg-transparent",
-                                "flex w-full items-center hover:bg-slate-200 px-2.5 py-3 rounded-md"
+                                "flex w-full items-center hover:bg-slate-200 px-2.5 py-3 rounded-md cursor-pointer"
                             )}
                         >
                             <div className="items-center mr-3 flex-2">
@@ -52,8 +83,24 @@ export default function ChatListUser() {
                                     <div className="text-slate-800 text-sm font-medium truncate mb-1.5">
                                         {user.name}
                                     </div>
-                                    <div className="text-[10px] text-gray-400 mb-1">
-                                        {chat?.sent_at}
+                                    <div className="text-[10px] text-gray-400 mb-1 flex items-center">
+                                        {chat?.sent_at
+                                            ? formatChatTime(chat.sent_at)
+                                            : ""}
+                                        {/* Online status indicator */}
+                                        <div className="ml-2">
+                                            {userIsOnline ? (
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            ) : (
+                                                <span className="text-xs text-gray-400 hidden sm:block">
+                                                    {user.last_seen_at
+                                                        ? formatRelativeTime(
+                                                              user.last_seen_at
+                                                          )
+                                                        : ""}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between">
@@ -100,14 +147,26 @@ export default function ChatListUser() {
                                             </div>
                                         )}
                                     </div>
-                                    {user.messages_count > 0 && (
-                                        <div className="inline-flex items-center px-1.5 rounded-full text-[10px] bg-purple-500 ">
-                                            {user.messages_count}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center space-x-2">
+                                        {user.messages_count > 0 && (
+                                            <div className="inline-flex items-center px-1.5 rounded-full text-[10px] bg-purple-500 ">
+                                                {user.messages_count}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Dynamic Status Display below username */}
+                                <div
+                                    className={`text-xs sm:hidden mt-1 ${
+                                        isUserOnline
+                                            ? "text-green-500"
+                                            : "text-gray-400"
+                                    }`}
+                                >
+                                    {statusText}
                                 </div>
                             </div>
-                        </Link>
+                        </div>
                     );
                 })}
             </div>

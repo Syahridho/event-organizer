@@ -1,12 +1,33 @@
 import React, { useState } from "react";
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
+import { getUserStatusIndo } from "@/Utils/Formatters.js";
 
 export default function HeaderUserChatBox({ user, isOnline, isTyping }) {
+    const { auth } = usePage().props;
+    const { isUserOnline } = useOnlineStatusContext();
+
+    // Check if user is online using the context
+    const userIsOnline = isUserOnline(user?.id);
+
+    // Get formatted status in Indonesian using the new robust formatter
+    const statusText = getUserStatusIndo(user?.last_seen_at, userIsOnline);
+
+    // Determine the correct route based on user role
+    const getChatIndexRoute = () => {
+        if (auth.user.role === "admin") {
+            return "admin.chat";
+        } else if (auth.user.role === "mitra") {
+            return "mitra.chat";
+        }
+        return "chat.index";
+    };
+
     return (
         <>
             <div className="flex items-center">
                 <Link
-                    href={route("chat.index")}
+                    href={route(getChatIndexRoute())}
                     className="flex lg:hidden items-center -ml-2 mr-2"
                 >
                     <svg
@@ -37,10 +58,8 @@ export default function HeaderUserChatBox({ user, isOnline, isTyping }) {
                     </div>
                     <div className="text-slate-400 text-[10px] lg:text-xs truncate mt-0.5 tracking-tight">
                         {isTyping
-                            ? `${user?.name} is typing...`
-                            : isOnline
-                            ? "Online"
-                            : `${user?.last_seen_at}`}
+                            ? `${user?.name} sedang mengetik...`
+                            : statusText}
                     </div>
                 </div>
             </div>

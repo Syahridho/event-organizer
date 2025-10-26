@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rent_properties', function (Blueprint $table) {
+        Schema::create('rent_propertys', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('location');
             $table->text('description')->nullable();
+            $table->boolean('delivered')->default(false);
+            $table->boolean('picked_up')->default(false);
             $table->integer('price')->default(0);
             $table->string('pin')->nullable();
             $table->string('thumbnail')->nullable();
@@ -30,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rent_properties');
+        Schema::dropIfExists('rent_propertys');
     }
 };

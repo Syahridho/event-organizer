@@ -9,10 +9,23 @@ class Kernel extends ConsoleKernel
 {
     /**
      * Define the application's command schedule.
+     *
+     * OPTIMIZED: Auto-cleanup sold-out cart items every 5 minutes
+     * Prevents users from attempting to checkout items that are already booked by others
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Clean up sold-out cart items every 5 minutes
+        $schedule->command('cart:cleanup-sold-out')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // Auto-update expired transactions every minute (mass update to 'overtime')
+        $schedule->command('transactions:check-expired')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**

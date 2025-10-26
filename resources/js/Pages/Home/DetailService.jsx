@@ -43,15 +43,17 @@ import { getBookedDatesWithUser } from "@/Utils/bookedDates";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import AddressManager from "@/components/address-manager";
 import MainLayout from "@/Layouts/Main";
+import ReviewSection from "@/components/ReviewSection";
+import { createPaymentPayload } from "@/Utils/PaymentHelper";
 
 const DetailService = () => {
-    const { service, ziggy, transaction, user, leaves, photos } =
+    const { service, ziggy, transaction, user, leaves, photos, tax_info } =
         usePage().props;
 
     const dispatch = useDispatch();
 
     const items = useMemo(
-        () => [{ id: service.id, price: service.price }],
+        () => [{ id: service.id, price: service.price }], // Use base price for calculations
         [service.id, service.price]
     );
     const {
@@ -164,35 +166,24 @@ const DetailService = () => {
             }
 
             try {
-                const paymentData = {
-                    items: [
-                        {
-                            id: Number(service.id),
-                            type: "service",
-                            price: Number(service.price),
-                            quantity: 1,
-                            rent_days: selectedDate.toLocaleDateString(
-                                "en-CA",
-                                { timeZone: "Asia/Jakarta" }
-                            ),
-                            name: service.name,
-                        },
-                    ],
-                    amount: Number(service.price),
-                    name: user.name,
-                    email: user.email,
-                    note: note,
+                // Create service item with rent_days for payment
+                const serviceItem = {
+                    ...service,
+                    rent_days: selectedDate.toLocaleDateString("en-CA", {
+                        timeZone: "Asia/Jakarta",
+                    }),
                 };
 
-                paymentData.shipping_address = {
-                    recipient_name: selectedAddress.recipient_name,
-                    address_line: selectedAddress.address_line,
-                    phone: selectedAddress.phone,
-                    note: selectedAddress.note,
-                    city: selectedAddress.city,
-                    province: selectedAddress.province,
-                    postal_code: selectedAddress.postal_code,
-                };
+                // Use PaymentHelper to create payment payload
+                const paymentData = createPaymentPayload(
+                    serviceItem,
+                    1,
+                    user,
+                    selectedAddress
+                );
+
+                // Add note to payment data
+                paymentData.note = note;
 
                 const response = await axios.post(
                     "/midtrans/token",
@@ -411,6 +402,16 @@ const DetailService = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Review Section */}
+                        <section className="mt-8">
+                            <ReviewSection
+                                key={service.id}
+                                itemType="App\Models\Service"
+                                itemId={service.id}
+                                user={user}
+                            />
+                        </section>
                     </div>
 
                     <div className="lg:col-span-5 space-y-6">
@@ -430,11 +431,24 @@ const DetailService = () => {
                                 </div>
                                 <div className="text-center my-6">
                                     <div className="text-3xl font-bold text-blue-600">
-                                        {formatPrice(service.price)}
+                                        {formatPrice(
+                                            service.final_price || service.price
+                                        )}
                                     </div>
                                     <p className="text-sm text-slate-600 mt-1">
                                         Perhari
                                     </p>
+                                    {/* {service.tax_amount > 0 && (
+                                        <div className="text-xs text-slate-500 mt-1">
+                                            Termasuk pajak{" "}
+                                            {console.log(tax_info)}
+                                            {tax_info?.type === "percent"
+                                                ? `${tax_info?.value}%`
+                                                : formatPrice(
+                                                      tax_info?.value || 0
+                                                  )}
+                                        </div>
+                                    )} */}
                                 </div>
 
                                 <div className="space-y-4">
@@ -605,11 +619,28 @@ const DetailService = () => {
                             </div>
 
                             <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Harga</span>
+                                <span className="text-slate-600">
+                                    Harga Dasar
+                                </span>
                                 <span className="font-medium">
                                     {formatPrice(service.price)} / hari
                                 </span>
                             </div>
+
+                            {service.tax_amount > 0 && (
+                                <div className="flex justify-between py-2 border-b">
+                                    <span className="text-slate-600">
+                                        Pajak (
+                                        {tax_info?.type === "percent"
+                                            ? `${tax_info?.value}%`
+                                            : "Fixed"}
+                                        )
+                                    </span>
+                                    <span className="font-medium">
+                                        {formatPrice(service.tax_amount)}
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="flex justify-between py-2 border-b">
                                 <span className="text-slate-600">Tanggal</span>
@@ -677,7 +708,11 @@ const DetailService = () => {
 
                             <div className="flex justify-between py-3 mt-2 border-t font-semibold text-base">
                                 <span>Total</span>
-                                <span>{formatPrice(service.price)}</span>
+                                <span>
+                                    {formatPrice(
+                                        service.final_price || service.price
+                                    )}
+                                </span>
                             </div>
                         </div>
                     </div>

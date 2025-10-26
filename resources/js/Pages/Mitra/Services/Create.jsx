@@ -47,10 +47,7 @@ export default function ServicesCreate() {
         if (data.itemPhoto.length > 0) {
             const lastPhoto = data.itemPhoto[data.itemPhoto.length - 1];
             if (!lastPhoto.photo) {
-                toast({
-                    title: "Isi kolom yang kosong terlebih dahulu",
-                    variant: "destructive",
-                });
+                toast.warning("Isi kolom yang kosong terlebih dahulu");
                 return;
             }
         }

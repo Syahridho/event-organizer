@@ -13,20 +13,21 @@ use Inertia\Inertia;
 
 class PartnerController extends Controller
 {
-    public function create()
+    public function index()
     {
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
+        // Check if user already has a mitra record
+        $existingMitra = null;
+        if (Auth::check()) {
+            $existingMitra = Mitra::where('user_id', Auth::id())->first();
 
-        if (Auth::user()->where('role', 'mitra')->exists()) {
-            return redirect()->route('mitra.dashboard')->with('info', 'Anda sudah mengajukan pendaftaran mitra.');
+            // If mitra exists and approved, redirect to dashboard
+            if ($existingMitra && $existingMitra->status === 'approved') {
+                return redirect()->route('mitra.dashboard')->with('info', 'Anda sudah terdaftar sebagai mitra.');
+            }
         }
-
-        $mitra = Mitra::where('status', 'pending')->with('user')->get();
 
         return Inertia::render('User/Mitra/Index', [
-            'status' => $mitra,
+            'existingMitra' => $existingMitra,
         ]);
     }
 

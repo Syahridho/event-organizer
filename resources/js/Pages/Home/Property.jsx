@@ -202,7 +202,7 @@ export default function HomeProperty() {
                             : items.map((item) => (
                                   <Link
                                       key={item.id}
-                                      href={`/properties/${item.id}`}
+                                      href={`/propertys/${item.id}`}
                                   >
                                       <div className="border rounded hover:shadow-lg transition-all duration-300 overflow-hidden group">
                                           <LazyImage

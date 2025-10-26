@@ -70,6 +70,64 @@ class ChatController extends Controller
         return redirect()->back();
     }
 
+    public function mitraChat()
+    {
+        return inertia('Mitra/Chat/Index', [
+            'users' => UserCollection::make($this->getChatWithUser()),
+        ]);
+    }
+
+    public function mitraShow(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('mitra.chat');
+        }
+
+        UserResource::withoutWrapping();
+
+        $chats = $user->messages()->where('receiver_id', auth()->id())->whereNull('seen_at')->get();
+        $result = $chats->each->update(['seen_at' => now()]);
+        if ($result->count()) {
+            $message = $result->last()->load('sender');
+            broadcast(new ReadMessageEvent($message))->toOthers();
+        }
+
+        return inertia('Mitra/Chat/Show', [
+            'users' => UserCollection::make($this->getChatWithUser()),
+            'chat_with' => UserResource::make($user),
+            'messages' => $this->loadMessages($user),
+        ]);
+    }
+
+    public function adminChat()
+    {
+        return inertia('Admin/Chat/Index', [
+            'users' => UserCollection::make($this->getChatWithUser()),
+        ]);
+    }
+
+    public function adminShow(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('admin.chat');
+        }
+
+        UserResource::withoutWrapping();
+
+        $chats = $user->messages()->where('receiver_id', auth()->id())->whereNull('seen_at')->get();
+        $result = $chats->each->update(['seen_at' => now()]);
+        if ($result->count()) {
+            $message = $result->last()->load('sender');
+            broadcast(new ReadMessageEvent($message))->toOthers();
+        }
+
+        return inertia('Admin/Chat/Show', [
+            'users' => UserCollection::make($this->getChatWithUser()),
+            'chat_with' => UserResource::make($user),
+            'messages' => $this->loadMessages($user),
+        ]);
+    }
+
     private function getChatWithUser()
     {
         return User::query()

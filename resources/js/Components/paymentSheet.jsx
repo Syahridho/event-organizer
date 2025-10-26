@@ -26,7 +26,16 @@ export const PaymentSheet = ({
     isPaying,
     snapLoaded,
     isCart,
+    taxAmount = 0, // received from parent (ShowEvent.jsx)
+    taxLabel = "", // descriptive label from parent
 }) => {
+    console.log(taxAmount, taxLabel);
+    const showTax =
+        Boolean(hasSelectedTickets) &&
+        Number(totalHarga) > 0 &&
+        Number(taxAmount) > 0;
+    const grandTotal = Number(totalHarga) + Number(taxAmount);
+
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -69,14 +78,25 @@ export const PaymentSheet = ({
                                 tickets={tickets}
                                 ticketCounts={ticketCounts}
                             />
+                            {showTax && (
+                                <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+                                    <span>{taxLabel || "Pajak"}</span>
+                                    <span>Rp. {formatRupiah(taxAmount)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     <div className="text-right">
                         <p className="text-sm text-muted-foreground">Total</p>
                         <p className="font-bold text-lg">
-                            Rp. {formatRupiah(totalHarga)}
+                            Rp. {formatRupiah(grandTotal)}
                         </p>
+                        {showTax && (
+                            <p className="text-xs text-muted-foreground">
+                                Termasuk pajak
+                            </p>
+                        )}
                     </div>
 
                     <SheetFooter className="border-t pt-4 mt-4 grid grid-cols-10 gap-4 w-full">

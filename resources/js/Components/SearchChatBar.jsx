@@ -5,15 +5,26 @@ import {
     UserCircleIcon,
 } from "@heroicons/react/24/outline/index.js";
 import clsx from "clsx";
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import axios from "axios";
 import { debounce } from "lodash";
 
 export default function SearchChatBar() {
+    const { auth } = usePage().props;
     const [query, setQuery] = useState("");
     const [open, setOpen] = useState(false);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // Determine the correct route based on user role
+    const getChatRoute = () => {
+        if (auth.user.role === "admin") {
+            return "admin.chat.show";
+        } else if (auth.user.role === "mitra") {
+            return "mitra.chat.show";
+        }
+        return "chat.show";
+    };
 
     const searchUser = useCallback(
         debounce(async (query) => {
@@ -191,7 +202,7 @@ export default function SearchChatBar() {
                                                                     );
                                                                 }}
                                                                 href={route(
-                                                                    "chat.show",
+                                                                    getChatRoute(),
                                                                     user.uuid
                                                                 )}
                                                                 className="flex-auto ml-3 truncate"

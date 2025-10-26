@@ -60,10 +60,14 @@ import { getBookedDatesWithUser } from "@/Utils/bookedDates";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import AddressManager from "@/components/address-manager";
 import MainLayout from "@/Layouts/Main";
+import ReviewSection from "@/Components/ReviewSection";
+import { createPaymentPayload } from "@/Utils/PaymentHelper";
 
 const DetailProperty = () => {
-    const { property, ziggy, transaction, user, leaves, photos } =
+    const { property, ziggy, transaction, user, leaves, photos, tax_info } =
         usePage().props;
+
+    console.log(transaction, user);
 
     const dispatch = useDispatch();
     const [latitude, longitude] =
@@ -96,10 +100,10 @@ const DetailProperty = () => {
 
     // Updated delivery state management
     const [deliveryOption, setDeliveryOption] = useState("pickup");
+    const [note, setNote] = useState("");
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
-    const [note, setNote] = useState("");
 
     const bookedDatesWithUser = useMemo(() => {
         return getBookedDatesWithUser(transaction, user?.id);
@@ -178,39 +182,25 @@ const DetailProperty = () => {
             }
 
             try {
-                const paymentData = {
-                    items: [
-                        {
-                            id: Number(property.id),
-                            type: "property",
-                            price: Number(property.price),
-                            quantity: 1,
-                            rent_days: selectedDate.toLocaleDateString(
-                                "en-CA",
-                                { timeZone: "Asia/Jakarta" }
-                            ),
-                            name: property.name,
-                        },
-                    ],
-                    amount: Number(property.price),
-                    name: user.name,
-                    email: user.email,
-                    delivery_option: deliveryOption,
-                    note: note,
+                // Create property item with rent_days for payment
+                // Important: explicitly mark as rent_property to match backend validation
+                const propertyItem = {
+                    ...property,
+                    type: "rent_property",
+                    rent_days: selectedDate.toLocaleDateString("en-CA", {
+                        timeZone: "Asia/Jakarta",
+                    }),
                 };
 
-                // Only add shipping address if delivery is selected
-                if (deliveryOption === "delivery" && selectedAddress) {
-                    paymentData.shipping_address = {
-                        recipient_name: selectedAddress.recipient_name,
-                        address_line: selectedAddress.address_line,
-                        phone: selectedAddress.phone,
-                        note: selectedAddress.note,
-                        city: selectedAddress.city,
-                        province: selectedAddress.province,
-                        postal_code: selectedAddress.postal_code,
-                    };
-                }
+                // Use PaymentHelper to create payment payload
+                const paymentData = createPaymentPayload(
+                    propertyItem,
+                    1,
+                    user,
+                    deliveryOption,
+                    note,
+                    deliveryOption === "delivery" ? selectedAddress : null
+                );
 
                 const response = await axios.post(
                     "/midtrans/token",
@@ -521,6 +511,15 @@ const DetailProperty = () => {
                                             />
                                         </div>
                                     </section>
+
+                                    {/* Review Section */}
+                                    <section className="mt-8">
+                                        <ReviewSection
+                                            itemType="App\Models\RentProperty"
+                                            itemId={property.id}
+                                            user={user}
+                                        />
+                                    </section>
                                 </div>
                             </div>
                         </div>
@@ -553,6 +552,16 @@ const DetailProperty = () => {
                                             {property.area} m²
                                         </p>
                                     )}
+                                    {/* {property.tax_amount > 0 && (
+                                        <div className="text-xs text-slate-500 mt-1">
+                                            Pajak{" "}
+                                            {tax_info?.type === "percent"
+                                                ? `${tax_info?.value}%`
+                                                : formatPrice(
+                                                      tax_info?.value || 0
+                                                  )}
+                                        </div>
+                                    )} */}
                                 </div>
 
                                 <div className="space-y-4">
@@ -774,11 +783,28 @@ const DetailProperty = () => {
                             </div>
 
                             <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Harga</span>
+                                <span className="text-slate-600">
+                                    Harga Dasar
+                                </span>
                                 <span className="font-medium">
                                     {formatPrice(property.price)} / hari
                                 </span>
                             </div>
+
+                            {property.tax_amount > 0 && (
+                                <div className="flex justify-between py-2 border-b">
+                                    <span className="text-slate-600">
+                                        Pajak (
+                                        {tax_info?.type === "percent"
+                                            ? `${tax_info?.value}%`
+                                            : "Fixed"}
+                                        )
+                                    </span>
+                                    <span className="font-medium">
+                                        {formatPrice(property.tax_amount)}
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="flex justify-between py-2 border-b">
                                 <span className="text-slate-600">Tanggal</span>
@@ -873,7 +899,11 @@ const DetailProperty = () => {
 
                             <div className="flex justify-between py-3 mt-2 border-t font-semibold text-base">
                                 <span>Total</span>
-                                <span>{formatPrice(property.price)}</span>
+                                <span>
+                                    {formatPrice(
+                                        property.final_price || property.price
+                                    )}
+                                </span>
                             </div>
                         </div>
                     </div>

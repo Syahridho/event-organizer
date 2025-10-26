@@ -291,7 +291,7 @@ export function MitraDataTable({ data }) {
                     placeholder="Cari nama atau email..."
                     value={globalFilter ?? ""}
                     onChange={(event) => setGlobalFilter(event.target.value)}
-                    className="w-full lg:max-w-sm text-sm"
+                    className="w-full text-sm"
                 />
 
                 <div className="flex gap-2 w-full lg:w-auto">

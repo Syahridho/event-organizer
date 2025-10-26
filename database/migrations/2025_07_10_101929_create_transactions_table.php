@@ -21,7 +21,12 @@ return new class extends Migration
             $table->decimal('total', 15, 2)->default(0);
             $table->dateTime('expired_at')->nullable();
             $table->string('payment_type')->nullable();
+            $table->string('va_number')->nullable();
+            $table->string('bank_name')->nullable();
+            $table->string('bill_key')->nullable();
+            $table->string('biller_code')->nullable();
             $table->string('discount')->nullable();
+            $table->string('tax')->nullable();
             $table->timestamps();
             
             $table->index('user_id');

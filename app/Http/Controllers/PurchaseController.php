@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Ticket;
 use App\Models\Service; 
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use Inertia\Inertia;
 
 class PurchaseController extends Controller
@@ -17,12 +17,13 @@ class PurchaseController extends Controller
         $transactions = Transaction::with([
             'items.item' => function ($morph) {
                 $morph->morphWith([
-                    Ticket::class => ['event'],        
-                    Service::class => ['itemPhotos'],  
-                    Building::class => ['itemPhotos'], 
-                    Property::class => ['itemPhotos'], 
+                    Ticket::class => ['event'],
+                    Service::class => ['itemPhotos'],
+                    Building::class => ['itemPhotos'],
+                    RentProperty::class => ['itemPhotos'],
                 ]);
-            }
+            },
+            'items.review'
         ])
         ->where('user_id', auth()->id())
         ->latest()
@@ -37,7 +38,7 @@ class PurchaseController extends Controller
     // Belum bayar (pending)
     public function unpaid()
     {
-        $transactions = Transaction::with(['items.item.event'])
+        $transactions = Transaction::with(['items.item.event', 'items.review'])
             ->where('user_id', auth()->id())
             ->where('status', 'pending')
             ->latest()
@@ -52,7 +53,7 @@ class PurchaseController extends Controller
     // Sudah bayar (settlement, capture)
     public function paid()
     {
-        $transactions = Transaction::with(['items.item.event'])
+        $transactions = Transaction::with(['items.item.event', 'items.review'])
             ->where('user_id', auth()->id())
             ->whereIn('status', ['settlement', 'capture'])
             ->latest()
@@ -67,7 +68,7 @@ class PurchaseController extends Controller
     // Dalam perjalanan (shipped)
     public function shipped()
     {
-        $transactions = Transaction::with(['items.item.event'])
+        $transactions = Transaction::with(['items.item.event', 'items.review'])
             ->where('user_id', auth()->id())
             ->where('status', 'shipped')
             ->latest()
@@ -82,7 +83,7 @@ class PurchaseController extends Controller
     // Selesai (completed)
     public function completed()
     {
-        $transactions = Transaction::with(['items.item.event'])
+        $transactions = Transaction::with(['items.item.event', 'items.review'])
             ->where('user_id', auth()->id())
             ->where('status', 'completed')
             ->latest()
@@ -162,7 +163,8 @@ class PurchaseController extends Controller
                     \App\Models\Ticket::class => ['event'],
                     \App\Models\Service::class => ['itemphotos'],
                 ]);
-            }
+            },
+            'items.review'
         ])
         ->where('id', $id)
         ->where('user_id', auth()->id())

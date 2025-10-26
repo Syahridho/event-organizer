@@ -31,7 +31,7 @@ import {
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 
 export default function CheckoutPage() {
-    const { checkoutData, ziggy, user } = usePage().props;
+    const { checkoutData, ziggy, user, taxInfo } = usePage().props;
     console.log(checkoutData);
 
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -55,11 +55,26 @@ export default function CheckoutPage() {
 
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
 
+    // CRITICAL: Get CSRF token helper
+    const getCsrfToken = () => {
+        return (
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content") ||
+            document.querySelector('input[name="_token"]')?.value
+        );
+    };
+
     // Check if address is required based on item types
     const isAddressRequired = useMemo(() => {
         if (!checkoutData?.items) return false;
+        // Address required for service, building, and rent_property (formerly "property")
         return checkoutData.items.some(
-            (item) => item.type === "service" || item.type === "property"
+            (item) =>
+                item.type === "service" ||
+                item.type === "building" ||
+                item.type === "rent_property" ||
+                item.type === "property" // backward compatibility
         );
     }, [checkoutData]);
 
@@ -71,7 +86,6 @@ export default function CheckoutPage() {
     const formatDate = (dateString) => {
         if (!dateString) return null;
         try {
-            // Parse tanggal dengan timezone Jakarta (WIB)
             const date = new Date(dateString);
             const options = {
                 weekday: "long",
@@ -86,12 +100,11 @@ export default function CheckoutPage() {
         }
     };
 
-    // Format rent days date (only date, no time) - OPTIMIZED
+    // Format rent days date (only date, no time)
     const formatRentDays = (dateString) => {
         if (!dateString) return null;
         try {
-            // Parse YYYY-MM-DD langsung tanpa timezone conversion
-            const [year, month, day] = dateString.split('T')[0].split('-');
+            const [year, month, day] = dateString.split("T")[0].split("-");
             const date = new Date(year, month - 1, day);
 
             const options = {
@@ -102,10 +115,29 @@ export default function CheckoutPage() {
             };
             return date.toLocaleDateString("id-ID", options);
         } catch (e) {
-            console.error('Error formatting rent_days:', e, dateString);
+            console.error("Error formatting rent_days:", e, dateString);
             return dateString;
         }
     };
+
+    // Calculate tax dynamically
+    const subtotal = useMemo(() => {
+        return checkoutData?.total || 0;
+    }, [checkoutData]);
+
+    const taxAmount = useMemo(() => {
+        if (!taxInfo || !subtotal) return 0;
+
+        if (taxInfo.type === "percent") {
+            return Math.round(subtotal * (taxInfo.value / 100));
+        } else {
+            return taxInfo.value;
+        }
+    }, [taxInfo, subtotal]);
+
+    const totalWithTax = useMemo(() => {
+        return subtotal + taxAmount;
+    }, [subtotal, taxAmount]);
 
     // Get product detail URL helper
     const getProductDetailUrl = (item) => {
@@ -113,10 +145,48 @@ export default function CheckoutPage() {
             ticket: "events",
             service: "services",
             building: "buildings",
-            property: "properties",
+            property: "property",
+            rent_property: "property", // support normalized type
         };
         const path = typeMap[item.type] || "events";
         return `/${path}/${item.id}`;
+    };
+
+    // Get thumbnail URL using cart item data (fix: use thumbnail from cart)
+    const getCartItemThumbnailUrl = (cartItem) => {
+        const baseUrl = ziggy.url;
+        console.log(cartItem);
+        // Tickets: thumbnail comes from nested event on cart item
+        if (cartItem.type === "ticket") {
+            const thumb = cartItem?.thumbnail;
+            if (!thumb) return "/randoms/1.webp";
+
+            if (String(thumb).includes("randoms")) {
+                // randoms are stored under /storage/randoms/...
+                return `${baseUrl}/storage${
+                    String(thumb).startsWith("/") ? thumb : `/${thumb}`
+                }`;
+            }
+            // regular thumbnails are stored under /storage/thumbnails/...
+            return `${baseUrl}/storage/thumbnails/${String(thumb).replace(
+                /^\/+/,
+                ""
+            )}`;
+        }
+
+        // Non-tickets: thumbnail is directly on the nested item
+        const thumb = cartItem?.thumbnail;
+        if (!thumb) return "/images/fallback-thumbnail.jpg";
+
+        if (String(thumb).includes("randoms")) {
+            return `${baseUrl}/storage${
+                String(thumb).startsWith("/") ? thumb : `/${thumb}`
+            }`;
+        }
+        return `${baseUrl}/storage/thumbnails/${String(thumb).replace(
+            /^\/+/,
+            ""
+        )}`;
     };
 
     // Load addresses
@@ -269,27 +339,15 @@ export default function CheckoutPage() {
         router.visit("/cart");
     }, []);
 
-    // Handle payment
+    // Handle payment - supports free checkout and fixes CSRF/type mapping
     const handlePayment = useCallback(
         async (e) => {
             if (e) e.preventDefault();
 
-            // Validate address requirement
+            // Validate address requirement (both flows)
             if (isAddressRequired && !selectedAddressId) {
                 toast.error(
-                    "Silakan pilih alamat pengiriman untuk item service atau property"
-                );
-                return;
-            }
-
-            if (checkoutData.total < 1000) {
-                toast.error("Minimum pembayaran adalah Rp. 1.000");
-                return;
-            }
-
-            if (!snapLoaded || !window.snap) {
-                toast.error(
-                    "Sistem pembayaran belum siap. Silakan refresh halaman."
+                    "Silakan pilih alamat pengiriman untuk item layanan/gedung/properti"
                 );
                 return;
             }
@@ -303,21 +361,25 @@ export default function CheckoutPage() {
                         ticket: "ticket",
                         service: "service",
                         building: "building",
-                        property: "rent_property",
+                        property: "rent_property", // normalize legacy type
+                        rent_property: "rent_property",
                     };
                     return typeMapping[frontendType] || "ticket";
                 };
 
+                // Build common payload base
+                const baseItems = checkoutData.items.map((item) => ({
+                    id: parseInt(item.id),
+                    type: mapItemType(item.type),
+                    quantity: parseInt(item.quantity),
+                    price: parseInt(item.price),
+                    rent_days: item.rent_days,
+                    name: `${item.name} (${item.type})`,
+                }));
+
                 const paymentData = {
-                    items: checkoutData.items.map((item) => ({
-                        id: parseInt(item.id),
-                        type: mapItemType(item.type),
-                        quantity: parseInt(item.quantity),
-                        price: parseInt(item.price),
-                        rent_days: item.rent_days,
-                        name: `${item.name} (${item.type})`,
-                    })),
-                    amount: parseInt(checkoutData.total),
+                    items: baseItems,
+                    amount: parseInt(subtotal),
                     name: user.name,
                     email: user.email,
                 };
@@ -334,6 +396,87 @@ export default function CheckoutPage() {
                     };
                 }
 
+                // CSRF token
+                const csrfToken = getCsrfToken();
+
+                // FREE FLOW: when subtotal is 0, route to /event/free (no Midtrans)
+                if (parseInt(subtotal) <= 0) {
+                    try {
+                        const freePayload = {
+                            items: baseItems.map(({ id, type, quantity }) => ({
+                                id,
+                                type,
+                                quantity,
+                            })),
+                            amount: 0,
+                            name: user.name,
+                            email: user.email,
+                        };
+
+                        const freeResponse = await axios.post(
+                            "/event/free",
+                            freePayload,
+                            {
+                                timeout: 30000,
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-Requested-With": "XMLHttpRequest",
+                                    "X-CSRF-TOKEN": csrfToken,
+                                },
+                            }
+                        );
+
+                        // Clear cart after successful free registration
+                        await axios.delete("/cart/clear-after-checkout", {
+                            data: { cart_ids: checkoutData.cart_ids },
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": getCsrfToken(),
+                            },
+                        });
+
+                        setIsProcessingPayment(false);
+
+                        if (freeResponse.data?.success) {
+                            toast.success("Transaksi gratis berhasil diproses");
+                        } else {
+                            toast.info(
+                                freeResponse.data?.message ||
+                                    "Transaksi gratis diproses"
+                            );
+                        }
+
+                        router.visit("/purchase", {
+                            method: "get",
+                            preserveState: false,
+                        });
+                        return;
+                    } catch (freeErr) {
+                        console.error("Free checkout error:", freeErr);
+                        setIsProcessingPayment(false);
+                        const msg =
+                            freeErr.response?.data?.message ||
+                            "Gagal memproses transaksi gratis.";
+                        toast.error(msg);
+                        return;
+                    }
+                }
+
+                // PAID FLOW: require min amount and Midtrans readiness
+                if (checkoutData.total < 1000) {
+                    setIsProcessingPayment(false);
+                    toast.error("Minimum pembayaran adalah Rp. 1.000");
+                    return;
+                }
+
+                if (!snapLoaded || !window.snap) {
+                    setIsProcessingPayment(false);
+                    toast.error(
+                        "Sistem pembayaran belum siap. Silakan refresh halaman."
+                    );
+                    return;
+                }
+
                 const response = await axios.post(
                     "/midtrans/token",
                     paymentData,
@@ -342,9 +485,7 @@ export default function CheckoutPage() {
                         headers: {
                             "Content-Type": "application/json",
                             "X-Requested-With": "XMLHttpRequest",
-                            "X-CSRF-TOKEN": document
-                                .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute("content"),
+                            "X-CSRF-TOKEN": csrfToken,
                         },
                     }
                 );
@@ -357,16 +498,14 @@ export default function CheckoutPage() {
 
                 window.snap.pay(snapToken, {
                     skipOrderSummary: false,
-                    onSuccess: async (result) => {
+                    onSuccess: async () => {
                         setIsProcessingPayment(false);
 
                         await axios.delete("/cart/clear-after-checkout", {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": document
-                                    .querySelector('meta[name="csrf-token"]')
-                                    ?.getAttribute("content"),
+                                "X-CSRF-TOKEN": getCsrfToken(),
                             },
                         });
 
@@ -376,16 +515,14 @@ export default function CheckoutPage() {
                             preserveState: false,
                         });
                     },
-                    onPending: async (result) => {
+                    onPending: async () => {
                         setIsProcessingPayment(false);
 
                         await axios.delete("/cart/clear-after-checkout", {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": document
-                                    .querySelector('meta[name="csrf-token"]')
-                                    ?.getAttribute("content"),
+                                "X-CSRF-TOKEN": getCsrfToken(),
                             },
                         });
 
@@ -395,8 +532,7 @@ export default function CheckoutPage() {
                             preserveState: false,
                         });
                     },
-                    onError: (error) => {
-                        console.error("Payment error:", error);
+                    onError: () => {
                         setIsProcessingPayment(false);
                         toast.error(
                             "Terjadi kesalahan dalam proses pembayaran"
@@ -411,9 +547,7 @@ export default function CheckoutPage() {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": document
-                                    .querySelector('meta[name="csrf-token"]')
-                                    ?.getAttribute("content"),
+                                "X-CSRF-TOKEN": getCsrfToken(),
                             },
                         });
                         router.visit("/purchase", {
@@ -430,7 +564,13 @@ export default function CheckoutPage() {
                 let errorMessage =
                     "Terjadi kesalahan saat memproses pembayaran";
 
-                if (error.response?.data?.message) {
+                if (error.response?.status === 419) {
+                    errorMessage =
+                        "Session expired. Silakan refresh halaman dan coba lagi.";
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else if (error.response?.data?.message) {
                     errorMessage = error.response.data.message;
                 } else if (error.response?.data?.errors) {
                     const errors = error.response.data.errors;
@@ -453,14 +593,16 @@ export default function CheckoutPage() {
             snapLoaded,
             isAddressRequired,
             selectedAddressId,
+            totalWithTax,
         ]
     );
 
     const TYPE_LABELS = {
         ticket: "Tiket Event",
-        service: "Layanan",
+        service: "Jasa",
         building: "Gedung",
         property: "Properti",
+        rent_property: "Properti", // normalized label
     };
 
     const getTypeLabel = (type) => TYPE_LABELS[type] || type;
@@ -516,7 +658,7 @@ export default function CheckoutPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Shipping Address Section - Only show if required */}
+                    {/* Shipping Address Section */}
                     {isAddressRequired && (
                         <div className="bg-white rounded-lg border p-6">
                             <div className="flex items-center justify-between mb-4">
@@ -685,26 +827,12 @@ export default function CheckoutPage() {
                                 >
                                     <div className="flex-shrink-0">
                                         <img
-                                            src={
-                                                typeof item.thumbnail ===
-                                                    "string" &&
-                                                item.thumbnail.includes(
-                                                    "randoms"
-                                                )
-                                                    ? `${
-                                                          ziggy.url
-                                                      }/storage/${item.thumbnail.replace(
-                                                          /^\/+/,
-                                                          ""
-                                                      )}`
-                                                    : `${
-                                                          ziggy.url
-                                                      }/storage/thumbnails/${item.thumbnail?.replace(
-                                                          /^\/+/,
-                                                          ""
-                                                      )}`
+                                            src={getCartItemThumbnailUrl(item)}
+                                            alt={
+                                                item.item?.name ||
+                                                item.name ||
+                                                "Item"
                                             }
-                                            alt={item.name}
                                             onError={(e) => {
                                                 e.currentTarget.src =
                                                     "/images/fallback-thumbnail.jpg";
@@ -717,7 +845,9 @@ export default function CheckoutPage() {
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 space-y-1.5">
                                                 <Link
-                                                    href={getProductDetailUrl(item)}
+                                                    href={getProductDetailUrl(
+                                                        item
+                                                    )}
                                                     className="font-semibold text-sm text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1 group line-clamp-2"
                                                 >
                                                     {item.name}
@@ -725,45 +855,75 @@ export default function CheckoutPage() {
                                                 </Link>
 
                                                 <div className="flex flex-wrap items-center gap-1.5">
-                                                    {/* Type Badge */}
                                                     <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded font-medium">
-                                                        {getTypeLabel(item.type)}
+                                                        {getTypeLabel(
+                                                            item.type
+                                                        )}
                                                     </span>
 
-                                                    {/* Ticket Name */}
-                                                    {item.type === "ticket" && item.ticket_name && (
-                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                                                            <FaTicketAlt className="w-2.5 h-2.5" />
-                                                            {item.ticket_name}
-                                                        </span>
-                                                    )}
+                                                    {item.type === "ticket" &&
+                                                        item.ticket_name && (
+                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+                                                                <FaTicketAlt className="w-2.5 h-2.5" />
+                                                                {
+                                                                    item.ticket_name
+                                                                }
+                                                            </span>
+                                                        )}
                                                 </div>
 
-                                                {/* Event Date - Compact */}
-                                                {item.type === "ticket" && item.event_date && (
-                                                    <div className="flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">
-                                                        <FaCalendarAlt className="w-3 h-3 flex-shrink-0" />
-                                                        <span className="font-medium">{formatDate(item.event_date)}</span>
-                                                    </div>
-                                                )}
+                                                {item.type === "ticket" &&
+                                                    item.event_date && (
+                                                        <div className="flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                                                            <FaCalendarAlt className="w-3 h-3 flex-shrink-0" />
+                                                            <span className="font-medium">
+                                                                {formatDate(
+                                                                    item.event_date
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    )}
 
-                                                {/* Rent Days - Compact */}
-                                                {["service", "building", "property"].includes(item.type) && item.rent_days && (
-                                                    <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 px-2 py-1 rounded">
-                                                        <FaCalendarAlt className="w-3 h-3 flex-shrink-0" />
-                                                        <span className="font-medium">{formatRentDays(item.rent_days)}</span>
-                                                    </div>
-                                                )}
+                                                {[
+                                                    "service",
+                                                    "building",
+                                                    "property",
+                                                ].includes(item.type) &&
+                                                    item.rent_days && (
+                                                        <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 px-2 py-1 rounded">
+                                                            <FaCalendarAlt className="w-3 h-3 flex-shrink-0" />
+                                                            <span className="font-medium">
+                                                                {formatRentDays(
+                                                                    item.rent_days
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    )}
 
-                                                {/* Price Info */}
                                                 <div className="text-xs text-gray-600">
-                                                    Rp {formatRupiah(item.price)} × {item.quantity}
+                                                    Rp{" "}
+                                                    {formatRupiah(item.price)} ×{" "}
+                                                    {item.quantity}{" "}
+                                                    {[
+                                                        "service",
+                                                        "building",
+                                                        "property",
+                                                    ].includes(item.type) &&
+                                                        item.rent_days &&
+                                                        "Hari"}
+                                                    {["ticket"].includes(
+                                                        item.type
+                                                    ) && "Tiket"}
                                                 </div>
                                             </div>
 
                                             <div className="text-right">
                                                 <div className="font-bold text-sm text-blue-600">
-                                                    Rp {formatRupiah(item.price * item.quantity)}
+                                                    Rp{" "}
+                                                    {formatRupiah(
+                                                        item.price *
+                                                            item.quantity
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -788,26 +948,20 @@ export default function CheckoutPage() {
                                     item)
                                 </span>
                                 <span className="font-medium">
-                                    {formatRupiah(checkoutData.total || 0)}
+                                    Rp {formatRupiah(subtotal)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-gray-600">
-                                <span>Biaya Admin</span>
+                                <span>{taxInfo?.label || "Pajak"}</span>
                                 <span className="font-medium">
-                                    {formatRupiah(0)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between text-gray-600">
-                                <span>Pajak</span>
-                                <span className="font-medium">
-                                    {formatRupiah(0)}
+                                    Rp {formatRupiah(taxAmount)}
                                 </span>
                             </div>
                             <hr className="my-3" />
                             <div className="flex justify-between font-bold text-lg">
                                 <span>Total Pembayaran</span>
                                 <span className="text-blue-600">
-                                    {formatRupiah(checkoutData.total || 0)}
+                                    Rp {formatRupiah(totalWithTax)}
                                 </span>
                             </div>
                         </div>

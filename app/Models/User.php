@@ -26,6 +26,7 @@ class User extends Authenticatable
         'uuid',
         'last_seen_at',
         'role',
+        'profile_photo',
     ];
 
     /**
@@ -75,5 +76,43 @@ class User extends Authenticatable
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Chat::class, 'sender_id', 'id');
+    }
+
+    /**
+     * Get the profile photo URL attribute.
+     */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return $this->profile_photo
+            ? asset('storage/' . $this->profile_photo)
+            : null;
+    }
+
+    /**
+     * Get user initials from name.
+     */
+    public function getInitialsAttribute(): string
+    {
+        $words = explode(' ', trim($this->name));
+        $initials = '';
+
+        foreach ($words as $word) {
+            if (!empty($word)) {
+                $initials .= strtoupper($word[0]);
+                if (strlen($initials) >= 2) break;
+            }
+        }
+
+        return $initials ?: strtoupper(substr($this->name, 0, 2));
+    }
+
+    /**
+     * Get the route key for the model.
+     *
+     * @return string
+     */
+    public function getRouteKeyName()
+    {
+        return 'uuid';
     }
 }

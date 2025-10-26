@@ -26,6 +26,35 @@ import { useTicketSelection } from "@/hooks/useTicketSelection";
 import { PaymentSheet } from "@/components/paymentSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import MainLayout from "@/Layouts/Main";
+import ReviewSection from "@/Components/ReviewSection";
+import { createPaymentPayload } from "@/Utils/PaymentHelper";
+
+const getEventStatus = (eventData) => {
+    console.log(eventData);
+    const now = new Date();
+    const eventEnd = new Date(eventData.event_date_end);
+    const eventStart = new Date(eventData.event_date_start);
+    const ticketEnd = new Date(eventData.ticket_date_end);
+
+    const status = {
+        isOver: now > eventEnd,
+        isLive: now >= eventStart && now <= eventEnd,
+        isSaleOver: now > ticketEnd,
+        message: "",
+    };
+
+    if (status.isOver) {
+        status.message = "Event telah berakhir,";
+    } else if (status.isSaleOver) {
+        status.message = "Waktu penjualan tiket sudah habis.";
+    } else if (status.isLive) {
+        status.message = "Event sedang berlangsung.";
+    } else {
+        status.message = "Tiket masih tersedia.";
+    }
+
+    return status;
+};
 
 // Countdown Timer Component
 const CountdownTimer = ({ targetDate, onComplete }) => {
@@ -158,9 +187,14 @@ const SpeakerCard = ({ speaker, baseUrl, onImageLoad }) => {
 
 // Ticket Stock Badge Component
 const TicketStockBadge = ({ ticket }) => {
+    console.log(ticket);
     const remaining = ticket.remaining ?? 0;
     const percentage =
         ticket.quantity > 0 ? (remaining / ticket.quantity) * 100 : 0;
+
+    if (ticket.quota === 99999999) {
+        return <Badge variant="destructive">Tiket Gratis!!</Badge>;
+    }
 
     if (ticket.is_sold_out) {
         return (
@@ -198,7 +232,10 @@ const TicketStockBadge = ({ ticket }) => {
 };
 
 export default function ShowEvent() {
-    const { event, auth, ziggy, alreadyRegistered } = usePage().props;
+    const { event, auth, ziggy, alreadyRegistered, tax_info, platformTax } =
+        usePage().props;
+
+    console.log(tax_info);
 
     const [latitude, longitude] = event?.pin.split(",");
 
@@ -207,6 +244,7 @@ export default function ShowEvent() {
     const dispatch = useDispatch();
     const [isPaying, setIsPaying] = useState(false);
     const [isCart, setIsCart] = useState(false);
+    const eventStatus = getEventStatus(event);
     const [isLoadingFree, setIsLoadingFree] = useState(false);
     const [imageLoadedStates, setImageLoadedStates] = useState({});
     const [showRefreshAlert, setShowRefreshAlert] = useState(false);
@@ -225,6 +263,51 @@ export default function ShowEvent() {
         hasSelectedTickets,
         resetTicketCounts,
     } = useTicketSelection(event.tickets);
+
+    // Dynamic tax calculation based on event.tax_info (percentage | fixed)
+    const finalTaxAmount = useMemo(() => {
+        const subtotal = Number(totalHarga) || 0;
+        if (subtotal <= 0) return 0;
+
+        const info = tax_info;
+        if (!info) return 0;
+
+        const rawValue =
+            typeof info.value === "string"
+                ? parseFloat(info.value)
+                : Number(info.value || 0);
+        if (!rawValue || Number.isNaN(rawValue)) return 0;
+
+        if (info.type === "fixed") {
+            return Math.round(rawValue);
+        }
+        if (info.type === "percent") {
+            return Math.round(subtotal * (rawValue / 100));
+        }
+
+        return 0;
+    }, [totalHarga, tax_info]);
+
+    // Descriptive tax label to be shown on PaymentSheet
+    const taxLabel = useMemo(() => {
+        const info = tax_info;
+        if (!info) return "";
+        if (info.label && typeof info.label === "string") return info.label;
+
+        const rawValue =
+            typeof info.value === "string"
+                ? parseFloat(info.value)
+                : Number(info.value || 0);
+        if (Number.isNaN(rawValue)) return "Pajak";
+
+        if (info.type === "percent") {
+            return `Pajak (${rawValue.toFixed(2)}%)`;
+        }
+        if (info.type === "fixed") {
+            return `Pajak (Rp ${formatRupiah(rawValue)})`;
+        }
+        return "Pajak";
+    }, [tax_info]);
 
     // Check if ticket sale has started
     useEffect(() => {
@@ -249,14 +332,47 @@ export default function ShowEvent() {
     }, []);
 
     const paidTickets = useMemo(
-        () => event.tickets.filter((ticket) => ticket.name !== "Free"),
+        () => event.tickets.filter((ticket) => Number(ticket?.price) > 0),
         [event.tickets]
     );
 
-    const freeTicket = useMemo(
-        () => event.tickets.find((ticket) => ticket.name === "Free"),
-        [event.tickets]
-    );
+    // Determine when to use a virtual default free ticket (when no tickets were provided)
+    const hasDefaultFreeTicket = useMemo(() => {
+        const tickets = event?.tickets;
+        return Array.isArray(tickets) && tickets.length === 0;
+    }, [event.tickets]);
+
+    const defaultFreeTicket = useMemo(() => {
+        if (!hasDefaultFreeTicket) return null;
+        return {
+            id: -1,
+            name: "Free",
+            price: 0,
+            quantity: 9999999, // signifies unlimited
+            remaining: 9999999, // for stock badges and UI
+            is_sold_out: false,
+            is_free: true,
+        };
+    }, [hasDefaultFreeTicket]);
+
+    // Free ticket prioritization:
+    // 1) If event had no tickets, use a virtual default free ticket
+    // 2) Otherwise, find a free ticket by price (0), known names, or virtual id
+    const freeTicket = useMemo(() => {
+        if (hasDefaultFreeTicket) return defaultFreeTicket;
+
+        return (
+            event.tickets.find((ticket) => {
+                const priceZero = Number(ticket?.price) === 0;
+                const namedFree =
+                    String(ticket?.name || "").toLowerCase() === "free" ||
+                    String(ticket?.name || "").toLowerCase() === "free default";
+                const virtualId =
+                    typeof ticket?.id === "number" && ticket.id < 0;
+                return priceZero || namedFree || virtualId;
+            }) || null
+        );
+    }, [event.tickets, hasDefaultFreeTicket, defaultFreeTicket]);
 
     const thumbnailUrl = useMemo(() => {
         const baseUrl = ziggy.url;
@@ -344,23 +460,49 @@ export default function ShowEvent() {
                     return;
                 }
 
-                // Lanjutkan proses pembayaran jika validasi sukses
+                // Create items array for PaymentHelper
+                const ticketItems = Object.entries(ticketCounts)
+                    .filter(([_, count]) => count > 0)
+                    .map(([ticketId, quantity]) => {
+                        const ticket = event.tickets.find(
+                            (t) => t.id === parseInt(ticketId)
+                        );
+                        return {
+                            ...ticket,
+                            id: parseInt(ticketId),
+                            type: "ticket",
+                            quantity,
+                            name: `${event.name} (${ticket.name})`,
+                        };
+                    });
+
+                // Use PaymentHelper to create payment payload for each ticket
+                // For events, we need to handle multiple tickets differently
+                const allItems = [];
+                let subtotalAmount = 0;
+
+                ticketItems.forEach((ticketItem) => {
+                    // For each ticket, create a separate payload but we'll combine them
+                    const ticketPayload = createPaymentPayload(
+                        ticketItem,
+                        ticketItem.quantity,
+                        auth.user,
+                        null // Events don't use shipping address
+                    );
+
+                    allItems.push(...ticketPayload.items);
+                    subtotalAmount += ticketPayload.amount;
+                });
+
+                // Enrich items with event thumbnail URL for Midtrans payload
+                const itemsWithThumbnail = allItems.map((item) => ({
+                    ...item,
+                    thumbnail: thumbnailUrl, // full URL from computed event thumbnail
+                }));
+
                 const paymentData = {
-                    items: Object.entries(ticketCounts)
-                        .filter(([_, count]) => count > 0)
-                        .map(([ticketId, quantity]) => {
-                            const ticket = event.tickets.find(
-                                (t) => t.id === parseInt(ticketId)
-                            );
-                            return {
-                                id: parseInt(ticketId),
-                                type: "ticket",
-                                price: ticket.price,
-                                quantity,
-                                name: `${event.name} (${ticket.name})`,
-                            };
-                        }),
-                    amount: totalHarga,
+                    items: itemsWithThumbnail,
+                    amount: subtotalAmount,
                     name: auth.user.name,
                     email: auth.user.email,
                 };
@@ -672,7 +814,6 @@ export default function ShowEvent() {
                                 ))}
                             </div>
                         </div>
-
                         {/* Right Action Section */}
                         <div className="flex flex-col gap-2 lg:min-w-[240px] mt-6 lg:mt-0">
                             <div className="text-center lg:text-right bg-gray-50 p-4 rounded-lg">
@@ -684,9 +825,28 @@ export default function ShowEvent() {
                                 </p>
                             </div>
 
-                            {auth.user ? (
+                            {eventStatus.isOver || eventStatus.isSaleOver ? (
+                                <Alert
+                                    variant="destructive"
+                                    className="mt-2 flex items-start"
+                                >
+                                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                                    <AlertDescription className="text-sm pt-1">
+                                        {eventStatus.message} Tiket tidak dapat
+                                        dibeli.
+                                    </AlertDescription>
+                                </Alert>
+                            ) : (
                                 <div className="space-y-2">
-                                    {/* Countdown Timer jika belum dimulai */}
+                                    {eventStatus.isLive && (
+                                        <Alert className="bg-green-100 border-green-500 text-green-700">
+                                            <Clock className="h-4 w-4" />
+                                            <AlertDescription className="text-sm">
+                                                {eventStatus.message}
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+
                                     {!isSaleActive &&
                                         event.ticket_date_start && (
                                             <CountdownTimer
@@ -699,22 +859,6 @@ export default function ShowEvent() {
                                             />
                                         )}
 
-                                    {/* Show message if sale hasn't started */}
-                                    {!isSaleActive &&
-                                        event.ticket_date_start && (
-                                            <Alert className="border-orange-600">
-                                                <Clock className="h-4 w-4 text-orange-600" />
-                                                <AlertDescription className="text-orange-700 text-sm">
-                                                    Penjualan tiket belum
-                                                    dibuka. Tunggu hingga{" "}
-                                                    {formatTanggalIndo(
-                                                        event.ticket_date_start
-                                                    )}
-                                                </AlertDescription>
-                                            </Alert>
-                                        )}
-
-                                    {/* Only show ticket options if sale is active */}
                                     {isSaleActive && (
                                         <>
                                             {freeTicket && (
@@ -776,6 +920,10 @@ export default function ShowEvent() {
                                                         isPaying={isPaying}
                                                         snapLoaded={snapLoaded}
                                                         isCart={isCart}
+                                                        taxAmount={
+                                                            finalTaxAmount
+                                                        }
+                                                        taxLabel={taxLabel}
                                                     />
                                                 )}
 
@@ -791,13 +939,15 @@ export default function ShowEvent() {
                                         </>
                                     )}
                                 </div>
-                            ) : (
+                            )}
+
+                            {!auth.user && (
                                 <Link
                                     href={`/login?redirect=${ziggy.location}`}
                                 >
                                     <Button
                                         variant="outline"
-                                        className="w-full"
+                                        className="w-full mt-4"
                                         size="lg"
                                     >
                                         Masuk untuk Mendaftar
@@ -858,6 +1008,15 @@ export default function ShowEvent() {
                             title={`Lokasi: ${event.name}`}
                         />
                     </div>
+                </section>
+
+                {/* Review Section */}
+                <section className="mt-8">
+                    <ReviewSection
+                        itemType="App\Models\Event"
+                        itemId={event.id}
+                        user={auth?.user}
+                    />
                 </section>
 
                 {isPaying && (

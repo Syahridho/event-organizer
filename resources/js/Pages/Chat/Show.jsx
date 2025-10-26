@@ -6,27 +6,15 @@ import ChatInputMessage from "@/components/ChatInputMessage.jsx";
 import DateChatIndicator from "@/components/DateChatIndicator.jsx";
 import LeftSideBoxChat from "@/components/LeftSideBoxChat.jsx";
 import RightSideBoxChat from "@/components/RightSideBoxChat.jsx";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
 
 export default function Show() {
     const { auth, chat_with: chatWithUser, messages } = usePage().props;
 
     const scrollRef = useRef(null);
     const [reply, setReply] = useState(null);
-    const [onlineUsers, setOnlineUsers] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
-
-    useEffect(() => {
-        Echo.join("online-users")
-            .here((users) => {
-                setOnlineUsers(users);
-            })
-            .joining((user) => {
-                setOnlineUsers((prev) => [...prev, user]);
-            })
-            .leaving((user) => {
-                setOnlineUsers((prev) => prev.filter((u) => u.id !== user.id));
-            });
-    }, []);
+    const { isUserOnline } = useOnlineStatusContext();
 
     const replyHandleState = (message) => {
         setReply(message);
@@ -78,15 +66,12 @@ export default function Show() {
         <>
             <Head title="Chat " />
 
-            <div className="flex flex-col w-full lg:w-2/3">
+            <div className="flex flex-col w-full h-full">
                 <div className="px-6 py-5 border-b border-gray-700">
                     <div className="flex items-center justify-between">
                         <HeaderUserChatBox
                             user={chatWithUser}
-                            isOnline={onlineUsers?.find(
-                                (onlineUser) =>
-                                    onlineUser.id === chatWithUser.id
-                            )}
+                            isOnline={isUserOnline(chatWithUser.id)}
                             isTyping={isTyping}
                         />
                         <div className="pr-5">
@@ -109,7 +94,7 @@ export default function Show() {
                 </div>
 
                 <div
-                    className="flex-1 h-screen px-2 pb-5 overflow-y-scroll lg:px-8"
+                    className="flex-1 px-2 pb-5 overflow-y-auto lg:px-8"
                     ref={scrollRef}
                 >
                     <div className="grid grid-cols-12">

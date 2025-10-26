@@ -7,7 +7,7 @@ use Inertia\Inertia;
 use App\Models\Event;
 use App\Models\Service;
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use Illuminate\Support\Facades\DB;
 
 class ListingController extends Controller
@@ -83,9 +83,9 @@ class ListingController extends Controller
                         ->limit($limit)
                 )
 
-                // Properties
+                // property
                 ->unionAll(
-                    DB::table('rent_properties')
+                    DB::table('rent_property')
                         ->select(
                             'id',
                             'name',
@@ -94,7 +94,7 @@ class ListingController extends Controller
                             'location',
                             'description',
                             DB::raw("'property' as type"),
-                            DB::raw("'properties' as type_slug"),
+                            DB::raw("'propertys' as type_slug"),
                             'created_at'
                         )
                         ->where('status', 'active')
@@ -120,7 +120,7 @@ class ListingController extends Controller
             'events'    => ['model' => Event::class, 'component' => 'Home/Events'],
             'services'   => ['model' => Service::class, 'component' => 'Home/Services'],
             'buildings'  => ['model' => Building::class, 'component' => 'Home/Building'],
-            'properties' => ['model' => RentProperties::class, 'component' => 'Home/Property'],
+            'propertys', 'property' => ['model' => RentProperty::class, 'component' => 'Home/Property'],
             default      => abort(404), // Tampilkan 404 jika tipe tidak valid
         };
 

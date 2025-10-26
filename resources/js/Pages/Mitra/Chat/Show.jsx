@@ -1,12 +1,17 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
-import AppChat from "@/Layouts/App.jsx";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, usePage, router } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
+import { debounce } from "lodash";
+import AppLayout from "@/Layouts/App/AppSidebarLayout";
+import ChatLayout from "@/components/ChatLayout.jsx";
+import ChatSidebar from "@/components/ChatSidebar.jsx";
 import HeaderUserChatBox from "@/components/HeaderUserChatBox.jsx";
 import ChatInputMessage from "@/components/ChatInputMessage.jsx";
 import DateChatIndicator from "@/components/DateChatIndicator.jsx";
 import LeftSideBoxChat from "@/components/LeftSideBoxChat.jsx";
 import RightSideBoxChat from "@/components/RightSideBoxChat.jsx";
-import AppLayout from "@/Layouts/App/AppSidebarLayout";
+import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
 
 const breadcrumbs = [
     {
@@ -24,21 +29,44 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
 
     const scrollRef = useRef(null);
     const [reply, setReply] = useState(null);
-    const [onlineUsers, setOnlineUsers] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
+    const { isUserOnline } = useOnlineStatusContext();
 
+    // Use the custom hook for real-time updates
+    // This will handle both chat list and message updates
+    useRealtimeChatUpdates();
+
+    // Additional effect for message-specific updates
     useEffect(() => {
-        Echo.join("online-users")
-            .here((users) => {
-                setOnlineUsers(users);
-            })
-            .joining((user) => {
-                setOnlineUsers((prev) => [...prev, user]);
-            })
-            .leaving((user) => {
-                setOnlineUsers((prev) => prev.filter((u) => u.id !== user.id));
+        const debouncedMessageReload = debounce(() => {
+            router.reload({
+                preserveScroll: true,
+                only: ["messages"], // Only reload messages
             });
-    }, []);
+        }, 350);
+
+        Echo.private("message." + auth.user.uuid).listen(
+            "NewMessageEvent",
+            (e) => {
+                // Check if the message is for the current chat
+                if (
+                    e.message.sender_id === chatWithUser.id ||
+                    e.message.receiver_id === chatWithUser.id
+                ) {
+                    console.log(
+                        "New message for current chat, updating messages"
+                    );
+                    debouncedMessageReload();
+                }
+            }
+        );
+
+        return () => {
+            Echo.private("message." + auth.user.uuid).stopListening(
+                "NewMessageEvent"
+            );
+        };
+    }, [auth.user.uuid, chatWithUser.id]);
 
     const replyHandleState = (message) => {
         setReply(message);
@@ -48,13 +76,16 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
         scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
     }, [messages, reply]);
 
-    Echo.private("message." + auth.user.uuid).listenForWhisper("typing", () => {
-        setIsTyping(true);
+    window.Echo.private("message." + auth.user.uuid).listenForWhisper(
+        "typing",
+        () => {
+            setIsTyping(true);
 
-        setTimeout(() => {
-            setIsTyping(false);
-        }, 2000);
-    });
+            setTimeout(() => {
+                setIsTyping(false);
+            }, 2000);
+        }
+    );
 
     const renderMessage = (messages, auth) => {
         return messages?.map((date) => (
@@ -85,119 +116,23 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
             </Fragment>
         ));
     };
-
     return (
-        <>
-            <AppChat>
-                {/* <Head title="Dashboard Mitra" /> */}
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            <Head title="Chat" />
 
-                <div className="flex flex-1 flex-col gap-4 p-4">
-                    <Head title="Chat " />
-
-                    <div className="flex flex-col w-full h-full">
-                        <div className="px-6 py-5 border-b border-gray-700">
-                            <div className="flex items-center justify-between">
-                                <HeaderUserChatBox
-                                    user={chatWithUser}
-                                    isOnline={onlineUsers?.find(
-                                        (onlineUser) =>
-                                            onlineUser.id === chatWithUser.id
-                                    )}
-                                    isTyping={isTyping}
-                                />
-                                <div className="pr-5">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        strokeWidth="1.5"
-                                        stroke="currentColor"
-                                        className="w-3.5 h-3.5 lg:w-5 lg:h-5 text-white"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                                        />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div
-                            className="flex-1 h-screen px-2 pb-5 overflow-y-scroll lg:px-8"
-                            ref={scrollRef}
-                        >
-                            <div className="grid grid-cols-12">
-                                {renderMessage(messages, auth)}
-                            </div>
-                        </div>
-
-                        <div
-                            className={`transform transition-transform ${
-                                reply ? "translate-y-0" : "translate-y-full"
-                            } duration-150 ease-in-out`}
-                        >
-                            {reply && (
-                                <div className="flex items-center py-2 border-t border-gray-700 px-9">
-                                    <div className="flex items-center justify-between w-full px-2 py-1.5 bg-gray-700/50 border-gray-600 border-l-4 rounded">
-                                        <div className="text-[10px] lg:text-xs">
-                                            <div className="mb-1 text-purple-400">
-                                                {reply.sender_id ===
-                                                auth.user.id
-                                                    ? "You"
-                                                    : chatWithUser.name}
-                                            </div>
-                                            <div
-                                                className="overflow-hidden text-gray-300/80"
-                                                style={{
-                                                    display: "-webkit-box",
-                                                    WebkitLineClamp: 2,
-                                                    WebkitBoxOrient: "vertical",
-                                                }}
-                                            >
-                                                <div className="whitespace-pre-wrap">
-                                                    {reply.message}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() =>
-                                                replyHandleState(null)
-                                            }
-                                            className="w-6 h-6 text-gray-500 transition duration-300 rounded-full hover:text-gray-400 focus:outline-none"
-                                        >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                strokeWidth={1.5}
-                                                stroke="currentColor"
-                                                className="w-4 h-4"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M6 18L18 6M6 6l12 12"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex px-6 py-1.5 border-t border-gray-700 z-50">
-                            <ChatInputMessage
-                                reply={reply}
-                                setReply={setReply}
-                                setIsTyping={setIsTyping}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </AppChat>
-        </>
+            <ChatLayout
+                showBackButton={true}
+                backUrl={route("mitra.chat")}
+                currentUser={chatWithUser}
+                messages={messages}
+                onlineUsers={[]}
+                isTyping={isTyping}
+                reply={reply}
+                setReply={setReply}
+                setIsTyping={setIsTyping}
+                scrollRef={scrollRef}
+            />
+        </div>
     );
 }
 

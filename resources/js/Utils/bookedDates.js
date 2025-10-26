@@ -1,13 +1,15 @@
+// OPTIMIZED: Return raw date strings without Date parsing to avoid timezone issues
 export const getBookedDates = (transactions) => {
     if (!transactions || !Array.isArray(transactions)) return [];
 
     return transactions
         .filter((item) => item.rent_days && item.rent_days.trim() !== "")
         .map((item) => {
-            const rentDate = new Date(item.rent_days);
-            return rentDate.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+            // Return rent_days as-is (already in YYYY-MM-DD format from database)
+            const dateStr = item.rent_days.split('T')[0]; // Handle potential datetime format
+            return dateStr;
         })
-        .filter((date) => date !== "Invalid Date");
+        .filter((date) => date && date !== "Invalid Date");
 };
 
 export const getBookedDatesWithUser = (transactions, currentUserId) => {
@@ -17,7 +19,8 @@ export const getBookedDatesWithUser = (transactions, currentUserId) => {
         .filter((item) => item.rent_days && item.rent_days.trim() !== "")
         .map((item) => {
             // Gunakan rent_days langsung sebagai string tanpa parsing ke Date
-            const dateStr = item.rent_days; // "2025-09-15"
+            // Handle potential datetime format (YYYY-MM-DDTHH:MM:SS) by taking only date part
+            const dateStr = item.rent_days.split('T')[0]; // "2025-09-15"
             const transactionUserId = item.transaction?.user_id;
             const isCurrentUser =
                 String(transactionUserId) === String(currentUserId);
@@ -28,7 +31,7 @@ export const getBookedDatesWithUser = (transactions, currentUserId) => {
                 isCurrentUser,
             };
         })
-        .filter((item) => item.date !== "Invalid Date");
+        .filter((item) => item.date && item.date !== "Invalid Date");
 
     // Deduplikasi berdasarkan date dan userId
     const uniqueBookedDates = bookedDates.reduce((acc, current) => {

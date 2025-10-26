@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan cart:cleanup-sold-out)",
+      "Bash(npm run build)",
+      "Bash(php artisan migrate:status)",
+      "Bash(php artisan db:show --table=admin_settings)",
+      "Bash(php artisan make:migration add_profile_photo_to_users_table --table=users)",
+      "Bash(php artisan make:controller ProfileController)",
+      "Bash(php artisan migrate)",
+      "Bash(php artisan storage:link)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

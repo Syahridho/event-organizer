@@ -1,10 +1,8 @@
+import React from "react";
 import { Head } from "@inertiajs/react";
-import { usePage } from "@inertiajs/react";
-import Chat from "@/Pages/Chat/Index";
-import Show from "@/Pages/Chat/Show";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import App from "@/Layouts/App";
-import AppChat from "@/Layouts/App";
+import ChatLayout from "@/components/ChatLayout.jsx";
+import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
 
 const breadcrumbs = [
     {
@@ -18,15 +16,18 @@ const breadcrumbs = [
 ];
 
 export default function MitraChat() {
-    const { chat_with } = usePage().props;
+    // Use the custom hook for real-time updates
+    useRealtimeChatUpdates();
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            {/* <Head title="Dashboard Mitra" /> */}
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            <Head title="Pesan Mitra" />
 
-            <div className="flex flex-1 flex-col gap-4 p-4">
-                <AppChat />
-            </div>
-        </AppLayout>
+            <ChatLayout />
+        </div>
     );
 }
+
+MitraChat.layout = (page) => (
+    <AppLayout breadcrumbs={breadcrumbs} children={page} />
+);

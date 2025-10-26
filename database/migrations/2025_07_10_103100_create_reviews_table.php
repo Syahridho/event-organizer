@@ -14,8 +14,13 @@ return new class extends Migration
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            // Link to transaction_items to avoid cycle (transaction_items.reviews_id is not FK)
+            $table->foreignId('transaction_item_id')->constrained()->onDelete('cascade');
+
+            // Added fields for indexing and fast lookups
             $table->unsignedBigInteger('item_id');
             $table->string('item_type');
+
             $table->integer('rating');
             $table->text('comment')->nullable();
             $table->timestamps();

@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Service;
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
@@ -16,6 +16,6 @@ class ProductSeeder extends Seeder
     {
         Service::factory()->count(10)->create();
         Building::factory()->count(10)->create();
-        RentProperties::factory()->count(10)->create();
+        RentProperty::factory()->count(10)->create();
     }
 }

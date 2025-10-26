@@ -7,8 +7,8 @@ export default function Chat() {
         <>
             <Head title="Pesan" />
 
-            <div className="flex-col hidden lg:flex lg:w-2/3">
-                <div className="flex items-center justify-center h-screen">
+            <div className="hidden lg:flex lg:flex-col lg:w-2/3 lg:h-full">
+                <div className="flex items-center justify-center h-full">
                     <div className="font-semibold tracking-tight">
                         Cari dan pilih percakapan untuk memulai pesan
                     </div>

@@ -24,12 +24,18 @@ import {
     XCircle,
     ChevronLeft,
     Package,
+    Wrench,
+    Building2,
+    Home,
+    Ticket,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
     addToCart,
     updateCartQuantity,
     removeFromCart,
+    removeBulkFromCart,
+    setCartItems,
     selectCartItems,
 } from "@/Store/cartSlice";
 import { ErrorBoundary } from "react-error-boundary";
@@ -67,7 +73,7 @@ const formatDate = (dateString) => {
     if (!dateString) return null;
     try {
         // Parse YYYY-MM-DD directly without timezone manipulation
-        const [year, month, day] = dateString.split('T')[0].split('-');
+        const [year, month, day] = dateString.split("T")[0].split("-");
         const date = new Date(year, month - 1, day);
 
         return date.toLocaleDateString("id-ID", {
@@ -76,7 +82,7 @@ const formatDate = (dateString) => {
             day: "numeric",
         });
     } catch (e) {
-        console.error('Error formatting date:', e, dateString);
+        console.error("Error formatting date:", e, dateString);
         return dateString;
     }
 };
@@ -99,12 +105,22 @@ const getTypeLabel = (type) => TYPE_LABELS[type] || type;
 const getTypeColor = (type) =>
     TYPE_COLORS[type] || "bg-gray-100 text-gray-700 border-gray-200";
 
+const getTypeIcon = (type) => {
+    const TYPE_ICONS = {
+        ticket: Ticket,
+        service: Wrench,
+        building: Building2,
+        property: Home,
+    };
+    return TYPE_ICONS[type] || Package;
+};
+
 const getDetailUrl = (type, eventId, itemId) => {
     const urlMap = {
         ticket: `/events/${eventId}`,
         service: `/services/${itemId}`,
         building: `/buildings/${itemId}`,
-        property: `/properties/${itemId}`,
+        property: `/property/${itemId}`,
     };
     return urlMap[type] || "#";
 };
@@ -268,13 +284,22 @@ const getSeverityColors = (severity) => {
     }
 };
 
-export default function CartPage() {
+export default function CartPage({ carts: serverCarts, taxInfo }) {
     const { ziggy } = usePage().props;
     const dispatch = useDispatch();
 
+    // OPTIMIZED: Use Redux store as single source of truth
+    // Redux with normalized state provides O(1) access/delete/update
     const cartItems = useSelector(selectCartItems);
 
-    console.log(cartItems);
+    // CRITICAL: Sync server data to Redux on mount and when server data changes
+    useEffect(() => {
+        if (serverCarts) {
+            dispatch(setCartItems(serverCarts));
+        }
+    }, [serverCarts, dispatch]);
+
+    console.log("Cart Items from Redux Store:", cartItems);
 
     const [selectedItems, setSelectedItems] = useState(new Set());
     const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -345,6 +370,7 @@ export default function CartPage() {
                                 }
                             }
 
+                            // ROLLBACK: Restore original quantity on error using Redux
                             const original = safeCartItems.find(
                                 (item) => item.id === cartId
                             );
@@ -366,7 +392,7 @@ export default function CartPage() {
                 setTimeout(processQueue, 300);
             }
         }
-    }, [dispatch, safeCartItems]);
+    }, [safeCartItems, dispatch]);
 
     const handleQtyChange = useCallback(
         (cartId, newQty) => {
@@ -381,43 +407,61 @@ export default function CartPage() {
                 }
             }
 
-            dispatch(updateCartQuantity({ cart_id: cartId, quantity: newQty }));
+            // OPTIMIZED: Update Redux state instantly (O(1) access)
+            dispatch(
+                updateCartQuantity({
+                    cart_id: cartId,
+                    quantity: newQty,
+                })
+            );
+
             updateQueue.current.set(cartId, newQty);
 
             setTimeout(() => {
                 processQueue();
             }, 500);
         },
-        [dispatch, processQueue, safeCartItems]
+        [processQueue, safeCartItems, dispatch]
     );
 
     const handleDeleteCart = useCallback(
         async (cartId) => {
-            const originalCart = safeCartItems.find(
-                (item) => item.id === cartId
-            );
+            // Save original carts for rollback
+            const originalCarts = [...safeCartItems];
 
+            // OPTIMIZED: Optimistic update using Redux (O(1) delete)
             dispatch(removeFromCart({ cart_id: cartId }));
+
+            // Remove from selection instantly
             setSelectedItems((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(cartId);
                 return newSet;
             });
 
+            // Clear from update queue
             updateQueue.current.delete(cartId);
 
             try {
+                // Send delete request to backend
                 await axios.delete(`/cart/${cartId}`);
                 toast.success("Item berhasil dihapus dari keranjang");
+
+                // CRITICAL FIX: Reload cart from server to ensure sync
+                // This prevents race condition with auto-refresh
+                router.reload({
+                    only: ["carts"],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
             } catch (error) {
-                if (originalCart) {
-                    dispatch(addToCart(originalCart));
-                }
+                // ROLLBACK: Restore original data if failed
+                dispatch(setCartItems(originalCarts));
                 toast.error("Gagal menghapus item");
                 console.error(error);
             }
         },
-        [dispatch, safeCartItems]
+        [safeCartItems, dispatch]
     );
 
     const handleSelectItem = useCallback(
@@ -454,28 +498,43 @@ export default function CartPage() {
         async (items) => {
             const itemIds = items.map((item) => item.id);
 
-            itemIds.forEach((id) => {
-                dispatch(removeFromCart({ cart_id: id }));
-                setSelectedItems((prev) => {
-                    const newSet = new Set(prev);
-                    newSet.delete(id);
-                    return newSet;
-                });
+            // Save original cart for rollback
+            const originalCarts = [...safeCartItems];
+
+            // OPTIMIZED: Optimistic update using Redux bulk remove (O(k))
+            dispatch(removeBulkFromCart({ cart_ids: itemIds }));
+
+            // Remove all from selection instantly
+            setSelectedItems((prev) => {
+                const newSet = new Set(prev);
+                itemIds.forEach((id) => newSet.delete(id));
+                return newSet;
             });
 
             try {
+                // Send bulk delete request
                 await Promise.all(
                     itemIds.map((id) => axios.delete(`/cart/${id}`))
                 );
                 toast.success(
                     `${items.length} item berhasil dihapus dari keranjang`
                 );
+
+                // CRITICAL FIX: Reload cart from server to ensure sync
+                // This prevents race condition with auto-refresh
+                router.reload({
+                    only: ["carts"],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
             } catch (error) {
+                // ROLLBACK: Restore original data if failed
+                dispatch(setCartItems(originalCarts));
                 toast.error("Gagal menghapus beberapa item");
                 console.error(error);
             }
         },
-        [dispatch]
+        [safeCartItems, dispatch]
     );
 
     const selectedCartItems = useMemo(
@@ -493,6 +552,23 @@ export default function CartPage() {
         [selectedCartItems]
     );
 
+    // OPTIMIZED: Calculate tax dynamically using taxInfo from backend (O(1) complexity)
+    const taxAmount = useMemo(() => {
+        if (!taxInfo || !selectedTotal) return 0;
+
+        if (taxInfo.type === "percent") {
+            // Percentage-based tax (e.g., 11% = 0.11 * subtotal)
+            return Math.round(selectedTotal * (taxInfo.value / 100));
+        } else {
+            // Fixed tax amount
+            return taxInfo.value;
+        }
+    }, [taxInfo, selectedTotal]);
+
+    const totalWithTax = useMemo(() => {
+        return selectedTotal + taxAmount;
+    }, [selectedTotal, taxAmount]);
+
     const handleCheckout = useCallback(async () => {
         if (selectedItems.size === 0) {
             toast.error("Pilih minimal satu item untuk checkout");
@@ -500,22 +576,11 @@ export default function CartPage() {
         }
 
         setIsCheckingOut(true);
-        console.log(
-            selectedCartItems.map((item) => ({
-                cart_id: item.id,
-                id: item.item_id,
-                name: item.item?.name,
-                ticket_name: item.type === "ticket" ? item.item?.name : null,
-                type: item.type,
-                price: item.item?.price,
-                quantity: item.item_qty,
-                rent_days: item.rent_days || null,
-                is_unavailable: item.is_unavailable || false,
-                thumbnail: item.item?.thumbnail,
-            }))
-        );
+
+        console.log(selectedCartItems);
 
         try {
+            console.log(selectedCartItems);
             const checkoutData = {
                 cart_ids: Array.from(selectedItems),
                 items: selectedCartItems.map((item) => ({
@@ -529,10 +594,15 @@ export default function CartPage() {
                     quantity: item.item_qty,
                     rent_days: item.rent_days || null,
                     is_unavailable: item.is_unavailable || false,
-                    thumbnail: item.item?.thumbnail,
+                    thumbnail: item?.item?.event?.thumbnail?.includes("randoms")
+                        ? item?.item?.event?.thumbnail?.replace(/^\/+/, "")
+                        : item?.type === "ticket"
+                        ? item?.item?.event?.thumbnail?.replace(/^\/+/, "")
+                        : item?.item?.thumbnail?.replace(/^\/+/, ""),
                 })),
                 total: selectedTotal,
             };
+            console.log(checkoutData);
 
             router.visit("/checkout", {
                 method: "post",
@@ -559,6 +629,21 @@ export default function CartPage() {
         }, 300);
 
         return () => clearTimeout(timer);
+    }, []);
+
+    // CRITICAL: Auto-refresh cart every 10 seconds to check sold-out status
+    // This ensures real-time sold-out detection when another user books the same item
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            // Silently fetch updated cart data from server
+            router.reload({
+                only: ["carts"],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 10000); // Refresh every 10 seconds
+
+        return () => clearInterval(intervalId);
     }, []);
 
     useEffect(() => {
@@ -614,27 +699,28 @@ export default function CartPage() {
                             />
 
                             <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-lg overflow-hidden border-2 border-gray-200">
+                                {console.log(item?.type == "ticket")}
                                 <img
                                     src={
-                                        item.item?.thumbnail?.includes(
+                                        item.item?.event?.thumbnail?.includes(
                                             "randoms"
                                         )
                                             ? `${
                                                   ziggy.url
-                                              }/storage/${item.item.thumbnail.replace(
+                                              }/storage/${item?.item?.event?.thumbnail?.replace(
                                                   /^\/+/,
                                                   ""
                                               )}`
                                             : item.type === "ticket"
                                             ? `${
                                                   ziggy.url
-                                              }/storage/thumbnails/${item.item?.event?.thumbnail?.replace(
+                                              }/storage/thumbnails/${item?.item?.event?.thumbnail?.replace(
                                                   /^\/+/,
                                                   ""
                                               )}`
                                             : `${
                                                   ziggy.url
-                                              }/storage/thumbnails/${item.item?.thumbnail?.replace(
+                                              }/storage/thumbnails/${item?.item?.thumbnail?.replace(
                                                   /^\/+/,
                                                   ""
                                               )}`
@@ -680,7 +766,13 @@ export default function CartPage() {
                                                     item.type
                                                 )}`}
                                             >
-                                                <Package className="w-3 h-3 mr-1" />
+                                                {React.createElement(
+                                                    getTypeIcon(item.type),
+                                                    {
+                                                        className:
+                                                            "w-3 h-3 mr-1",
+                                                    }
+                                                )}
                                                 {getTypeLabel(item.type)}
                                             </Badge>
                                         </div>
@@ -990,22 +1082,6 @@ export default function CartPage() {
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="p-6 space-y-6">
-                                            {/* Selection Summary */}
-                                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-medium text-blue-900">
-                                                        Item Dipilih
-                                                    </span>
-                                                    <Badge className="bg-blue-600">
-                                                        {selectedItems.size}
-                                                    </Badge>
-                                                </div>
-                                                <p className="text-xs text-blue-700">
-                                                    dari {validItems.length}{" "}
-                                                    item tersedia
-                                                </p>
-                                            </div>
-
                                             {/* Price Details */}
                                             <div className="space-y-3">
                                                 <div className="flex justify-between text-sm">
@@ -1031,12 +1107,13 @@ export default function CartPage() {
                                                 </div>
                                                 <div className="flex justify-between text-sm">
                                                     <span className="text-gray-600">
-                                                        PPN (11%)
+                                                        {taxInfo?.label ||
+                                                            "Pajak"}
                                                     </span>
                                                     <span className="font-semibold text-gray-900">
                                                         Rp{" "}
                                                         {formatRupiah(
-                                                            selectedTotal * 0.11
+                                                            taxAmount
                                                         )}
                                                     </span>
                                                 </div>
@@ -1053,7 +1130,7 @@ export default function CartPage() {
                                                     <p className="text-2xl font-black text-primary">
                                                         Rp{" "}
                                                         {formatRupiah(
-                                                            selectedTotal * 1.11
+                                                            totalWithTax
                                                         )}
                                                     </p>
                                                 </div>

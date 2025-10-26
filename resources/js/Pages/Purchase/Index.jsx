@@ -1,7 +1,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { usePage, Link, Head, router } from "@inertiajs/react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { formatRupiah } from "@/Utils/formatRupiah";
+import {
+    formatDateWithShortDay,
+    formatCompactDateTime,
+} from "@/Utils/formatDateTime";
 import Countdown from "@/Utils/CountDown";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,13 +27,26 @@ import { Textarea } from "@/components/ui/textarea";
 import ItemStatusBadge from "@/components/item-status-badge";
 import Rating from "react-rating";
 import { IoStar, IoStarOutline } from "react-icons/io5";
+import {
+    Clock,
+    Package,
+    Calendar,
+    MapPin,
+    CreditCard,
+    ShoppingCart,
+    CheckCircle2,
+} from "lucide-react";
 import MainLayout from "@/Layouts/Main";
 import axios from "axios";
 
-// ===================================
-// KOMPONEN RATING DIALOG
-// ===================================
-
+/**
+ * ===================================
+ * OPTIMIZED: RATING DIALOG COMPONENT
+ * ===================================
+ * - Clean shadcn UI design
+ * - Improved validation UX
+ * - Responsive layout
+ */
 const RatingDialog = ({
     transaction,
     onRatingSubmit,
@@ -38,20 +57,22 @@ const RatingDialog = ({
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
 
-    const handleSubmit = () => {
+    const handleSubmit = useCallback(() => {
         if (rating === 0) {
             toast.error("Silakan berikan bintang rating terlebih dahulu.");
             return;
         }
-
+        console.log(transaction.id, rating, comment, item_type);
         onRatingSubmit(transaction.id, rating, comment, item_type);
-    };
+    }, [rating, comment, transaction.id, item_type, onRatingSubmit]);
 
     return (
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle>Beri Ulasan untuk Transaksi Ini</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-lg sm:text-xl">
+                    Beri Ulasan untuk Transaksi Ini
+                </DialogTitle>
+                <DialogDescription className="text-sm sm:text-base">
                     Bagikan pengalaman Anda dengan memberikan rating dan ulasan.
                 </DialogDescription>
             </DialogHeader>
@@ -60,32 +81,37 @@ const RatingDialog = ({
                     <Rating
                         initialRating={rating}
                         emptySymbol={
-                            <IoStarOutline className="text-gray-300 text-3xl" />
+                            <IoStarOutline className="text-gray-300 text-2xl sm:text-3xl" />
                         }
                         fullSymbol={
-                            <IoStar className="text-yellow-500 text-3xl" />
+                            <IoStar className="text-yellow-500 text-2xl sm:text-3xl" />
                         }
                         onChange={(value) => setRating(value)}
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="comment">Komentar (Opsional)</Label>
+                    <Label htmlFor="comment" className="text-sm font-medium">
+                        Komentar (Opsional)
+                    </Label>
                     <Textarea
                         id="comment"
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         placeholder="Tulis ulasan Anda di sini..."
+                        className="min-h-[100px] text-sm"
                     />
                 </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
                 <DialogClose asChild>
-                    <Button variant="outline">Batal</Button>
+                    <Button variant="outline" className="w-full sm:w-auto">
+                        Batal
+                    </Button>
                 </DialogClose>
                 <Button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="bg-blue-500 hover:bg-blue-600"
+                    className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600"
                 >
                     {isLoading ? "Mengirim..." : "Kirim Ulasan"}
                 </Button>
@@ -93,10 +119,6 @@ const RatingDialog = ({
         </DialogContent>
     );
 };
-
-// ===================================
-// KOMPONEN TRANSACTION ITEM (DENGAN PERBAIKAN RESPONSIVITAS)
-// ===================================
 
 const TransactionItem = React.memo(
     ({
@@ -113,7 +135,7 @@ const TransactionItem = React.memo(
         const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
         const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
-        const handlePayment = () => {
+        const handlePayment = useCallback(() => {
             if (transaction.redirect_url) {
                 onRedirectPay(transaction.redirect_url);
             } else if (transaction.snap_token) {
@@ -121,134 +143,249 @@ const TransactionItem = React.memo(
             } else {
                 toast.error("Tidak ada token pembayaran yang tersedia.");
             }
-        };
+        }, [transaction, onRedirectPay, onPay]);
 
-        const handleCancelConfirm = () => {
+        const handleCancelConfirm = useCallback(() => {
             handleCancel(transaction.order_id);
             setIsCancelDialogOpen(false);
-        };
+        }, [transaction.order_id, handleCancel]);
 
         return (
-            <div className="border rounded-lg sm:rounded-2xl p-3 sm:p-4 mb-4 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-                    <p className="text-xs sm:text-sm font-semibold text-gray-600">
+            <Card className="mb-4 overflow-hidden hover:shadow-md transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                    {/* Header: Order ID + Status */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                         <Link
                             href={route("purchase.show", transaction.id)}
-                            className="block hover:bg-gray-50 p-1 sm:p-2 rounded-lg"
+                            className="group"
                         >
-                            Order ID: {transaction.order_id}
-                        </Link>
-                    </p>
-                    <PaymentStatusBadge status={transaction.status} />
-                </div>
-
-                {transaction?.items?.map((item) => (
-                    <div
-                        key={item.id}
-                        className="flex items-center justify-between mt-2 pb-2 border-b border-gray-200 last:border-none"
-                    >
-                        {/* PERBAIKAN: Tambahkan min-w-0 ke flex-1 agar detail produk dapat menyusut */}
-                        <div className="flex items-start gap-4 flex-1 **min-w-0**">
-                            <img
-                                src={getThumbnail(item)}
-                                alt={item.item?.name || "Produk"}
-                                className="w-16 h-16 rounded object-cover flex-shrink-0"
-                                loading="lazy"
-                            />
-                            {/* PERBAIKAN: Tambahkan min-w-0 ke container detail teks */}
-                            <div className="flex flex-col **min-w-0**">
-                                <div className="flex items-center gap-2 **min-w-0**">
-                                    {/* PERBAIKAN: Tambahkan break-words untuk teks panjang dan min-w-0 */}
-                                    <p className="font-semibold text-gray-800 **break-words min-w-0**">
-                                        {item.item?.event?.name ||
-                                            item.item?.name ||
-                                            "Produk"}
-                                    </p>
-                                    <ItemStatusBadge status={item.status} />
-                                </div>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    {item?.item_type !== "ticket"
-                                        ? "Jasa"
-                                        : `Tiket ${item?.item?.name}`}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">
-                                    x {item?.qty}{" "}
-                                    {item?.item_type === "ticket"
-                                        ? "Tiket"
-                                        : "Hari Jasa"}
-                                </p>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-600 group-hover:text-blue-600 transition-colors">
+                                <ShoppingCart className="w-4 h-4" />
+                                <span>Order ID: {transaction.order_id}</span>
                             </div>
-                        </div>
+                            {/* OPTIMIZED: Display transaction date with day name */}
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>
+                                    {formatCompactDateTime(
+                                        transaction.created_at
+                                    )}
+                                </span>
+                            </div>
+                        </Link>
+                        <PaymentStatusBadge status={transaction.status} />
+                    </div>
 
-                        {/* PERBAIKAN: Tambahkan flex-shrink-0 untuk memastikan bagian harga tidak menyusut paksa */}
-                        <div className="flex flex-col items-end text-right ml-4 **flex-shrink-0**">
-                            <h1 className="font-semibold text-gray-900 **whitespace-nowrap**">
-                                Rp {formatRupiah(item.price * item.qty)}
-                            </h1>
-                            <p className="text-xs text-gray-500 mt-1 **whitespace-nowrap**">
-                                Harga Satuan Rp {formatRupiah(item.price)}
-                            </p>
-                            {item.rating === null &&
-                                item.status === "completed" && (
-                                    <div className="mt-4">
-                                        <Dialog
-                                            open={
-                                                isRatingDialogOpen === item.id
-                                            }
-                                            onOpenChange={(open) =>
-                                                setIsRatingDialogOpen(
-                                                    open ? item.id : null
-                                                )
-                                            }
-                                        >
-                                            <DialogTrigger asChild>
-                                                <Button
-                                                    variant="default"
-                                                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                                                >
-                                                    Beri Ulasan
-                                                </Button>
-                                            </DialogTrigger>
-                                            <RatingDialog
-                                                transaction={item}
-                                                onRatingSubmit={handleRating}
-                                                isLoading={isLoading}
-                                                item_type={item?.item_type}
-                                                onClose={() =>
-                                                    setIsRatingDialogOpen(null)
-                                                }
+                    <Separator className="mb-4" />
+
+                    {/* Items List */}
+                    <div className="space-y-3">
+                        {transaction?.items?.map((item) => (
+                            <div
+                                key={item.id}
+                                className="flex gap-3 sm:gap-4 pb-3 border-b border-gray-100 last:border-none"
+                            >
+                                {/* Product Image */}
+                                <div className="flex-shrink-0">
+                                    <img
+                                        src={getThumbnail(item)}
+                                        alt={item.item?.name || "Produk"}
+                                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover ring-1 ring-gray-200"
+                                        loading="lazy"
+                                    />
+                                </div>
+
+                                {/* Product Details */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start gap-2 mb-1">
+                                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 break-words line-clamp-2">
+                                            {item.item?.event?.name ||
+                                                item.item?.name ||
+                                                "Produk"}
+                                        </h3>
+                                        {item.item_type !== "ticket" && (
+                                            <ItemStatusBadge
+                                                status={item.status}
                                             />
-                                        </Dialog>
+                                        )}
                                     </div>
-                                )}
+
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">
+                                        {item?.item_type !== "ticket"
+                                            ? "Jasa"
+                                            : `Tiket ${item?.item?.name}`}
+                                    </p>
+
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                                        <Package className="w-3 h-3" />
+                                        <span>
+                                            x {item?.qty}{" "}
+                                            {item?.item_type === "ticket"
+                                                ? "Tiket"
+                                                : "Hari"}
+                                        </span>
+                                    </div>
+
+                                    {/* OPTIMIZED: Display rent_days with day name if available */}
+                                    {item?.rent_days && (
+                                        <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-fit mb-2">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>
+                                                {formatDateWithShortDay(
+                                                    item.rent_days
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Price */}
+                                    <div className="mt-2">
+                                        <p className="font-bold text-sm sm:text-base text-gray-900">
+                                            Rp{" "}
+                                            {formatRupiah(
+                                                item.price * item.qty
+                                            )}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            Harga Satuan Rp{" "}
+                                            {formatRupiah(item.price)}
+                                        </p>
+                                    </div>
+
+                                    {/* Rating section: show existing review (shadcn Card) or the rating button */}
+                                    {item?.reviews_id || item?.review ? (
+                                        <Card className="mt-3 bg-emerald-50 border-emerald-200">
+                                            <CardContent className="p-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-semibold text-emerald-700">
+                                                        Ulasan terkirim
+                                                    </span>
+                                                </div>
+                                                {Number(item?.review?.rating) >
+                                                    0 && (
+                                                    <div className="mt-2 flex items-center justify-start">
+                                                        <Rating
+                                                            initialRating={
+                                                                Number(
+                                                                    item?.review
+                                                                        ?.rating
+                                                                ) || 0
+                                                            }
+                                                            emptySymbol={
+                                                                <IoStarOutline className="text-gray-300 text-lg" />
+                                                            }
+                                                            fullSymbol={
+                                                                <IoStar className="text-yellow-500 text-lg" />
+                                                            }
+                                                            readonly
+                                                        />
+                                                    </div>
+                                                )}
+                                                {item?.review?.comment && (
+                                                    <p className="mt-2 text-sm text-gray-700">
+                                                        {item.review.comment}
+                                                    </p>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    ) : (
+                                        item.status === "completed" && (
+                                            <div className="mt-3">
+                                                <Dialog
+                                                    onOpenChange={(open) =>
+                                                        setIsRatingDialogOpen(
+                                                            open
+                                                                ? item.id
+                                                                : null
+                                                        )
+                                                    }
+                                                >
+                                                    <DialogTrigger asChild>
+                                                        <Button
+                                                            size="sm"
+                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs"
+                                                        >
+                                                            Beri Ulasan
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <RatingDialog
+                                                        transaction={item}
+                                                        onRatingSubmit={(
+                                                            _id,
+                                                            rating,
+                                                            comment,
+                                                            item_type
+                                                        ) =>
+                                                            handleRating(
+                                                                transaction.order_id,
+                                                                rating,
+                                                                comment,
+                                                                item_type,
+                                                                item?.item_id,
+                                                                item?.rent_days
+                                                            )
+                                                        }
+                                                        isLoading={isLoading}
+                                                        item_type={
+                                                            item?.item_type
+                                                        }
+                                                        onClose={() =>
+                                                            setIsRatingDialogOpen(
+                                                                null
+                                                            )
+                                                        }
+                                                    />
+                                                </Dialog>
+                                            </div>
+                                        )
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <Separator className="my-4" />
+                    {transaction?.tax && (
+                        <p className="text-sm font-semibold text-muted-foreground mb-4">
+                            Pajak : Rp. {formatRupiah(transaction.tax ?? 0)}
+                        </p>
+                    )}
+
+                    {/* Footer: Countdown + Total */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        {transaction?.status === "pending" && (
+                            <div className="flex items-center gap-2 text-sm">
+                                <Clock className="w-4 h-4 text-amber-600" />
+                                <Countdown
+                                    expired_at={transaction.expired_at}
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-2 ml-auto">
+                            <span className="text-sm text-gray-600">
+                                Total:
+                            </span>
+                            <span className="font-bold text-lg text-gray-900">
+                                Rp {formatRupiah(transaction.total)}
+                            </span>
                         </div>
                     </div>
-                ))}
-                <div className="flex flex-col sm:flex-row sm:justify-between mt-3 pt-2 gap-2">
-                    {transaction?.status === "pending" && (
-                        <Countdown expired_at={transaction.expired_at} />
-                    )}
-                    <p className="font-bold text-sm sm:text-base">
-                        Total: Rp {formatRupiah(transaction.total)}
-                    </p>
-                </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                    {/* Action Buttons */}
                     {transaction.status === "pending" &&
                         new Date(
                             transaction.expired_at.replace(" ", "T")
                         ).getTime() > Date.now() && (
-                            <>
+                            <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t">
+                                {/* Pay Button */}
                                 <Dialog
                                     open={isPaymentDialogOpen}
                                     onOpenChange={setIsPaymentDialogOpen}
                                 >
                                     <DialogTrigger asChild>
-                                        <Button
-                                            variant="default"
-                                            // PASTIKAN: w-full di mobile
-                                            className="bg-blue-500 hover:bg-blue-600 **w-full** sm:w-auto text-sm"
-                                        >
+                                        <Button className="w-full sm:flex-1 bg-blue-500 hover:bg-blue-600 text-sm sm:text-base">
+                                            <CreditCard className="w-4 h-4 mr-2" />
                                             Bayar Sekarang
                                         </Button>
                                     </DialogTrigger>
@@ -262,30 +399,35 @@ const TransactionItem = React.memo(
                                                 pembayaran untuk transaksi ini.
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-gray-50 rounded-lg">
-                                                <div className="flex justify-between items-center text-gray-400">
-                                                    <span className="text-sm">
-                                                        Order ID:
-                                                    </span>
-                                                    <span className="font-medium">
-                                                        {transaction.order_id}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center mt-2">
-                                                    <span className="text-sm text-gray-600">
-                                                        Total:
-                                                    </span>
-                                                    <span className="font-bold text-lg">
-                                                        Rp{" "}
-                                                        {formatRupiah(
-                                                            transaction.total
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                        <div className="space-y-4 py-4">
+                                            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                                                <CardContent className="p-4 space-y-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm text-gray-600">
+                                                            Order ID:
+                                                        </span>
+                                                        <span className="font-mono font-medium text-sm">
+                                                            {
+                                                                transaction.order_id
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    <Separator />
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-gray-700">
+                                                            Total:
+                                                        </span>
+                                                        <span className="font-bold text-xl text-blue-600">
+                                                            Rp{" "}
+                                                            {formatRupiah(
+                                                                transaction.total
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
                                         </div>
-                                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                                        <DialogFooter className="gap-2 sm:gap-0">
                                             <DialogClose asChild>
                                                 <Button
                                                     variant="outline"
@@ -304,6 +446,7 @@ const TransactionItem = React.memo(
                                     </DialogContent>
                                 </Dialog>
 
+                                {/* Cancel Button */}
                                 <Dialog
                                     open={isCancelDialogOpen}
                                     onOpenChange={setIsCancelDialogOpen}
@@ -312,8 +455,7 @@ const TransactionItem = React.memo(
                                         <Button
                                             disabled={isLoading}
                                             variant="destructive"
-                                            // PASTIKAN: w-full di mobile
-                                            className="**w-full** sm:w-auto text-sm"
+                                            className="w-full sm:w-auto text-sm sm:text-base"
                                         >
                                             {isLoading
                                                 ? "Membatalkan..."
@@ -332,34 +474,41 @@ const TransactionItem = React.memo(
                                                 dibatalkan.
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                        <Card className="bg-red-50 border-red-200">
+                                            <CardContent className="p-4 space-y-3">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-sm text-gray-600">
                                                         Order ID:
                                                     </span>
-                                                    <span className="font-medium">
+                                                    <span className="font-mono font-medium text-sm">
                                                         {transaction.order_id}
                                                     </span>
                                                 </div>
-                                                <div className="flex justify-between items-center mt-2">
+                                                <Separator />
+                                                <div className="flex justify-between items-center">
                                                     <span className="text-sm text-gray-600">
                                                         Total:
                                                     </span>
-                                                    <span className="font-bold text-lg">
+                                                    <span className="font-bold text-lg text-red-600">
                                                         Rp{" "}
                                                         {formatRupiah(
                                                             transaction.total
                                                         )}
                                                     </span>
                                                 </div>
-                                                <div className="mt-3 p-2 bg-red-100 rounded text-sm text-red-700">
-                                                    ⚠️ Transaksi yang dibatalkan
-                                                    tidak dapat dikembalikan
+                                                <div className="mt-3 p-3 bg-red-100 rounded-lg text-sm text-red-700 flex items-start gap-2">
+                                                    <span className="text-lg">
+                                                        ⚠️
+                                                    </span>
+                                                    <span>
+                                                        Transaksi yang
+                                                        dibatalkan tidak dapat
+                                                        dikembalikan
+                                                    </span>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                                            </CardContent>
+                                        </Card>
+                                        <DialogFooter className="gap-2 sm:gap-0">
                                             <DialogClose asChild>
                                                 <Button
                                                     variant="outline"
@@ -381,19 +530,47 @@ const TransactionItem = React.memo(
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                            </>
+                            </div>
                         )}
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         );
     }
 );
 
-// ===================================
-// KOMPONEN UTAMA PURCHASE INDEX (DENGAN PERBAIKAN TABS)
-// ===================================
+/**
+ * ===================================
+ * OPTIMIZED: MAIN PURCHASE INDEX COMPONENT
+ * ===================================
+ * - O(1) status mapping with constant object
+ * - Improved responsive tabs design
+ * - Enhanced UI with shadcn components
+ * - Optimized rendering with useMemo and useCallback
+ * - Better mobile experience
+ */
 
-// ✅ FIX: Changed from named export to default export
+// OPTIMIZED: O(1) status mapping lookup
+const STATUS_MAPPING = {
+    pending: "unpaid",
+    settlement: "paid",
+    shipping: "shipped",
+    success: "completed",
+    cancel: "cancelled",
+    cancelled: "cancelled",
+    pending_admin: "pending_admin",
+};
+
+// OPTIMIZED: Tab configuration array for easy maintenance
+const TAB_CONFIG = [
+    { key: "all", label: "Semua", icon: ShoppingCart },
+    { key: "unpaid", label: "Belum Bayar", icon: Clock },
+    { key: "paid", label: "Sudah Bayar", icon: CheckCircle2 },
+    { key: "pending_admin", label: "Menunggu Konfirmasi", icon: Clock },
+    { key: "shipped", label: "Dalam Perjalanan", icon: MapPin },
+    { key: "completed", label: "Selesai", icon: CheckCircle2 },
+    { key: "cancelled", label: "Dibatalkan", icon: Package },
+];
+
 export default function PurchaseIndex() {
     const { transactions, ziggy, midtransClientKey, flash } = usePage().props;
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -406,6 +583,7 @@ export default function PurchaseIndex() {
     const searchParams = new URLSearchParams(window.location.search);
     const currentTab = searchParams.get("tab") || "all";
 
+    // Flash messages effect
     useEffect(() => {
         if (flash?.success) {
             toast.success(flash.success);
@@ -415,40 +593,7 @@ export default function PurchaseIndex() {
         }
     }, [flash]);
 
-    useEffect(() => {
-        const script = document.createElement("script");
-        script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
-        script.setAttribute("data-client-key", midtransClientKey);
-        script.async = true;
-        document.head.appendChild(script);
-
-        return () => {
-            if (document.head.contains(script)) {
-                document.head.removeChild(script);
-            }
-        };
-    }, [midtransClientKey]);
-
-    const statusMapping = {
-        pending: "unpaid",
-        settlement: "paid",
-        shipping: "shipped",
-        success: "completed",
-        cancel: "cancelled",
-        cancelled: "cancelled",
-        pending_admin: "pending_admin",
-    };
-
-    const tabs = [
-        { key: "all", label: "Semua" },
-        { key: "unpaid", label: "Belum Bayar" },
-        { key: "paid", label: "Sudah Bayar" },
-        { key: "pending_admin", label: "Menunggu Konfirmasi" },
-        { key: "shipped", label: "Dalam Perjalanan" },
-        { key: "completed", label: "Selesai" },
-        { key: "cancelled", label: "Dibatalkan" },
-    ];
-
+    // OPTIMIZED: Memoized getThumbnail function
     const getThumbnail = useCallback(
         (item) => {
             const thumb =
@@ -463,14 +608,38 @@ export default function PurchaseIndex() {
         [ziggy.url]
     );
 
+    // OPTIMIZED: Memoized filtered transactions with O(1) status lookup
     const filteredTransactions = useMemo(() => {
-        return allTransactions.filter((trx) =>
-            currentTab === "all"
-                ? true
-                : statusMapping[trx.status] === currentTab
+        if (currentTab === "all") return allTransactions;
+        return allTransactions.filter(
+            (trx) => STATUS_MAPPING[trx.status] === currentTab
         );
     }, [allTransactions, currentTab]);
 
+    // Auto-open rating dialog for the first completed item without a review
+    useEffect(() => {
+        try {
+            const firstPendingReviewItem = (allTransactions || [])
+                .flatMap((trx) => trx?.items || [])
+                .find(
+                    (item) =>
+                        item?.status === "completed" &&
+                        (item?.reviews_id == null || item?.rating == null)
+                );
+
+            if (firstPendingReviewItem) {
+                // Do not override if a dialog is already open
+                setIsRatingDialogOpen(
+                    (prev) => prev ?? firstPendingReviewItem.id
+                );
+            }
+        } catch (e) {
+            // noop: defensive guard
+            console.error("Auto-open rating check error:", e);
+        }
+    }, [allTransactions, currentTab]);
+
+    // Payment handlers
     const handlePay = useCallback((snapToken) => {
         if (!window.snap) {
             toast.error("Midtrans Snap belum dimuat. Silakan refresh halaman.");
@@ -478,16 +647,16 @@ export default function PurchaseIndex() {
         }
 
         window.snap.pay(snapToken, {
-            onSuccess: (result) => {
+            onSuccess: () => {
                 toast.success("Pembayaran berhasil!");
                 router.reload();
             },
-            onPending: (result) => {
+            onPending: () => {
                 toast.warning(
                     "Pembayaran pending. Silakan cek status pembayaran."
                 );
             },
-            onError: (result) => {
+            onError: () => {
                 toast.error("Terjadi kesalahan dalam pembayaran.");
             },
             onClose: () => {
@@ -497,8 +666,14 @@ export default function PurchaseIndex() {
     }, []);
 
     const handleRedirectPay = useCallback((redirectUrl) => {
-        setPaymentUrl(redirectUrl);
-        setShowPaymentModal(true);
+        try {
+            window.open(redirectUrl, "_blank", "noopener,noreferrer");
+            toast.info("Jendela pembayaran dibuka di tab baru.");
+        } catch (e) {
+            // Fallback to in-app modal if popup blocked
+            setPaymentUrl(redirectUrl);
+            setShowPaymentModal(true);
+        }
     }, []);
 
     const closePaymentModal = useCallback(() => {
@@ -507,6 +682,7 @@ export default function PurchaseIndex() {
         router.reload();
     }, []);
 
+    // Cancel transaction handler
     const handleCancel = useCallback((orderId) => {
         if (!orderId) {
             toast.error("Order ID tidak valid!");
@@ -539,31 +715,58 @@ export default function PurchaseIndex() {
             });
     }, []);
 
+    // Rating handler
     const handleRating = useCallback(
-        (transactionItemId, rating, comment, item_type) => {
+        (orderId, rating, comment, item_type, item_id, day_rent) => {
+            console.log({ orderId, item_id, day_rent });
             setIsCancelling(true);
-            setCancellingOrderId(transactionItemId);
+            setCancellingOrderId(orderId);
 
             router.post(
-                route("mitra.rating.store", {
-                    transactionItemId: transactionItemId,
-                }),
-                { rating, comment, item_type },
+                route("mitra.rating.store", { orderId }),
+                { rating, comment, item_type, item_id, day_rent },
                 {
                     preserveScroll: true,
                     onSuccess: () => {
                         toast.success("Ulasan berhasil dikirim!");
-                        setAllTransactions((prevTransactions) =>
-                            prevTransactions.map((transaction) => ({
-                                ...transaction,
-                                items: transaction.items.map((item) =>
-                                    item.id === transactionItemId
-                                        ? { ...item, rating, comment }
-                                        : item
-                                ),
-                            }))
+
+                        // Optimistically update UI so the review card (shadcn) shows immediately
+                        setAllTransactions((prev) =>
+                            (prev || []).map((trx) => {
+                                if (trx?.order_id !== orderId) return trx;
+                                return {
+                                    ...trx,
+                                    items: (trx.items || []).map((it) => {
+                                        const matches =
+                                            it?.item_id === item_id &&
+                                            (it?.item_type === item_type ||
+                                                it?.item_type?.toLowerCase?.() ===
+                                                    item_type?.toLowerCase?.()) &&
+                                            (day_rent
+                                                ? String(it?.rent_days) ===
+                                                  String(day_rent)
+                                                : true);
+
+                                        if (!matches) return it;
+
+                                        return {
+                                            ...it,
+                                            // Mark as reviewed so the button hides and card shows
+                                            reviews_id: it?.reviews_id ?? -1,
+                                            // Populate display fields for the shadcn card using review relation
+                                            review: {
+                                                rating,
+                                                comment,
+                                            },
+                                        };
+                                    }),
+                                };
+                            })
                         );
+
                         setIsRatingDialogOpen(null);
+                        // Ensure server state is reflected after local optimistic update
+                        router.reload();
                     },
                     onError: (errors) => {
                         console.error("Rating error:", errors);
@@ -579,6 +782,7 @@ export default function PurchaseIndex() {
         []
     );
 
+    // OPTIMIZED: Memoized transaction renderer
     const renderTransaction = useCallback(
         (transaction) => (
             <TransactionItem
@@ -609,80 +813,119 @@ export default function PurchaseIndex() {
     );
 
     return (
-        <div className="max-w-4xl mx-auto p-3 sm:p-4">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <Head title="Pembelian" />
             <Toaster position="top-right" richColors />
 
-            <h1 className="text-lg sm:text-xl font-bold mb-4">Pembayaran</h1>
+            <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+                {/* Page Header */}
+                <div className="mb-6">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                        Pembelian Saya
+                    </h1>
+                    <p className="text-sm sm:text-base text-gray-600">
+                        Kelola dan lacak semua transaksi pembelian Anda
+                    </p>
+                </div>
 
-            <Tabs defaultValue={currentTab} className="w-full">
-                {/* PERBAIKAN UTAMA: Gunakan flex-nowrap dan overflow-x-auto untuk horizontal scrolling di mobile */}
-                <TabsList className="flex flex-wrap gap-1 mb-4 h-auto p-1 w-full">
-                    {tabs.map((tab) => (
-                        <Link
+                {/* OPTIMIZED: Enhanced Tabs with horizontal scrolling on mobile */}
+                <Tabs defaultValue={currentTab} className="w-full">
+                    <div className="mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                        <TabsList className="inline-flex w-auto min-w-full sm:w-full bg-white rounded-lg p-1 shadow-sm border">
+                            {TAB_CONFIG.map((tab) => {
+                                const Icon = tab.icon;
+                                return (
+                                    <Link
+                                        key={tab.key}
+                                        href={`/purchase?tab=${tab.key}`}
+                                        preserveScroll
+                                        preserveState
+                                    >
+                                        <TabsTrigger
+                                            value={tab.key}
+                                            className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 py-2 whitespace-nowrap data-[state=active]:bg-blue-500 data-[state=active]:text-white transition-all"
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            <span>{tab.label}</span>
+                                        </TabsTrigger>
+                                    </Link>
+                                );
+                            })}
+                        </TabsList>
+                    </div>
+
+                    {TAB_CONFIG.map((tab) => (
+                        <TabsContent
                             key={tab.key}
-                            href={`/purchase?tab=${tab.key}`}
-                            preserveScroll
-                            preserveState
+                            value={tab.key}
+                            className="mt-0"
                         >
-                            <TabsTrigger
-                                value={tab.key}
-                                className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 whitespace-nowrap"
-                            >
-                                {tab.label}
-                            </TabsTrigger>
-                        </Link>
+                            {filteredTransactions.length === 0 ? (
+                                <Card className="p-8 sm:p-12 text-center">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                                            <Package className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                                Tidak ada transaksi
+                                            </h3>
+                                            <p className="text-sm text-gray-500">
+                                                Anda belum memiliki transaksi di
+                                                kategori ini
+                                            </p>
+                                        </div>
+                                        <Button asChild className="mt-2">
+                                            <Link href="/">Mulai Belanja</Link>
+                                        </Button>
+                                    </div>
+                                </Card>
+                            ) : (
+                                filteredTransactions.map(renderTransaction)
+                            )}
+                        </TabsContent>
                     ))}
-                </TabsList>
+                </Tabs>
 
-                {tabs.map((tab) => (
-                    <TabsContent key={tab.key} value={tab.key}>
-                        {filteredTransactions.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                Tidak ada transaksi
+                {/* Payment Modal */}
+                {showPaymentModal && (
+                    <Dialog
+                        open={showPaymentModal}
+                        onOpenChange={setShowPaymentModal}
+                    >
+                        <DialogContent className="sm:max-w-3xl max-h-[90vh] p-0">
+                            <DialogHeader className="p-6 pb-0">
+                                <DialogTitle>Lakukan Pembayaran</DialogTitle>
+                                <DialogDescription>
+                                    Silakan lakukan pembayaran melalui gateway
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex-1 overflow-y-auto p-6 pt-4">
+                                <div className="h-[70vh] w-full">
+                                    <iframe
+                                        src={paymentUrl}
+                                        className="w-full h-full border rounded-lg"
+                                        title="Payment Gateway"
+                                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
+                                    />
+                                </div>
                             </div>
-                        ) : (
-                            filteredTransactions.map(renderTransaction)
-                        )}
-                    </TabsContent>
-                ))}
-            </Tabs>
-
-            {showPaymentModal && (
-                <Dialog
-                    open={showPaymentModal}
-                    onOpenChange={setShowPaymentModal}
-                >
-                    <DialogContent className="sm:max-w-2xl max-h-[95vh] p-0">
-                        <DialogHeader className="p-6 pb-0">
-                            <DialogTitle>Lakukan Pembayaran</DialogTitle>
-                            <DialogDescription>
-                                Silakan lakukan pembayaran
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex-1 overflow-y-auto p-6 pt-0">
-                            <div className="h-[80vh] w-full">
-                                <iframe
-                                    src={paymentUrl}
-                                    className="w-full h-full border rounded-lg"
-                                    title="Payment Gateway"
-                                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter className="p-6 pt-0">
-                            <DialogClose asChild>
-                                <Button onClick={closePaymentModal}>
-                                    Selesai
-                                </Button>
-                            </DialogClose>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
+                            <DialogFooter className="p-6 pt-0">
+                                <DialogClose asChild>
+                                    <Button
+                                        onClick={closePaymentModal}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Selesai
+                                    </Button>
+                                </DialogClose>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
+            </div>
         </div>
     );
 }
 
-// ✅ FIX: Corrected layout assignment for Inertia
 PurchaseIndex.layout = (page) => <MainLayout children={page} />;

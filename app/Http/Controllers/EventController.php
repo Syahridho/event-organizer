@@ -19,6 +19,7 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\TaxHelper;
 
 class EventController extends Controller
 {
@@ -28,9 +29,19 @@ class EventController extends Controller
     }
  
     public function store(EventRequest $request)
-    {        
+    {
         try {
             $data = $request->validated();
+
+            if (!isset($data['tickets']) || empty($data['tickets'])) {
+                $data['tickets'] = [
+                    [
+                        'name' => 'Free',
+                        'quota' => 99999999,
+                        'price' => 0,
+                    ]
+                ];
+            }
 
             $data['event_date_start'] = Carbon::parse($data['event_date_start'])->format('Y-m-d H:i:s');
 
@@ -129,6 +140,17 @@ class EventController extends Controller
     
             $data['speakers'] = $data['speakers'] ?? [];
             $data['tickets'] = $data['tickets'] ?? [];
+
+            // Enforce default free ticket when no ticket data provided
+            if (!isset($data['tickets']) || empty($data['tickets'])) {
+                $data['tickets'] = [
+                    [
+                        'name' => 'Free',
+                        'quota' => 99999999,
+                        'price' => 0,
+                    ]
+                ];
+            }
     
             // Handle thumbnail
             $thumbnail = $data['thumbnail'] ?? null;
@@ -377,11 +399,49 @@ class EventController extends Controller
 
     public function show($id)
     {
-        $event = Event::findOrFail($id);
+        $event = Event::with(['tickets'])->findOrFail($id);
+
+        // Inject a virtual "Default Free Ticket" when no tickets exist
+        if ($event->tickets->isEmpty()) {
+            $virtualTicket = new Ticket([
+                'id' => -1, // Virtual identifier
+                'event_id' => $event->id,
+                'name' => 'Free Default',
+                'price' => 0,
+                'quota' => 9999999,
+            ]);
+            // Additional virtual-only attributes
+            $virtualTicket->setAttribute('is_sold_out', false);
+            // Mark as not persisted
+            $virtualTicket->exists = false;
+
+            // Replace the relationship collection with our virtual ticket
+            $event->setRelation('tickets', collect([$virtualTicket]));
+        }
+
+        // Calculate tax-inclusive prices for all tickets (real or virtual)
+        $ticketsWithTax = $event->tickets->map(function ($ticket) {
+            $finalPrice = TaxHelper::calculateFinalPrice($ticket->price);
+
+            return [
+                'id' => $ticket->id,
+                'name' => $ticket->name,
+                'price' => $ticket->price,
+                'final_price' => $finalPrice, // Tax-inclusive price
+                'quota' => $ticket->quota,
+                'is_sold_out' => (bool) data_get($ticket, 'is_sold_out', false),
+                'tax_amount' => round($finalPrice - $ticket->price, 2),
+            ];
+        });
+
+        // Get tax info for display
+        $taxInfo = TaxHelper::getTaxInfo();
 
         return Inertia::render('Mitra/Events/show', [
             'id' => $id,
-            'event' => $event
+            'event' => $event,
+            'tickets' => $ticketsWithTax,
+            'tax_info' => $taxInfo,
         ]);
     }
 

@@ -20,9 +20,18 @@ class TransactionItem extends Model
         'price',
         'rent_days',
         'status',
+        'delivery_option',
+        'delivery_fee',
+        'delivery_fee_status',
+        'note',
         'qty',
         'reviews_id',
     ];
+
+    protected $casts = [
+        'price' => 'integer',
+        'qty' => 'integer',
+    ]; 
 
     public function transaction()
     {

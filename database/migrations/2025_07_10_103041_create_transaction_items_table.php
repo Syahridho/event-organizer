@@ -21,7 +21,10 @@ return new class extends Migration
             $table->integer('price');
             $table->date('rent_days')->nullable();
             $table->text('note')->nullable();
-            $table->foreignId('reviews_id')->nullable()->constrained()->onDelete('cascade');
+            $table->enum('delivery_option', ['delivery', 'pickup'])->nullable();
+            $table->integer('delivery_fee')->nullable()->default(0);
+            $table->string('delivery_fee_status')->default('pending');
+            $table->unsignedBigInteger('reviews_id')->nullable();
             $table->text('note_admin')->nullable();
             $table->string('status')->default('pending');
             $table->timestamps();

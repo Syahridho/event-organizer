@@ -7,7 +7,9 @@ use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\Service;
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
+use App\Helpers\TaxHelper;
+use App\Helpers\DateValidationHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -23,19 +25,19 @@ class CartController extends Controller
                     Ticket::class => ['event'],
                     Building::class => [],
                     Service::class => [],
-                    RentProperties::class => [],
+                    RentProperty::class => [],
                 ]);
             }
         ])
         ->where('user_id', $userId)
         ->get();
 
-        // Check booked dates for service, building, and property items
-        // Get all settled transaction items with rent_days
+        // OPTIMIZED: Single query to get all settled bookings with exact match validation
+        // This prevents double booking by checking DB in O(n) time
         $bookedDates = \DB::table('transaction_items')
             ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
             ->where('transactions.status', 'settlement')
-            ->whereIn('transaction_items.type', ['service', 'building', 'rent_property'])
+            ->whereIn('transaction_items.item_type', ['service', 'building', 'rent_property'])
             ->whereNotNull('transaction_items.rent_days')
             ->select(
                 'transaction_items.item_id',
@@ -49,23 +51,30 @@ class CartController extends Controller
                 return $item->item_id . '_' . $item->item_type . '_' . $item->rent_days;
             });
 
-        // Mark cart items as booked if they match settled bookings
+        // SOLD-OUT DETECTION: Mark cart items as booked/sold-out if settled by ANY user
         $carts = $carts->map(function ($cart) use ($bookedDates, $userId) {
-            // Only check for service, building, property types
+            // Only check for service, building, property types (rentable items)
             if (in_array($cart->type, ['service', 'building', 'property']) && $cart->rent_days) {
-                // Normalize item_type for comparison
-                $itemType = $cart->item_type;
+                // CRITICAL FIX: Normalize item_type from class name to lowercase string
+                // Cart stores: App\Models\Building, App\Models\Service, App\Models\RentProperty
+                // Transaction stores: building, service, rent_property
+                $normalizedType = $this->normalizeItemType($cart->item_type, $cart->type);
 
                 // Create key to match with booked dates
-                $key = $cart->item_id . '_' . $itemType . '_' . $cart->rent_days;
+                $key = $cart->item_id . '_' . $normalizedType . '_' . $cart->rent_days;
 
-                // Check if this combination is already booked
+                // Check if this exact combination (item + date) is already booked
                 if (isset($bookedDates[$key])) {
                     $bookingInfo = $bookedDates[$key]->first();
 
-                    // Check if booked by another user (not current user)
+                    // If booked by another user → SOLD OUT (cannot be purchased)
                     if ($bookingInfo->user_id != $userId) {
                         $cart->is_booked_by_other = true;
+                        $cart->is_sold_out = true; // Mark as sold out
+                    }
+                    // If booked by current user → Just mark as already booked (for info)
+                    else {
+                        $cart->is_already_booked_by_me = true;
                     }
                 }
             }
@@ -73,9 +82,32 @@ class CartController extends Controller
             return $cart;
         });
 
+        // Calculate tax info
+        $taxInfo = TaxHelper::getTaxInfo();
+
         return Inertia::render('Cart/Index', [
             'carts' => $carts,
+            'taxInfo' => $taxInfo,
         ]);
+    }
+
+    /**
+     * CRITICAL: Normalize item_type for consistent matching between cart and transactions
+     *
+     * @param string $itemType Fully qualified class name (e.g., App\Models\Building)
+     * @param string $type Short type name (e.g., building, service, property)
+     * @return string Normalized type for transaction_items table
+     */
+    private function normalizeItemType($itemType, $type)
+    {
+        // Map cart type to transaction_items item_type
+        $typeMapping = [
+            'building' => 'building',
+            'service' => 'service',
+            'property' => 'rent_property', // Important: property in cart = rent_property in transactions
+        ];
+
+        return $typeMapping[$type] ?? $type;
     }
 
     public function store(Request $request)
@@ -87,6 +119,32 @@ class CartController extends Controller
             'rent_days' => 'nullable|date|after:today',
             'item_qty' => 'nullable|integer|min:1',
         ]);
+
+        // CRITICAL: Date validation before adding to cart (FAST ALGORITHM)
+        // Load the item to validate
+        $itemModel = $data['item_type'];
+        $item = $itemModel::find($data['item_id']);
+
+        if (!$item) {
+            return response()->json([
+                'message' => 'Item tidak ditemukan.',
+                'error' => 'ITEM_NOT_FOUND',
+            ], 404);
+        }
+
+        // Validate product dates using optimized helper (O(1) complexity)
+        $validation = DateValidationHelper::validateProductPurchase(
+            $item,
+            $data['type'],
+            $data['rent_days'] ?? null
+        );
+
+        if (!$validation['valid']) {
+            return response()->json([
+                'message' => $validation['message'],
+                'error' => $validation['code'],
+            ], 400);
+        }
 
         $cart = Cart::where([
             'user_id' => auth()->id(),
@@ -132,7 +190,7 @@ class CartController extends Controller
                             Ticket::class => ['event'],
                             Service::class => [],
                             Building::class => [],
-                            RentProperties::class => [],
+                            RentProperty::class => [],
                         ]);
                     }
                 ])

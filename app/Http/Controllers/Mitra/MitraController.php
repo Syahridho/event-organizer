@@ -10,7 +10,7 @@ use App\Models\Wallet;
 use App\Models\TransactionItem;
 use App\Models\Service;
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use App\Models\Event;
 use Illuminate\Support\Facades\DB; // Import Facade DB untuk query
 use Carbon\Carbon;
@@ -20,13 +20,19 @@ class MitraController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        
-        // Ambil data total pendapatan dari model Wallet
-        $totalRevenue = $user->wallet->balance ?? 0;
+
+        // Pastikan wallet selalu ada untuk user yang login (operasi atomik, satu query)
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0]
+        );
+
+        // Ambil data total pendapatan dari model Wallet (dijamin tidak null)
+        $totalRevenue = $wallet->balance;
         
 
         // ---- Data untuk kartu "Transaksi Selesai" ----
-        $completedTransactionsCount = TransactionItem::whereHasMorph('item', [Service::class, Building::class, RentProperties::class], function ($query) use ($user) {
+        $completedTransactionsCount = TransactionItem::whereHasMorph('item', ['service', 'building', 'rent_property', 'property'], function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
         ->where('status', 'completed')
@@ -36,7 +42,7 @@ class MitraController extends Controller
         $startOfLastMonth = now()->subMonth()->startOfMonth();
         $endOfLastMonth = now()->subMonth()->endOfMonth();
 
-        $lastMonthCompletedCount = TransactionItem::whereHasMorph('item', [Service::class, Building::class, RentProperties::class], function ($query) use ($user) {
+        $lastMonthCompletedCount = TransactionItem::whereHasMorph('item', ['service', 'building', 'rent_property', 'property'], function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
         ->where('status', 'completed')
@@ -49,7 +55,7 @@ class MitraController extends Controller
         $itemCounts = [];
         $itemCounts['service'] = Service::where('user_id', $user->id)->count();
         $itemCounts['building'] = Building::where('user_id', $user->id)->count();
-        $itemCounts['rent_properties'] = RentProperties::where('user_id', $user->id)->count();
+        $itemCounts['rent_property'] = RentProperty::where('user_id', $user->id)->count();
         $itemCounts['event'] = Event::where('user_id', $user->id)->count();
 
         $totalItems = array_sum($itemCounts);
@@ -59,7 +65,7 @@ class MitraController extends Controller
         $startOfThisMonth = now()->startOfMonth();
         $endOfThisMonth = now()->endOfMonth();
 
-        $thisMonthRevenue = TransactionItem::whereHasMorph('item', [Service::class, Building::class, RentProperties::class], function ($query) use ($user) {
+        $thisMonthRevenue = TransactionItem::whereHasMorph('item', ['service', 'building', 'rent_property', 'property'], function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
         ->where('status', 'completed')
@@ -67,7 +73,7 @@ class MitraController extends Controller
         ->sum('price');
         
         // 2. Ambil pendapatan bulan lalu
-        $lastMonthRevenue = TransactionItem::whereHasMorph('item', [Service::class, Building::class, RentProperties::class], function ($query) use ($user) {
+        $lastMonthRevenue = TransactionItem::whereHasMorph('item', ['service', 'building', 'rent_property', 'property'], function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
         ->where('status', 'completed')
@@ -84,19 +90,34 @@ class MitraController extends Controller
         }
 
 
-        $transactionItems = TransactionItem::whereHasMorph(
-            'item',
-            [Service::class, Building::class, RentProperties::class],
-            function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            }
-        )
-        ->with([
-            'item',
-            'transaction'
-        ])
-        ->latest()
-        ->get();
+        // Robust owner filter without relying on morph alias resolution:
+        // Match directly on stored item_type values and item_id sets per model
+        $serviceIds = Service::where('user_id', $user->id)->pluck('id');
+        $buildingIds = Building::where('user_id', $user->id)->pluck('id');
+        $rentPropertyIds = RentProperty::where('user_id', $user->id)->pluck('id');
+
+        $transactionItems = TransactionItem::query()
+            ->where(function ($q) use ($serviceIds, $buildingIds, $rentPropertyIds) {
+                $q->where(function ($qq) use ($serviceIds) {
+                    $qq->where('item_type', 'service')->whereIn('item_id', $serviceIds);
+                })->orWhere(function ($qq) use ($buildingIds) {
+                    $qq->where('item_type', 'building')->whereIn('item_id', $buildingIds);
+                })->orWhere(function ($qq) use ($rentPropertyIds) {
+                    // Support multiple legacy morph-type storage values
+                    $qq->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
+                       ->whereIn('item_id', $rentPropertyIds);
+                });
+            })
+            ->with(['item', 'transaction'])
+            ->latest()
+            ->get();
+
+
+        // $tes = TransactionItem::where('user_id', $user->id)->get();
+
+        // dd($tes);
+
+        
 
         return Inertia::render('Mitra/Dashboard', [
             'totalRevenue' => $totalRevenue,

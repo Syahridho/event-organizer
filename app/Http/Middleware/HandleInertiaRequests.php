@@ -10,7 +10,7 @@ use App\Models\Cart;
 use App\Models\Ticket;
 use App\Models\Building;
 use App\Models\Service;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 
@@ -66,7 +66,7 @@ class HandleInertiaRequests extends Middleware
                         Ticket::class => ['event'],
                         Building::class => [],
                         Service::class => [],
-                        RentProperties::class => [],
+                        RentProperty::class => [],
                     ]);
                 }
             ])
@@ -83,7 +83,11 @@ class HandleInertiaRequests extends Middleware
         return [
             ...$shared,
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    ...$request->user()->toArray(),
+                    'profile_photo_url' => $request->user()->profile_photo_url,
+                    'initials' => $request->user()->initials,
+                ] : null,
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),

@@ -27,6 +27,11 @@ const admin = [
         exact: true,
     },
     {
+        title: "Pesan",
+        icon: TiMessages,
+        url: "/admin/dashboard/chat",
+    },
+    {
         title: "Organizer",
         icon: Trophy,
         items: [

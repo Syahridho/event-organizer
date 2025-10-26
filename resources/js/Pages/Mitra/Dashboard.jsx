@@ -474,7 +474,7 @@ export default function UserDashboard({
                                 {itemCounts.event || 0} event,{" "}
                                 {itemCounts.service || 0} jasa,{" "}
                                 {itemCounts.building || 0} gedung,{" "}
-                                {itemCounts.rent_properties || 0} properti
+                                {itemCounts.rent_property || 0} properti
                             </p>
                         </CardContent>
                     </Card>

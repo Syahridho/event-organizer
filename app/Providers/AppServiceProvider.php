@@ -6,8 +6,9 @@ use App\Helpers\Helper;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Service;
 use App\Models\Building;
-use App\Models\RentProperties;
+use App\Models\RentProperty;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -45,25 +46,29 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Relation::morphMap([
-            'ticket' => \App\Models\Ticket::class,
-            'service' => \App\Models\Service::class,
-            'building' => \App\Models\Building::class,
-            'property' => \App\Models\RentProperties::class,
+            'ticket'        => \App\Models\Ticket::class,
+            'service'       => \App\Models\Service::class,
+            'building'      => \App\Models\Building::class,
+            'property'      => \App\Models\RentProperty::class,
+            'rent_property' => \App\Models\RentProperty::class,
+            'itemPhoto'     => \App\Models\ItemPhoto::class,
+            'user'          => \App\Models\User::class,
+            'mitra'         => \App\Models\Mitra::class,
         ]);
 
         Relation::enforceMorphMap([
-            'ticket'         => \App\Models\Ticket::class,
-            'service'        => \App\Models\Service::class,
-            'building'       => \App\Models\Building::class,
-            'property'       => \App\Models\RentProperties::class,
-            'rent_property'       => \App\Models\RentProperties::class,
-            'itemPhoto'    => \App\Models\ItemPhoto::class,
-            'service'        => 'App\Models\Service',
-            'building'       => 'App\Models\Building',
-            'App\Models\Building'       => \App\Models\Building::class,
-            'rent_properties'=> 'App\Models\RentProperty',
-            'user'           => \App\Models\User::class,
-            'mitra'          => \App\Models\Mitra::class,
+            'ticket'               => \App\Models\Ticket::class,
+            'service'              => \App\Models\Service::class,
+            'building'             => \App\Models\Building::class,
+            'property'             => \App\Models\RentProperty::class,
+            'rent_property'        => \App\Models\RentProperty::class,
+            // Support legacy rows that stored full class names in item_type
+            'App\Models\Service'   => \App\Models\Service::class,
+            'App\Models\Building'  => \App\Models\Building::class,
+            'App\Models\RentProperty' => \App\Models\RentProperty::class,
+            'itemPhoto'            => \App\Models\ItemPhoto::class,
+            'user'                 => \App\Models\User::class,
+            'mitra'                => \App\Models\Mitra::class,
         ]);
     }
 }
