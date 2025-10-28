@@ -105,6 +105,37 @@ class User extends Authenticatable
 
         return $initials ?: strtoupper(substr($this->name, 0, 2));
     }
+    /**
+     * Get events for user.
+     */
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
+
+    /**
+     * Get services for user.
+     */
+    public function services()
+    {
+        return $this->hasMany(Service::class);
+    }
+
+    /**
+     * Get buildings for user.
+     */
+    public function buildings()
+    {
+        return $this->hasMany(Building::class);
+    }
+
+    /**
+     * Get rent properties for user.
+     */
+    public function rentProperties()
+    {
+        return $this->hasMany(RentProperty::class);
+    }
 
     /**
      * Get the route key for the model.

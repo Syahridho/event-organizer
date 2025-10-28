@@ -15,7 +15,7 @@ export const createPaymentPayload = (
     item,
     quantity,
     userInfo,
-    delivery_option = null,
+    delivery_type = null,
     note = null,
     shippingAddress = null
 ) => {
@@ -29,7 +29,7 @@ export const createPaymentPayload = (
                 price: Math.round(basePrice), // Base price only
                 name: item.name,
                 type: getItemType(item),
-                delivery_option: delivery_option,
+                delivery_type: delivery_type,
                 note: note,
                 quantity: quantity,
                 rent_days: item.rent_days || null,

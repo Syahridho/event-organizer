@@ -43,6 +43,13 @@ import MainLayout from "@/Layouts/Main";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 const ErrorFallback = ({ error }) => (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -120,7 +127,7 @@ const getDetailUrl = (type, eventId, itemId) => {
         ticket: `/events/${eventId}`,
         service: `/services/${itemId}`,
         building: `/buildings/${itemId}`,
-        property: `/property/${itemId}`,
+        property: `/propertys/${itemId}`,
     };
     return urlMap[type] || "#";
 };
@@ -163,7 +170,7 @@ const checkItemStatus = (item) => {
     }
 
     // Rule 3: Backend Unavailability Flag
-    if (item.is_unavailable) {
+    if (item.is_unavailable == "unavailable") {
         if (item.type === "ticket") {
             return {
                 disabled: true,
@@ -593,6 +600,7 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                     price: item.item?.price,
                     quantity: item.item_qty,
                     rent_days: item.rent_days || null,
+                    delivery_type: item?.delivery_type || null,
                     is_unavailable: item.is_unavailable || false,
                     thumbnail: item?.item?.event?.thumbnail?.includes("randoms")
                         ? item?.item?.event?.thumbnail?.replace(/^\/+/, "")
@@ -670,13 +678,38 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             return changed ? newSet : prev;
         });
     }, [disabledItems]);
-
     const renderCartItem = useCallback(
         (item) => {
             const status = checkItemStatus(item);
             const colors = status.severity
                 ? getSeverityColors(status.severity)
                 : null;
+
+            // --- Asumsi getThumbnailSrc tersedia di sini ---
+            const getThumbnailSrc = (cartItem) => {
+                const thumbnailPath =
+                    cartItem.type === "ticket"
+                        ? cartItem.item?.event?.thumbnail
+                        : cartItem.item?.thumbnail;
+
+                if (!thumbnailPath) {
+                    return `https://placehold.co/96x96/e5e7eb/7f8388?text=${(
+                        cartItem.type || "I"
+                    )
+                        .charAt(0)
+                        .toUpperCase()}`;
+                }
+
+                // Logika untuk menangani path yang mungkin sudah lengkap atau perlu penambahan
+                const path = thumbnailPath.replace(/^\/+/, "");
+                if (path.includes("randoms") || path.includes("storage")) {
+                    return `${ziggy.url}/${path}`;
+                }
+                return `${ziggy.url}/storage/thumbnails/${path}`;
+            };
+
+            const thumbnailUrl = getThumbnailSrc(item);
+            // ----------------------------------------------------
 
             return (
                 <Card
@@ -698,33 +731,10 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                 className="mt-1 flex-shrink-0"
                             />
 
+                            {/* Image Section (KODE DIPERSINGKAT MENGGUNAKAN thumbnailUrl) */}
                             <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-lg overflow-hidden border-2 border-gray-200">
-                                {console.log(item?.type == "ticket")}
                                 <img
-                                    src={
-                                        item.item?.event?.thumbnail?.includes(
-                                            "randoms"
-                                        )
-                                            ? `${
-                                                  ziggy.url
-                                              }/storage/${item?.item?.event?.thumbnail?.replace(
-                                                  /^\/+/,
-                                                  ""
-                                              )}`
-                                            : item.type === "ticket"
-                                            ? `${
-                                                  ziggy.url
-                                              }/storage/thumbnails/${item?.item?.event?.thumbnail?.replace(
-                                                  /^\/+/,
-                                                  ""
-                                              )}`
-                                            : `${
-                                                  ziggy.url
-                                              }/storage/thumbnails/${item?.item?.thumbnail?.replace(
-                                                  /^\/+/,
-                                                  ""
-                                              )}`
-                                    }
+                                    src={thumbnailUrl}
                                     alt={item.item?.name || "Item"}
                                     onError={(e) => {
                                         e.currentTarget.src = `https://placehold.co/96x96/e5e7eb/7f8388?text=${(
@@ -824,20 +834,96 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                     )}
 
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 mb-1">
-                                                Harga Satuan
-                                            </span>
-                                            <span className="text-lg md:text-xl font-bold text-primary">
-                                                Rp{" "}
-                                                {formatRupiah(
-                                                    item.item?.price || 0
-                                                )}
-                                            </span>
+                                    {item.type !== "property" && (
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-gray-500 mb-1">
+                                                    Harga Satuan
+                                                </span>
+                                                <span className="text-lg md:text-xl font-bold text-primary">
+                                                    Rp{" "}
+                                                    {formatRupiah(
+                                                        item.item?.price || 0
+                                                    )}
+                                                </span>
+                                            </div>
                                         </div>
+                                    )}
 
-                                        {item.type === "ticket" && (
+                                    {/* FASTEST ALGORITHM: Simplified Delivery Options (KODE BARU) */}
+                                    {item.type === "property" &&
+                                        !status.disabled && (
+                                            <div className="mb-4">
+                                                <label className="text-sm font-semibold text-gray-900 block mb-2">
+                                                    Pilihan Pengiriman
+                                                </label>
+                                                <Select
+                                                    value={
+                                                        item.delivery_type ||
+                                                        "pickup"
+                                                    }
+                                                    onValueChange={async (
+                                                        value
+                                                    ) => {
+                                                        try {
+                                                            const response =
+                                                                await axios.post(
+                                                                    "/cart/update-delivery-type",
+                                                                    {
+                                                                        cart_id:
+                                                                            item.id,
+                                                                        delivery_type:
+                                                                            value,
+                                                                    }
+                                                                );
+
+                                                            if (
+                                                                response.data
+                                                                    .success
+                                                            ) {
+                                                                // Update local Redux state
+                                                                dispatch(
+                                                                    updateCartQuantity(
+                                                                        {
+                                                                            cart_id:
+                                                                                item.id,
+                                                                            quantity:
+                                                                                item.item_qty,
+                                                                            delivery_type:
+                                                                                value,
+                                                                        }
+                                                                    )
+                                                                );
+                                                            }
+                                                        } catch (error) {
+                                                            console.error(
+                                                                "Failed to update delivery option:",
+                                                                error
+                                                            );
+                                                            toast.error(
+                                                                "Gagal memperbarui pilihan pengiriman"
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Pilih jenis pengiriman" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="pickup">
+                                                            Ambil di Tempat
+                                                        </SelectItem>
+                                                        <SelectItem value="delivery">
+                                                            Antar ke Alamat
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+
+                                    {/* Quantity Selector (Ticket only in this block) */}
+                                    {item.type === "ticket" &&
+                                        !status.disabled && (
                                             <div className="flex items-center border rounded-lg shadow-sm bg-white">
                                                 <Button
                                                     variant="ghost"
@@ -875,8 +961,8 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                                 </Button>
                                             </div>
                                         )}
-                                    </div>
 
+                                    {/* Subtotal Display */}
                                     <div className="text-left md:text-right">
                                         <p className="text-xs text-gray-500 mb-1">
                                             Subtotal
@@ -902,6 +988,7 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             handleDeleteCart,
             handleQtyChange,
             ziggy.url,
+            // Tambahkan dependency lain jika ada (misal: updateCartQuantity, dll.)
         ]
     );
 

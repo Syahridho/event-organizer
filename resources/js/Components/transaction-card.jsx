@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Truck, ShoppingBag } from "lucide-react";
+import { Truck, ShoppingBag, CheckCircle2Icon } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -23,6 +23,7 @@ import { Label } from "./ui/label";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import { useState } from "react";
 import { Input } from "./ui/input";
+import { useMemo } from "react";
 
 // ALGORITMA TERCEPAT: Pengecekan Tanggal di JavaScript
 const isRentDateArrivedOrPassed = (rentDaysString) => {
@@ -115,10 +116,9 @@ export function TransactionCard({
             : "-");
 
     // Logika utama untuk tombol Selesai (Completed)
+    // cek sebelum pulang
     const canComplete =
-        item.status === "work" ||
-        (item.status === "confirmed" &&
-            isRentDateArrivedOrPassed(item.rent_days));
+        item.status === "work" && !isRentDateArrivedOrPassed(item.rent_days);
 
     const transaction = item.transaction;
     const address = transaction.address;
@@ -137,6 +137,59 @@ export function TransactionCard({
         if (option === "pickup") return "Pembeli akan mengambil sendiri";
         return "Opsi Tidak Ditentukan";
     };
+
+    const isTimeWindowActive = (rentDateString) => {
+        if (!rentDateString) return false;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const rentDate = new Date(rentDateString);
+        rentDate.setHours(0, 0, 0, 0);
+
+        // Hitung tanggal 1 hari sebelum tanggal sewa (26 Okt)
+        const dayBeforeRent = new Date(rentDate);
+        dayBeforeRent.setDate(rentDate.getDate() - 1);
+
+        // Dapatkan timestamp hari ini
+        const todayTime = today.getTime();
+
+        // Bandingkan: Apakah hari ini adalah TANGGAL SEWA (27 Okt) ATAU 1 HARI SEBELUMNYA (26 Okt)?
+        const isRentDay = todayTime === rentDate.getTime();
+        const isDayBefore = todayTime === dayBeforeRent.getTime();
+
+        return isRentDay || isDayBefore;
+    };
+
+    const isActionTime = useMemo(() => {
+        // Gunakan fungsi helper yang diperbarui
+        return isTimeWindowActive(item.rent_days);
+    }, [item.rent_days]);
+
+    const isReadyForAction = useMemo(() => {
+        const isRentItem = ["rent_property", "service"].includes(
+            item.item_type
+        );
+        return (
+            item.status === "confirmed" &&
+            item.item_type !== "building" &&
+            isRentItem
+        );
+    }, [item.status, item.item_type]);
+
+    // --- Logika isTooEarlyForOtw diperbarui ---
+    const isTooEarlyForOtw = useMemo(() => {
+        // Sekarang, 'isActionTime' adalah kapan OTW diizinkan.
+        // Jika isReadyForAction benar, tapi BUKAN waktunya (isActionTime false), maka terlalu awal.
+        // Console.log Anda akan menunjukkan:
+        // isReadyForAction: true
+        // isActionTime: true (jika hari ini 26 atau 27 Oktober)
+
+        console.log(`Ready: ${isReadyForAction}, ActionTime: ${isActionTime}`);
+
+        // Logika: Item siap untuk aksi DAN BUKAN di jendela waktu aksi
+        return isReadyForAction && !isActionTime;
+    }, [isReadyForAction, isActionTime]);
 
     return (
         <Card className="shadow-sm">
@@ -175,13 +228,84 @@ export function TransactionCard({
                                 Tipe : {typeLabel}
                             </div>
 
-                            {item?.delivery_fee_status === "submitted" && (
-                                <Alert className="mt-2">
-                                    <AlertTitle className="text-muted-foreground">
-                                        Pembeli belum bayar{" "}
-                                        {formatRupiah(item.delivery_fee)}
+                            {item.delivery_type && (
+                                <div className="text-xs text-muted-foreground">
+                                    Tipe:{" "}
+                                    {item.delivery_type === "delivery"
+                                        ? "Diantar"
+                                        : item.delivery_type === "pickup"
+                                        ? "Diambil Sendiri"
+                                        : "Tidak Ditentukan"}
+                                </div>
+                            )}
+
+                            {item.delivery_type === "pickup" ? (
+                                // ==========================================================
+                                // SKENARIO 1: PICKUP (DIAMBIL SENDIRI)
+                                // ==========================================================
+                                <Alert className="mt-3 p-3 border rounded-lg bg-blue-50 border-blue-200">
+                                    <AlertTitle className="text-blue-800 flex flex-col sm:flex-row sm:items-center justify-between font-semibold">
+                                        {/* Status Utama & Detail */}
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-base">
+                                                {item.status === "work"
+                                                    ? "Pembeli Sudah Menjemput Properti"
+                                                    : item.status ===
+                                                      "completed"
+                                                    ? "Pembeli Sudah Mengembalikan Properti"
+                                                    : "Pembeli Akan Menjemput Properti"}
+                                            </span>
+
+                                            {/* Status Sub-teks */}
+                                            <span className="font-normal text-sm text-blue-600">
+                                                {item.status === "work"
+                                                    ? "(Ambil Foto Bukti)"
+                                                    : item.status ===
+                                                      "completed"
+                                                    ? ""
+                                                    : "(Menunggu Penjemputan)"}
+                                            </span>
+                                        </div>
                                     </AlertTitle>
                                 </Alert>
+                            ) : (
+                                item.delivery_type === "delivery" &&
+                                item.delivery_fee > 0 &&
+                                // ==========================================================
+                                // SKENARIO 2: DELIVERY (DIANTAR) DENGAN BIAYA
+                                // ==========================================================
+                                (item?.delivery_fee_payment_status ===
+                                "settlement" ? (
+                                    // KONDISI 2A: Biaya Antar Sudah Bayar (Settlement)
+                                    <Alert className="mt-2 bg-green-100 border-green-200">
+                                        <AlertTitle className="text-green-800 flex items-center justify-between font-semibold">
+                                            <span>
+                                                {item.status === "work"
+                                                    ? "Properti Sedang Diproses"
+                                                    : "Biaya Antar dibayar"}
+                                            </span>
+                                            <span className="font-bold ms-1">
+                                                {formatRupiah(
+                                                    item.delivery_fee
+                                                )}
+                                            </span>
+                                        </AlertTitle>
+                                    </Alert>
+                                ) : (
+                                    // KONDISI 2B: Biaya Antar Belum Bayar (Pending/Null)
+                                    <Alert className="mt-2 bg-yellow-50 border-yellow-200">
+                                        <AlertTitle className="text-yellow-800 flex items-center justify-between font-semibold">
+                                            <span>
+                                                Pembeli Belum Bayar Biaya Antar
+                                            </span>
+                                            <span className="font-bold ms-1">
+                                                {formatRupiah(
+                                                    item.delivery_fee
+                                                )}
+                                            </span>
+                                        </AlertTitle>
+                                    </Alert>
+                                ))
                             )}
                         </div>
                     </div>
@@ -291,19 +415,18 @@ export function TransactionCard({
                                         <Alert className="bg-primary/5 border-primary/20 flex items-center gap-2">
                                             <div className="">
                                                 {getDeliveryIcon(
-                                                    item.delivery_option
+                                                    item.delivery_type
                                                 )}
                                             </div>
                                             <AlertTitle className="text-primary font-bold">
                                                 {getDeliveryTitle(
-                                                    item.delivery_option
+                                                    item.delivery_type
                                                 )}
                                             </AlertTitle>
                                         </Alert>
 
                                         {/* Tampilkan Detail Alamat HANYA JIKA OPSI DELIVERY */}
-                                        {item.delivery_option ===
-                                            "delivery" && (
+                                        {item.delivery_type === "delivery" && (
                                             <div className="space-y-4">
                                                 {/* DETAIL PENERIMA */}
                                                 <div className="space-y-3 text-sm p-4 border rounded-lg bg-gray-50 dark:bg-zinc-800">
@@ -414,7 +537,7 @@ export function TransactionCard({
                                         )}
 
                                         {/* OPSI PICKUP (Tampilkan Biaya Antar: Rp 0) */}
-                                        {item.delivery_option === "pickup" && (
+                                        {item.delivery_type === "pickup" && (
                                             <div className="flex justify-between items-center p-3 border rounded-lg bg-gray-50 dark:bg-zinc-800 font-semibold">
                                                 <span className="text-muted-foreground">
                                                     Biaya Antar:
@@ -445,11 +568,34 @@ export function TransactionCard({
                     )}
 
                     {/* Button OTW */}
-                    {item.status === "confirmed" &&
-                        item.item_type !== "building" && (
-                            <Button onClick={() => onOtw(item.id)}>OTW</Button>
-                        )}
+                    {isReadyForAction && (
+                        <div className="flex flex-col gap-2">
+                            {/* 1. Tombol OTW / Sudah Diambil */}
+                            <Button
+                                onClick={() => onOtw(item.id)}
+                                // Tombol dinonaktifkan jika:
+                                // 1. Terlalu awal untuk OTW (waktu belum tepat)
+                                // 2. ATAU item delivery & Biaya antar belum lunas
+                                disabled={
+                                    isTooEarlyForOtw ||
+                                    (item.delivery_type === "delivery" &&
+                                        item.delivery_fee_payment_status !==
+                                            "settlement")
+                                }
+                            >
+                                {item.delivery_type === "pickup"
+                                    ? "Sudah Diambil"
+                                    : "Otw"}
+                            </Button>
 
+                            {/* 2. Tanda Keterangan Waktu */}
+                            {isTooEarlyForOtw && (
+                                <span className="text-xs text-center text-yellow-600">
+                                    Otw/Ambil: -1 Hari sebelum {item.rent_days}
+                                </span>
+                            )}
+                        </div>
+                    )}
                     {/* Button Kerja (Process) */}
                     {item.status === "otw" && (
                         <Button onClick={() => onProcess(item.id)}>
@@ -458,6 +604,7 @@ export function TransactionCard({
                     )}
 
                     {/* Tombol Selesai (Completed) - Menggunakan Logika Gabungan */}
+                    {console.log(canComplete)}
                     {canComplete && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -474,7 +621,12 @@ export function TransactionCard({
                                             ? "acara"
                                             : "pekerjaan"}{" "}
                                         ini? Status akan diubah menjadi selesai
-                                        dan dana akan masuk ke dompet Anda.
+                                        dan dana akan masuk ke dompet Anda. Uang{" "}
+                                        {formatRupiah(item.price)}
+                                        {item.item_type === "rent_property" &&
+                                            `Ongkir ${formatRupiah(
+                                                item.delivery_fee
+                                            )}`}
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

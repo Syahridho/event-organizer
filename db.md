@@ -168,7 +168,7 @@ created_at timestamp
 updated_at timestamp
 }
 
-Table rent_property {
+Table rent_properties {
 id bigint [pk, increment]
 user_id bigint
 name varchar(255)
@@ -250,7 +250,7 @@ indexes {
 Table transaction_items {
 id bigint [pk, increment]
 transaction_id bigint
-item_id bigint [note: "Polymorphic target id (tickets|services|buildings|rent_property). See conditional Refs based on item_type"]
+item_id bigint [note: "Polymorphic target id (tickets|services|buildings|rent_properties). See conditional Refs based on item_type"]
 item_type varchar(255) [note: "FQCN e.g., App\\Models\\Ticket|Service|Building|RentProperty"]
 type varchar(255)
 qty int [default: 1]
@@ -402,7 +402,7 @@ Ref: tickets.event_id > events.id [delete: cascade]
 
 Ref: services.user_id > users.id [delete: cascade]
 Ref: buildings.user_id > users.id [delete: cascade]
-Ref: rent_property.user_id > users.id [delete: cascade]
+Ref: rent_properties.user_id > users.id [delete: cascade]
 
 Ref: carts.user_id > users.id [delete: cascade]
 
@@ -428,7 +428,7 @@ Ref: mitra.user_id > users.id [delete: cascade]
 // Polymorphic: only when item_type = 'App\\Models\\Ticket'\nRef: transaction_items.item_id > tickets.id
 // Polymorphic: only when item_type = 'App\\Models\\Service'\nRef: transaction_items.item_id > services.id
 // Polymorphic: only when item_type = 'App\\Models\\Building'\nRef: transaction_items.item_id > buildings.id
-// Polymorphic: only when item_type = 'App\\Models\\RentProperty'\nRef: transaction_items.item_id > rent_property.id
+// Polymorphic: only when item_type = 'App\\Models\\RentProperties'\nRef: transaction_items.item_id > rent_properties.id
 
 // Polymorphic References for carts.item_id conditioned by item_type
 // Polymorphic: only when item_type = 'App\Models\Ticket'
@@ -437,16 +437,16 @@ Ref: carts.item_id > tickets.id
 Ref: carts.item_id > services.id
 // Polymorphic: only when item_type = 'App\Models\Building'
 Ref: carts.item_id > buildings.id
-// Polymorphic: only when item_type = 'App\Models\RentProperty'
-Ref: carts.item_id > rent_property.id
+// Polymorphic: only when item_type = 'App\Models\RentProperties'
+Ref: carts.item_id > rent_properties.id
 
 // Polymorphic References for item_photos.item_id conditioned by item_type
 // Polymorphic: only when item_type = 'App\Models\Service'
 Ref: item_photos.item_id > services.id
 // Polymorphic: only when item_type = 'App\Models\Building'
 Ref: item_photos.item_id > buildings.id
-// Polymorphic: only when item_type = 'App\Models\RentProperty'
-Ref: item_photos.item_id > rent_property.id
+// Polymorphic: only when item_type = 'App\Models\RentProperties'
+Ref: item_photos.item_id > rent_properties.id
 
 // Polymorphic References for reviews.item_id conditioned by item_type
 // Polymorphic: only when item_type = 'App\Models\Ticket'
@@ -455,8 +455,8 @@ Ref: reviews.item_id > tickets.id
 Ref: reviews.item_id > services.id
 // Polymorphic: only when item_type = 'App\Models\Building'
 Ref: reviews.item_id > buildings.id
-// Polymorphic: only when item_type = 'App\Models\RentProperty'
-Ref: reviews.item_id > rent_property.id
+// Polymorphic: only when item_type = 'App\Models\RentProperties'
+Ref: reviews.item_id > rent_properties.id
 
 // Polymorphic References for leaves.item_id conditioned by item_type
 // Polymorphic: only when item_type = 'App\Models\Ticket'
@@ -465,8 +465,8 @@ Ref: leaves.item_id > tickets.id
 Ref: leaves.item_id > services.id
 // Polymorphic: only when item_type = 'App\Models\Building'
 Ref: leaves.item_id > buildings.id
-// Polymorphic: only when item_type = 'App\Models\RentProperty'
-Ref: leaves.item_id > rent_property.id
+// Polymorphic: only when item_type = 'App\Models\RentProperties'
+Ref: leaves.item_id > rent_properties.id
 
 // Polymorphic References for notifications.notifiable_id conditioned by notifiable_type
 // Polymorphic: only when notifiable_type = 'App\Models\User'

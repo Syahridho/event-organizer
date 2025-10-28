@@ -62,7 +62,7 @@ class MidtransController extends Controller
             'items.*.quantity' => 'required|integer|min:1|max:999',
             'items.*.rent_days' => 'nullable|string',
             'items.*.note' => 'nullable|string|max:255',
-            'items.*.delivery_option' => 'nullable|in:delivery,pickup',
+            'items.*.delivery_type' => 'nullable', // Remove the in:delivery,pickup validation since it's now an object
             'amount' => 'required|numeric|min:1000',
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -76,7 +76,6 @@ class MidtransController extends Controller
             'shipping_address.note' => 'nullable|string|max:500',
         ]);
 
-        // dd($validatedData);
 
         // Mulai transaksi database
         DB::beginTransaction();
@@ -84,8 +83,11 @@ class MidtransController extends Controller
             $orderId = 'ORD-' . now()->format('YmdHis') . '-' . Str::random(6);
             $userId = Auth::id();
 
+            
+            
             // 🔎 Validasi & siapkan item
             $validatedItems = $this->validateAndPrepareItems($validatedData['items']);
+            
 
             // Extract clean base items for tax calculation
             $baseItems = MidtransTaxService::extractBaseItems($validatedItems);
@@ -193,8 +195,8 @@ class MidtransController extends Controller
                     'type'           => $validatedItem['item']->name ?? ucfirst($validatedItem['type']),
                     'qty'            => $validatedItem['quantity'],
                     'price'          => $validatedItem['price'],
-                    'delivery_option'=> $validatedItem['delivery_option'],
-                    'note'           => $validatedItem['note'],
+                    'delivery_type'=> $validatedItem['delivery_type'] ?? null,
+                    'note'           => $validatedItem['note'] ?? null,
                     'rent_days'      => $validatedItem['rent_days'] ?? null,
                 ]);
             }
@@ -352,13 +354,25 @@ class MidtransController extends Controller
                     }
                 }
                 
+                // Handle delivery_type - it's an object for rent_property, null for others
+                $deliveryType = null;
+                if ($type === 'rent_property' && isset($itemData['delivery_type'])) {
+                    // If delivery_type is an object, extract the 'id' field (which should be 'delivery' or 'pickup')
+                    if (is_object($itemData['delivery_type']) || is_array($itemData['delivery_type'])) {
+                        $deliveryType = isset($itemData['delivery_type']['id']) ? $itemData['delivery_type']['id'] : null;
+                    } else {
+                        // If it's a string, use it directly
+                        $deliveryType = $itemData['delivery_type'];
+                    }
+                }
+                
                 $validatedItems[] = [
                     'type' => $type,
                     'item' => $item,
                     'quantity' => $itemData['quantity'],
-                    'delivery_option' => $itemData['delivery_option'],
-                    'note' => $itemData['note'],
-                    'price' => $finalPrice, 
+                    'delivery_type' => $deliveryType,
+                    'note' => $itemData['note'] ?? null,
+                    'price' => $finalPrice,
                     'rent_days' => $rentDays,
                 ];
             }
@@ -379,17 +393,18 @@ class MidtransController extends Controller
             'bill_key' => $request->bill_key,
             'biller_code' => $request->biller_code,
         ]);
-
+    
         $serverKey = config('midtrans.server_key');
         $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
-
+    
         if ($hashed == $request->signature_key) {
-            $vaInfo = $this->extractVAInfo($request);
-
+            $vaInfo = $this->extractVAInfo($request); // Asumsi method ini ada dan berfungsi
+    
             if (in_array($request->transaction_status, ['capture', 'settlement', 'pending'])) {
                 $transaction = Transaction::where('order_id', $request->order_id)->first();
-
+    
                 if ($transaction) {
+                    // UPDATE DATA TRANSAKSI UTAMA (DEL-ORD atau ORD-)
                     $updateData = [
                         'status' => $request->transaction_status === 'pending' ? 'pending' : 'settlement',
                         'payment_type' => $request->payment_type ?? null,
@@ -399,16 +414,49 @@ class MidtransController extends Controller
                         'bill_key' => $vaInfo['bill_key'],
                         'biller_code' => $vaInfo['biller_code'],
                     ];
-
                     $transaction->update($updateData);
-
+    
                     Log::info('VA info saved', [
                         'order_id' => $request->order_id,
                         'va_number' => $vaInfo['va_number'],
                         'bank_name' => $vaInfo['bank_name'],
                     ]);
-
+    
+    
+                    // LOGIKA PENANGANAN TRANSAKSI SETTLEMENT
                     if ($request->transaction_status !== 'pending') {
+                        
+                        // 1. Cek apakah ini transaksi Biaya Antar (DEL-ORD) yang Settle
+                        if (str_starts_with($request->order_id, 'DEL-ORD-')) {
+                            
+                            $deliveryFeeItem = $transaction->items->first(); 
+                            
+                            if ($deliveryFeeItem && $deliveryFeeItem->type === 'Delivery Fee') {
+                                
+                                // Cari Item Transaksi Utama (ORD-) yang terkait
+                                $mainItem = TransactionItem::where('item_id', $deliveryFeeItem->item_id)
+                                    ->where('item_type', $deliveryFeeItem->item_type)
+                                    ->where('type', '!=', 'Delivery Fee') 
+                                    ->first();
+    
+                                if ($mainItem) {
+                                    // Update status delivery_fee_status di Item Transaksi Utama
+                                    $mainItem->update([
+                                        'delivery_fee_status' => 'settlement' 
+                                    ]);
+                                    
+                                    Log::info('Status Biaya Antar berhasil diperbarui', [
+                                        'order_id_fee' => $request->order_id,
+                                        'main_item_id' => $mainItem->id,
+                                    ]);
+                                }
+                                
+                                // HENTIKAN PROSES KARENA TRANSAKSI ONGKIR TIDAK MEMBATALKAN YANG LAIN
+                                return response()->json(['status' => 'success']); 
+                            }
+                        }
+                        
+                        // 2. LOGIKA PEMBATALAN TRANSAKSI LAIN (HANYA UNTUK TRANSAKSI UTAMA ORD-)
                         foreach ($transaction->items as $item) {
                             $otherTransactions = Transaction::where('id', '!=', $transaction->id)
                                 ->where('status', 'pending')
@@ -417,41 +465,42 @@ class MidtransController extends Controller
                                         ->where('rent_days', $item->rent_days);
                                 })
                                 ->get();
-
+                            
                             foreach ($otherTransactions as $other) {
                                 $other->update(['status' => 'expired']);
-
+    
                                 try {
                                     \Midtrans\Transaction::cancel($other->order_id);
                                 } catch (\Exception $e) {
                                     Log::error('Gagal cancel di Midtrans', [
-                                        'order_id' => $other->order_id,
+                                        'order_id' => $other->order_id, 
                                         'error' => $e->getMessage()
                                     ]);
                                 }
-
                                 Log::info('Transaksi lain dibatalkan', [
-                                    'order_id' => $other->order_id,
-                                    'item_id' => $item->item_id,
+                                    'order_id' => $other->order_id, 
+                                    'item_id' => $item->item_id, 
                                     'rent_days' => $item->rent_days
                                 ]);
                             }
                         }
-
+    
                         $user = $transaction->user;
                         if ($user) {
+                            // Logika notifikasi (Jika Anda menggunakannya)
                             // $user->notify(new TransactionSettled($transaction));
                             Log::info('Notifikasi transaksi berhasil', [
-                                'order_id' => $transaction->order_id,
+                                'order_id' => $transaction->order_id, 
                                 'user_id' => $user->id
                             ]);
                         }
-
+                        
                         Log::info('Transaksi berhasil diperbarui', [
-                            'order_id' => $request->order_id,
+                            'order_id' => $request->order_id, 
                             'status' => $transaction->status
                         ]);
                     }
+                    
                 } else {
                     Log::error('Transaksi tidak ditemukan', ['order_id' => $request->order_id]);
                 }
@@ -463,7 +512,7 @@ class MidtransController extends Controller
                 'signature_dihitung' => $hashed
             ]);
         }
-
+    
         return response()->json(['status' => 'success']);
     }
 
@@ -601,11 +650,32 @@ class MidtransController extends Controller
                 ], 500);
             }
 
+            // Update main transaction
             $transaction->update([
                 'status' => 'cancelled',
                 'cancelled_at' => now(),
                 'cancel_reason' => 'Manual cancellation'
             ]);
+            
+            // Generate associated delivery order ID
+            $deliveryOrderId = 'DEL-' . substr($orderId, 4) . '-%';
+            
+            // Cancel all associated delivery fee transactions
+            $deliveryFeeTransactions = Transaction::where('order_id', 'like', $deliveryOrderId)
+                ->whereIn('status', ['pending', 'settlement'])
+                ->get();
+            
+            foreach ($deliveryFeeTransactions as $feeTransaction) {
+                // Cancel in Midtrans
+                $this->cancelTransactionMidtrans($feeTransaction->order_id);
+                
+                // Update local status
+                $feeTransaction->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                    'cancel_reason' => 'Canceled due to parent ORD cancellation.'
+                ]);
+            }
             
             $this->clearTransactionCache($orderId);
 
@@ -852,9 +922,8 @@ class MidtransController extends Controller
     {
         // Ambil item transaksi + relasi yang dibutuhkan dengan query minimal
         $transactionItem = TransactionItem::with(['transaction.user', 'transaction.address'])->findOrFail($transactionItemId);
-
         // Validasi sederhana: hanya untuk opsi delivery dan fee > 0
-        if ($transactionItem->delivery_option !== 'delivery') {
+        if ($transactionItem->delivery_type !== 'delivery') {
             return response()->json(['success' => false, 'error' => 'Opsi pengiriman harus delivery.'], 400);
         }
         $fee = (int) ($transactionItem->delivery_fee ?? 0);
@@ -867,9 +936,11 @@ class MidtransController extends Controller
             return response()->json(['success' => false, 'error' => 'Pembeli tidak ditemukan.'], 404);
         }
 
-        // Order id baru yang terhubung ke base order
+        // Order id baru yang terhubung ke base order - use shorter format
         $baseOrderId = $transactionItem->transaction?->order_id ?? now()->format('YmdHis');
-        $orderId = 'DEL-' . $baseOrderId . '-' . Str::random(6);
+        // Extract unique part if baseOrderId starts with 'ORD-'
+        $uniqueOrderPart = str_starts_with($baseOrderId, 'ORD-') ? substr($baseOrderId, 4) : $baseOrderId;
+        $orderId = 'DEL-' . $uniqueOrderPart . '-' . Str::random(6);
 
         // Detail pelanggan dari transaksi asli (gunakan alamat jika tersedia)
         $customerDetails = [
@@ -897,7 +968,7 @@ class MidtransController extends Controller
             'customer_details' => $customerDetails,
             'item_details' => [
                 [
-                    'id' => 'DELIVERY_FEE_' . $transactionItem->id,
+                    'id' => 'DELIVERY_FEE_' . $transactionItem->item_type . '_' . $transactionItem->item_id,
                     'price' => $fee,
                     'quantity' => 1,
                     'name' => 'Biaya Antar',
@@ -935,7 +1006,7 @@ class MidtransController extends Controller
                 'total' => $fee,
                 'subtotal' => $fee,
                 'tax' => 0,
-                'expired_at' => now()->addMinutes(60)->toDateTimeString(),
+                'expired_at' => $transactionItem->rent_days ? Carbon::parse($transactionItem->rent_days)->endOfDay()->toDateTimeString() : now()->addMinutes(60)->toDateTimeString(),
             ]);
 
             // Simpan item terkait untuk konsistensi tampilan purchase
@@ -946,7 +1017,7 @@ class MidtransController extends Controller
                 'type'            => 'Delivery Fee',
                 'qty'             => 1,
                 'price'           => $fee,
-                'delivery_option' => 'delivery',
+                'delivery_type' => 'delivery',
                 'note'            => 'Biaya antar untuk pesanan ' . ($transactionItem->transaction?->order_id ?? ''),
                 'rent_days'       => $transactionItem->rent_days,
             ]);

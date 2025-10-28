@@ -16,7 +16,13 @@ import { toast } from "sonner";
  * - Optimized with pagination and indexing
  * - Fully responsive design
  */
-export default function ReviewSection({ itemType, itemId, user, className }) {
+export default function ReviewSection({
+    itemType,
+    itemId,
+    user,
+    className,
+    transactionItemId = null,
+}) {
     const [reviews, setReviews] = useState([]);
     const [stats, setStats] = useState({ average_rating: 0, total_reviews: 0 });
     const [rating, setRating] = useState(0);
@@ -102,12 +108,19 @@ export default function ReviewSection({ itemType, itemId, user, className }) {
 
         setIsSubmitting(true);
         try {
-            const response = await axios.post("/reviews", {
+            const payload = {
                 item_type: itemType,
                 item_id: itemId,
                 rating: rating,
                 comment: comment,
-            });
+            };
+
+            // Add transaction_item_id if available (for transaction-based reviews)
+            if (transactionItemId) {
+                payload.transaction_item_id = transactionItemId;
+            }
+
+            const response = await axios.post("/reviews", payload);
 
             setReviews([response.data.review, ...reviews]);
             setRating(0);
@@ -290,7 +303,7 @@ export default function ReviewSection({ itemType, itemId, user, className }) {
                                     </span>
                                 </div>
                             </div>
-                            {/* {isOwner && !isEditing && (
+                            {isOwner && !isEditing && (
                                 <div className="flex gap-1 flex-shrink-0">
                                     <Button
                                         variant="ghost"
@@ -317,7 +330,7 @@ export default function ReviewSection({ itemType, itemId, user, className }) {
                                         <Trash2 className="h-3 w-3" />
                                     </Button>
                                 </div>
-                            )} */}
+                            )}
                         </div>
 
                         {isEditing ? (

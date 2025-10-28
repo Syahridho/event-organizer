@@ -37,7 +37,7 @@ class CartController extends Controller
         $bookedDates = \DB::table('transaction_items')
             ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
             ->where('transactions.status', 'settlement')
-            ->whereIn('transaction_items.item_type', ['service', 'building', 'rent_property'])
+            ->whereIn('transaction_items.item_type', ['service', 'building', 'rent_property', 'property'])
             ->whereNotNull('transaction_items.rent_days')
             ->select(
                 'transaction_items.item_id',
@@ -85,6 +85,8 @@ class CartController extends Controller
         // Calculate tax info
         $taxInfo = TaxHelper::getTaxInfo();
 
+        // dd($carts);
+
         return Inertia::render('Cart/Index', [
             'carts' => $carts,
             'taxInfo' => $taxInfo,
@@ -117,6 +119,7 @@ class CartController extends Controller
             'item_type' => 'required|string',
             'type' => 'required|string',
             'rent_days' => 'nullable|date|after:today',
+            'delivery_type' => 'nullable|string|in:pickup,delivery',
             'item_qty' => 'nullable|integer|min:1',
         ]);
 
@@ -175,6 +178,8 @@ class CartController extends Controller
                 'item_type' => $data['item_type'],
                 'type' => $data['type'],
                 'rent_days' => $data['rent_days'] ?? null,
+                'delivery_type' => $data['delivery_type'] ?? 'pickup',
+                'delivery_address' => $data['delivery_address'] ?? null,
                 'item_qty' => $data['item_qty'] ?? 1,
             ]);
             
@@ -206,7 +211,7 @@ class CartController extends Controller
                             'type' => $cartItem->type,
                             'price' => 0,
                             'quantity' => $cartItem->item_qty,
-                            'is_unavailable' => true,
+                            'is_unavailable' => 'unavailable',
                         ];
                     }
 
@@ -229,7 +234,7 @@ class CartController extends Controller
                         'price' => $item?->price,
                         'quantity' => $cartItem->item_qty,
                         'rent_days' => $cartItem->rent_days,
-                        'is_unavailable' => $cartItem->is_unavailable ?? false,
+                        'is_unavailable' => $cartItem->is_unavailable ?? 'available',
                         'thumbnail' => $eventThumbnail,
                     ];
                 });
@@ -262,6 +267,22 @@ class CartController extends Controller
         $cart->update(['item_qty' => $request->item_qty]);
 
         return response()->json($cart);
+    }
+
+    public function updateDeliveryType(Request $request)
+    {
+        $validated = $request->validate([
+            'cart_id' => 'required|integer|exists:carts,id,user_id,'.auth()->id(),
+            'delivery_type' => 'required|string|in:pickup,delivery'
+        ]);
+
+        $cart = Cart::where('id', $validated['cart_id'])
+                    ->where('user_id', auth()->id())
+                    ->firstOrFail();
+
+        $cart->update(['delivery_type' => $validated['delivery_type']]);
+
+        return response()->json(['success' => true]);
     }
 
     public function destroy($id)

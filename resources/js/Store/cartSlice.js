@@ -17,8 +17,8 @@ import { createSlice, createSelector } from "@reduxjs/toolkit";
 const cartSlice = createSlice({
     name: "cart",
     initialState: {
-        itemsById: {},  // Normalized: { [cart_id]: item }
-        itemIds: [],    // Order: [id1, id2, id3]
+        itemsById: {}, // Normalized: { [cart_id]: item }
+        itemIds: [], // Order: [id1, id2, id3]
         total: 0,
         loading: false,
     },
@@ -35,7 +35,7 @@ const cartSlice = createSlice({
             state.itemIds = [];
 
             // Build normalized structure - O(n)
-            items.forEach(item => {
+            items.forEach((item) => {
                 state.itemsById[item.id] = item;
                 state.itemIds.push(item.id);
             });
@@ -68,34 +68,38 @@ const cartSlice = createSlice({
             }
 
             // Recalculate total - O(n) but necessary
-            state.total = state.itemIds.reduce(
-                (sum, id) => {
-                    const cartItem = state.itemsById[id];
-                    return sum + (cartItem.item?.price || 0) * (cartItem.item_qty || 0);
-                },
-                0
-            );
+            state.total = state.itemIds.reduce((sum, id) => {
+                const cartItem = state.itemsById[id];
+                return (
+                    sum + (cartItem.item?.price || 0) * (cartItem.item_qty || 0)
+                );
+            }, 0);
         },
 
         /**
          * Update cart quantity - O(1) access + O(n) recalc
          */
         updateCartQuantity: (state, action) => {
-            const { cart_id, quantity } = action.payload;
+            const { cart_id, quantity, delivery_type } = action.payload;
 
             const item = state.itemsById[cart_id]; // O(1) access
 
             if (item) {
                 item.item_qty = quantity; // O(1) update
 
+                // FASTEST: O(1) delivery option update
+                if (delivery_type !== undefined) {
+                    item.delivery_type = delivery_type;
+                }
+
                 // Recalculate total - O(n)
-                state.total = state.itemIds.reduce(
-                    (sum, id) => {
-                        const cartItem = state.itemsById[id];
-                        return sum + (cartItem.item?.price || 0) * (cartItem.item_qty || 0);
-                    },
-                    0
-                );
+                state.total = state.itemIds.reduce((sum, id) => {
+                    const cartItem = state.itemsById[id];
+                    return (
+                        sum +
+                        (cartItem.item?.price || 0) * (cartItem.item_qty || 0)
+                    );
+                }, 0);
             }
         },
 
@@ -110,16 +114,15 @@ const cartSlice = createSlice({
             delete state.itemsById[cart_id];
 
             // O(n) filter to maintain order
-            state.itemIds = state.itemIds.filter(id => id !== cart_id);
+            state.itemIds = state.itemIds.filter((id) => id !== cart_id);
 
             // Recalculate total - O(n)
-            state.total = state.itemIds.reduce(
-                (sum, id) => {
-                    const cartItem = state.itemsById[id];
-                    return sum + (cartItem.item?.price || 0) * (cartItem.item_qty || 0);
-                },
-                0
-            );
+            state.total = state.itemIds.reduce((sum, id) => {
+                const cartItem = state.itemsById[id];
+                return (
+                    sum + (cartItem.item?.price || 0) * (cartItem.item_qty || 0)
+                );
+            }, 0);
         },
 
         /**
@@ -130,21 +133,20 @@ const cartSlice = createSlice({
             const idsSet = new Set(cart_ids); // O(k) - for O(1) lookup
 
             // O(k) - delete each item
-            cart_ids.forEach(id => {
+            cart_ids.forEach((id) => {
                 delete state.itemsById[id];
             });
 
             // O(n) - filter remaining IDs
-            state.itemIds = state.itemIds.filter(id => !idsSet.has(id));
+            state.itemIds = state.itemIds.filter((id) => !idsSet.has(id));
 
             // Recalculate total - O(n)
-            state.total = state.itemIds.reduce(
-                (sum, id) => {
-                    const cartItem = state.itemsById[id];
-                    return sum + (cartItem.item?.price || 0) * (cartItem.item_qty || 0);
-                },
-                0
-            );
+            state.total = state.itemIds.reduce((sum, id) => {
+                const cartItem = state.itemsById[id];
+                return (
+                    sum + (cartItem.item?.price || 0) * (cartItem.item_qty || 0)
+                );
+            }, 0);
         },
 
         /**
@@ -188,7 +190,7 @@ export default cartSlice.reducer;
 export const selectCartItems = createSelector(
     [(state) => state.cart.itemsById, (state) => state.cart.itemIds],
     (itemsById, itemIds) => {
-        return itemIds.map(id => itemsById[id]);
+        return itemIds.map((id) => itemsById[id]);
     }
 );
 
@@ -216,7 +218,8 @@ export const selectCartLoading = (state) => state.cart.loading;
  * Select single item by ID - O(1)
  * Usage: useSelector(state => selectCartItemById(state, cartId))
  */
-export const selectCartItemById = (state, cartId) => state.cart.itemsById[cartId];
+export const selectCartItemById = (state, cartId) =>
+    state.cart.itemsById[cartId];
 
 /**
  * PERFORMANCE METRICS:

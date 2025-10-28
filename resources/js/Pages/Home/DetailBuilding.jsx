@@ -404,6 +404,7 @@ const DetailBuilding = () => {
                                     {/* Review Section */}
                                     <section className="mt-8">
                                         <ReviewSection
+                                            key={building.id}
                                             itemType="App\Models\Building"
                                             itemId={building.id}
                                             user={user}

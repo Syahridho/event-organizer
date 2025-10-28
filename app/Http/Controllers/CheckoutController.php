@@ -113,6 +113,7 @@ class CheckoutController extends Controller
             'total' => $request->total
         ];
 
+
         return Inertia::render('Checkout/Index', [
             'checkoutData' => $checkoutData,
             'user' => Auth::user(),

@@ -32,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import axios from "axios";
 
 const breadcrumbs = [
     {
@@ -131,25 +132,30 @@ export default function MitraTransactionDashboard({ transactionItems }) {
             {
                 onSuccess: () => {
                     toast.success("Item berhasil dikonfirmasi!");
-
-                    // Otomatis buat tagihan biaya antar untuk pembeli
-                    router.post(
-                        route("midtrans.delivery_fee.create", id),
-                        {},
-                        {
-                            onSuccess: () => {
-                                toast.success(
-                                    "Tagihan biaya antar dibuat untuk pembeli."
-                                );
-                            },
-                            onError: (errors) => {
-                                console.error(errors);
+                    // Buat tagihan biaya antar hanya jika ada fee > 0 (opsi delivery)
+                    if (Number(cleanedFee) > 0) {
+                        axios
+                            .post(route("midtrans.delivery_fee.create", id))
+                            .then((response) => {
+                                const { success } = response.data || {};
+                                if (success) {
+                                    toast.success(
+                                        "Tagihan biaya antar dibuat untuk pembeli."
+                                    );
+                                } else {
+                                    toast.error(
+                                        response?.data?.error ||
+                                            "Gagal membuat tagihan biaya antar."
+                                    );
+                                }
+                            })
+                            .catch((error) => {
+                                console.error(error);
                                 toast.error(
                                     "Gagal membuat tagihan biaya antar."
                                 );
-                            },
-                        }
-                    );
+                            });
+                    }
                 },
                 onError: (errors) => {
                     console.error(errors);

@@ -23,12 +23,14 @@ class RatingController extends Controller
                     'comment'   => 'nullable|string|max:500',
                     'item_type' => 'required|string',
                     'item_id'   => 'required|integer',
-                    'day_rent'  => 'required|date',
+                    'day_rent'  => 'nullable|date',
                 ]);
+
+                // dd($validated);
 
                 // Efficient access to new data points
                 $itemId  = $validated['item_id'];
-                $rentDay = $validated['day_rent'];
+                $rentDay = $validated['day_rent'] ?? null;
 
                 // Locate the TransactionItem by orderId (from parent Transaction), item_id, item_type, and completed status
                 $transactionItem = TransactionItem::where('status', 'completed')
@@ -38,6 +40,7 @@ class RatingController extends Controller
                         $q->where('order_id', $orderId);
                     })
                     ->first();
+                dd($transactionItem);
 
                 if (!$transactionItem) {
                     Log::warning('RatingController@store: Transaction item not found', [
@@ -74,7 +77,7 @@ class RatingController extends Controller
                         'payload' => [
                             'rating'  => $validated['rating'],
                             'comment' => $validated['comment'] ?? null,
-                            'day_rent'=> $rentDay,
+                            'day_rent'=> $rentDay ?? null,
                         ],
                     ]);
                     return back()->with('error', 'Item yang diulas tidak valid.');
@@ -89,7 +92,7 @@ class RatingController extends Controller
                     'order_id' => $orderId,
                     'review_id' => $review->id,
                     'item_id' => $itemId,
-                    'day_rent' => $rentDay,
+                    'day_rent' => $rentDay ?? null,
                     'user_id' => auth()->id(),
                 ]);
 

@@ -35,7 +35,9 @@ import {
     CreditCard,
     ShoppingCart,
     CheckCircle2,
+    CheckCircle2Icon,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MainLayout from "@/Layouts/Main";
 import axios from "axios";
 
@@ -49,6 +51,7 @@ import axios from "axios";
  */
 const RatingDialog = ({
     transaction,
+    item,
     onRatingSubmit,
     isLoading,
     item_type,
@@ -62,9 +65,9 @@ const RatingDialog = ({
             toast.error("Silakan berikan bintang rating terlebih dahulu.");
             return;
         }
-        console.log(transaction.id, rating, comment, item_type);
-        onRatingSubmit(transaction.id, rating, comment, item_type);
-    }, [rating, comment, transaction.id, item_type, onRatingSubmit]);
+        console.log(transaction.id, rating, comment, item_type, item);
+        onRatingSubmit(transaction.id, rating, comment, item_type, item);
+    }, [rating, comment, transaction.id, item_type, item, onRatingSubmit]);
 
     return (
         <DialogContent className="sm:max-w-md">
@@ -131,9 +134,30 @@ const TransactionItem = React.memo(
         isLoading,
         isRatingDialogOpen,
         setIsRatingDialogOpen,
+        ziggy,
     }) => {
         const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
         const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+
+        // Memoized getThumbnail function
+        const getItemThumbnail = useCallback(
+            (item) => {
+                const thumb =
+                    item?.thumbnail ||
+                    item?.item?.thumbnail ||
+                    item?.item?.event?.thumbnail;
+                if (!thumb) return "/default.png";
+                return thumb.includes("randoms")
+                    ? `${ziggy.url}/storage${thumb}`
+                    : `${ziggy.url}/storage/thumbnails/${thumb}`;
+            },
+            [ziggy.url]
+        );
+
+        // Hide cancel action for Delivery Fee orders (order_id starts with "DEL-")
+        const isDeliveryFeeOrder = (transaction?.order_id || "").startsWith(
+            "DEL-"
+        );
 
         const handlePayment = useCallback(() => {
             if (transaction.redirect_url) {
@@ -149,6 +173,18 @@ const TransactionItem = React.memo(
             handleCancel(transaction.order_id);
             setIsCancelDialogOpen(false);
         }, [transaction.order_id, handleCancel]);
+
+        const isEventPast = (eventDateEndString) => {
+            // Jika data tidak ada, anggap belum selesai
+            if (!eventDateEndString) return false;
+
+            // Konversi string event_date_end menjadi objek Date
+            const eventEndDate = new Date(eventDateEndString);
+            const now = new Date();
+
+            // Bandingkan: Apakah waktu sekarang LEBIH BESAR dari waktu selesai event?
+            return now.getTime() > eventEndDate.getTime();
+        };
 
         return (
             <Card className="mb-4 overflow-hidden hover:shadow-md transition-shadow">
@@ -173,6 +209,7 @@ const TransactionItem = React.memo(
                                 </span>
                             </div>
                         </Link>
+                        {console.log(transaction)}
                         <PaymentStatusBadge status={transaction.status} />
                     </div>
 
@@ -180,168 +217,212 @@ const TransactionItem = React.memo(
 
                     {/* Items List */}
                     <div className="space-y-3">
-                        {transaction?.items?.map((item) => (
-                            <div
-                                key={item.id}
-                                className="flex gap-3 sm:gap-4 pb-3 border-b border-gray-100 last:border-none"
-                            >
-                                {/* Product Image */}
-                                <div className="flex-shrink-0">
-                                    <img
-                                        src={getThumbnail(item)}
-                                        alt={item.item?.name || "Produk"}
-                                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover ring-1 ring-gray-200"
-                                        loading="lazy"
-                                    />
-                                </div>
+                        {transaction?.items?.map((item) => {
+                            // Check if transaction is completed or event is finished
+                            const isTransactionCompleted =
+                                transaction.status === "completed";
+                            const isEventFinished = item?.item?.event
+                                ? isEventPast(item?.item?.event.event_date_end)
+                                : false;
 
-                                {/* Product Details */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-start gap-2 mb-1">
-                                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 break-words line-clamp-2">
-                                            {item.item?.event?.name ||
-                                                item.item?.name ||
-                                                "Produk"}
-                                        </h3>
-                                        {item.item_type !== "ticket" && (
-                                            <ItemStatusBadge
-                                                status={item.status}
-                                            />
-                                        )}
+                            const shouldShowCompletedState =
+                                isTransactionCompleted || isEventFinished;
+
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="flex gap-3 sm:gap-4 pb-3 border-b border-gray-100 last:border-none"
+                                >
+                                    {/* Product Image */}
+                                    <div className="flex-shrink-0">
+                                        <img
+                                            src={getItemThumbnail(item)}
+                                            alt={item.item?.name || "Produk"}
+                                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover ring-1 ring-gray-200"
+                                            loading="lazy"
+                                        />
                                     </div>
 
-                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                                        {item?.item_type !== "ticket"
-                                            ? "Jasa"
-                                            : `Tiket ${item?.item?.name}`}
-                                    </p>
-
-                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                                        <Package className="w-3 h-3" />
-                                        <span>
-                                            x {item?.qty}{" "}
-                                            {item?.item_type === "ticket"
-                                                ? "Tiket"
-                                                : "Hari"}
-                                        </span>
-                                    </div>
-
-                                    {/* OPTIMIZED: Display rent_days with day name if available */}
-                                    {item?.rent_days && (
-                                        <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-fit mb-2">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>
-                                                {formatDateWithShortDay(
-                                                    item.rent_days
-                                                )}
-                                            </span>
+                                    {/* Product Details */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start gap-2 mb-1">
+                                            <h3 className="font-semibold text-sm sm:text-base text-gray-900 break-words line-clamp-2">
+                                                {isDeliveryFeeOrder &&
+                                                    "Biaya Ongkir"}{" "}
+                                                {item.item?.event?.name ||
+                                                    item.item?.name ||
+                                                    "Produk"}
+                                            </h3>
+                                            {console.log(item)}
+                                            {isDeliveryFeeOrder ||
+                                            transaction?.status ===
+                                                "cancelled" ? null : item.item_type !==
+                                              "ticket" ? (
+                                                <ItemStatusBadge
+                                                    status={item.status}
+                                                />
+                                            ) : null}
                                         </div>
-                                    )}
 
-                                    {/* Price */}
-                                    <div className="mt-2">
-                                        <p className="font-bold text-sm sm:text-base text-gray-900">
-                                            Rp{" "}
-                                            {formatRupiah(
-                                                item.price * item.qty
+                                        <p className="text-xs sm:text-sm text-gray-600 mb-1">
+                                            {isDeliveryFeeOrder
+                                                ? null
+                                                : item?.item_type === "ticket"
+                                                ? `Tiket ${item?.item?.name}`
+                                                : item?.item_type === "service"
+                                                ? "Jasa Layanan"
+                                                : item?.item_type === "building"
+                                                ? "Sewa Gedung"
+                                                : item?.item_type ===
+                                                  "rent_property"
+                                                ? "Sewa Properti"
+                                                : item?.item_type}
+                                        </p>
+
+                                        {!isDeliveryFeeOrder && (
+                                            <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                                                <Package className="w-3 h-3" />
+                                                <span>
+                                                    x {item?.qty}{" "}
+                                                    {item?.item_type ===
+                                                    "ticket"
+                                                        ? "Tiket"
+                                                        : "Hari"}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* OPTIMIZED: Display rent_days with day name if available */}
+                                        {item?.rent_days && (
+                                            <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-fit mb-2">
+                                                <Calendar className="w-3 h-3" />
+                                                <span>
+                                                    {formatDateWithShortDay(
+                                                        item.rent_days
+                                                    )}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Price */}
+                                        <div className="mt-2">
+                                            <p className="font-bold text-sm sm:text-base text-gray-900">
+                                                Rp{" "}
+                                                {formatRupiah(
+                                                    item.price * item.qty
+                                                )}
+                                            </p>
+
+                                            {!isDeliveryFeeOrder && (
+                                                <p className="text-xs text-gray-500">
+                                                    Harga Satuan Rp{" "}
+                                                    {formatRupiah(item.price)}
+                                                </p>
                                             )}
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            Harga Satuan Rp{" "}
-                                            {formatRupiah(item.price)}
-                                        </p>
-                                    </div>
+                                        </div>
 
-                                    {/* Rating section: show existing review (shadcn Card) or the rating button */}
-                                    {item?.reviews_id || item?.review ? (
-                                        <Card className="mt-3 bg-emerald-50 border-emerald-200">
-                                            <CardContent className="p-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-semibold text-emerald-700">
-                                                        Ulasan terkirim
-                                                    </span>
-                                                </div>
-                                                {Number(item?.review?.rating) >
-                                                    0 && (
-                                                    <div className="mt-2 flex items-center justify-start">
-                                                        <Rating
-                                                            initialRating={
-                                                                Number(
-                                                                    item?.review
-                                                                        ?.rating
-                                                                ) || 0
-                                                            }
-                                                            emptySymbol={
-                                                                <IoStarOutline className="text-gray-300 text-lg" />
-                                                            }
-                                                            fullSymbol={
-                                                                <IoStar className="text-yellow-500 text-lg" />
-                                                            }
-                                                            readonly
-                                                        />
+                                        {/* Rating section: show existing review (shadcn Card) or the rating button */}
+                                        {item?.reviews_id || item?.review ? (
+                                            <Card className="mt-3 bg-emerald-50 border-emerald-200">
+                                                <CardContent className="p-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-semibold text-emerald-700">
+                                                            Ulasan terkirim
+                                                        </span>
                                                     </div>
-                                                )}
-                                                {item?.review?.comment && (
-                                                    <p className="mt-2 text-sm text-gray-700">
-                                                        {item.review.comment}
-                                                    </p>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ) : (
-                                        item.status === "completed" && (
-                                            <div className="mt-3">
-                                                <Dialog
-                                                    onOpenChange={(open) =>
-                                                        setIsRatingDialogOpen(
-                                                            open
-                                                                ? item.id
-                                                                : null
-                                                        )
-                                                    }
-                                                >
-                                                    <DialogTrigger asChild>
-                                                        <Button
-                                                            size="sm"
-                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs"
-                                                        >
-                                                            Beri Ulasan
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <RatingDialog
-                                                        transaction={item}
-                                                        onRatingSubmit={(
-                                                            _id,
-                                                            rating,
-                                                            comment,
-                                                            item_type
-                                                        ) =>
-                                                            handleRating(
-                                                                transaction.order_id,
+                                                    {Number(
+                                                        item?.review?.rating
+                                                    ) > 0 && (
+                                                        <div className="mt-2 flex items-center justify-start">
+                                                            <Rating
+                                                                initialRating={
+                                                                    Number(
+                                                                        item
+                                                                            ?.review
+                                                                            ?.rating
+                                                                    ) || 0
+                                                                }
+                                                                emptySymbol={
+                                                                    <IoStarOutline className="text-gray-300 text-lg" />
+                                                                }
+                                                                fullSymbol={
+                                                                    <IoStar className="text-yellow-500 text-lg" />
+                                                                }
+                                                                readonly
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {item?.review?.comment && (
+                                                        <p className="mt-2 text-sm text-gray-700">
+                                                            {
+                                                                item.review
+                                                                    .comment
+                                                            }
+                                                        </p>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        ) : (
+                                            shouldShowCompletedState && (
+                                                <div className="mt-3">
+                                                    <Dialog
+                                                        onOpenChange={(open) =>
+                                                            setIsRatingDialogOpen(
+                                                                open
+                                                                    ? item.id
+                                                                    : null
+                                                            )
+                                                        }
+                                                    >
+                                                        <DialogTrigger asChild>
+                                                            <Button
+                                                                size="sm"
+                                                                className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs"
+                                                            >
+                                                                Beri Ulasan
+                                                            </Button>
+                                                        </DialogTrigger>
+
+                                                        <RatingDialog
+                                                            transaction={
+                                                                transaction
+                                                            }
+                                                            item={item}
+                                                            onRatingSubmit={(
+                                                                _id,
                                                                 rating,
                                                                 comment,
                                                                 item_type,
-                                                                item?.item_id,
-                                                                item?.rent_days
-                                                            )
-                                                        }
-                                                        isLoading={isLoading}
-                                                        item_type={
-                                                            item?.item_type
-                                                        }
-                                                        onClose={() =>
-                                                            setIsRatingDialogOpen(
-                                                                null
-                                                            )
-                                                        }
-                                                    />
-                                                </Dialog>
-                                            </div>
-                                        )
-                                    )}
+                                                                item
+                                                            ) =>
+                                                                handleRating(
+                                                                    transaction.order_id,
+                                                                    rating,
+                                                                    comment,
+                                                                    item_type,
+                                                                    item
+                                                                )
+                                                            }
+                                                            isLoading={
+                                                                isLoading
+                                                            }
+                                                            item_type={
+                                                                item?.item_type
+                                                            }
+                                                            onClose={() =>
+                                                                setIsRatingDialogOpen(
+                                                                    null
+                                                                )
+                                                            }
+                                                        />
+                                                    </Dialog>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     <Separator className="my-4" />
@@ -446,90 +527,96 @@ const TransactionItem = React.memo(
                                     </DialogContent>
                                 </Dialog>
 
-                                {/* Cancel Button */}
-                                <Dialog
-                                    open={isCancelDialogOpen}
-                                    onOpenChange={setIsCancelDialogOpen}
-                                >
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            disabled={isLoading}
-                                            variant="destructive"
-                                            className="w-full sm:w-auto text-sm sm:text-base"
-                                        >
-                                            {isLoading
-                                                ? "Membatalkan..."
-                                                : "Batalkan"}
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-md">
-                                        <DialogHeader>
-                                            <DialogTitle>
-                                                Konfirmasi Pembatalan
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                Apakah Anda yakin ingin
-                                                membatalkan transaksi ini?
-                                                Tindakan ini tidak dapat
-                                                dibatalkan.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <Card className="bg-red-50 border-red-200">
-                                            <CardContent className="p-4 space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-600">
-                                                        Order ID:
-                                                    </span>
-                                                    <span className="font-mono font-medium text-sm">
-                                                        {transaction.order_id}
-                                                    </span>
-                                                </div>
-                                                <Separator />
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-600">
-                                                        Total:
-                                                    </span>
-                                                    <span className="font-bold text-lg text-red-600">
-                                                        Rp{" "}
-                                                        {formatRupiah(
-                                                            transaction.total
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div className="mt-3 p-3 bg-red-100 rounded-lg text-sm text-red-700 flex items-start gap-2">
-                                                    <span className="text-lg">
-                                                        ⚠️
-                                                    </span>
-                                                    <span>
-                                                        Transaksi yang
-                                                        dibatalkan tidak dapat
-                                                        dikembalikan
-                                                    </span>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                        <DialogFooter className="gap-2 sm:gap-0">
-                                            <DialogClose asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full sm:w-auto"
-                                                >
-                                                    Tidak, Batal
-                                                </Button>
-                                            </DialogClose>
+                                {/* Cancel Button - hidden for Delivery Fee (DEL-*) orders */}
+                                {!isDeliveryFeeOrder && (
+                                    <Dialog
+                                        open={isCancelDialogOpen}
+                                        onOpenChange={setIsCancelDialogOpen}
+                                    >
+                                        <DialogTrigger asChild>
                                             <Button
-                                                onClick={handleCancelConfirm}
-                                                variant="destructive"
-                                                className="w-full sm:w-auto"
                                                 disabled={isLoading}
+                                                variant="destructive"
+                                                className="w-full sm:w-auto text-sm sm:text-base"
                                             >
                                                 {isLoading
                                                     ? "Membatalkan..."
-                                                    : "Ya, Batalkan Transaksi"}
+                                                    : "Batalkan"}
                                             </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>
+                                                    Konfirmasi Pembatalan
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    Apakah Anda yakin ingin
+                                                    membatalkan transaksi ini?
+                                                    Tindakan ini tidak dapat
+                                                    dibatalkan.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <Card className="bg-red-50 border-red-200">
+                                                <CardContent className="p-4 space-y-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm text-gray-600">
+                                                            Order ID:
+                                                        </span>
+                                                        <span className="font-mono font-medium text-sm">
+                                                            {
+                                                                transaction.order_id
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    <Separator />
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm text-gray-600">
+                                                            Total:
+                                                        </span>
+                                                        <span className="font-bold text-lg text-red-600">
+                                                            Rp{" "}
+                                                            {formatRupiah(
+                                                                transaction.total
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-3 p-3 bg-red-100 rounded-lg text-sm text-red-700 flex items-start gap-2">
+                                                        <span className="text-lg">
+                                                            ⚠️
+                                                        </span>
+                                                        <span>
+                                                            Transaksi yang
+                                                            dibatalkan tidak
+                                                            dapat dikembalikan
+                                                        </span>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                            <DialogFooter className="gap-2 sm:gap-0">
+                                                <DialogClose asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full sm:w-auto"
+                                                    >
+                                                        Tidak, Batal
+                                                    </Button>
+                                                </DialogClose>
+                                                <Button
+                                                    onClick={
+                                                        handleCancelConfirm
+                                                    }
+                                                    variant="destructive"
+                                                    className="w-full sm:w-auto"
+                                                    disabled={isLoading}
+                                                >
+                                                    {isLoading
+                                                        ? "Membatalkan..."
+                                                        : "Ya, Batalkan Transaksi"}
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                )}
                             </div>
                         )}
                 </CardContent>
@@ -696,13 +783,14 @@ export default function PurchaseIndex() {
             .post(route("transaction.cancel", orderId))
             .then((response) => {
                 toast.success(response.data.message);
-                setAllTransactions((prevTransactions) =>
-                    prevTransactions.map((transaction) =>
-                        transaction.order_id === orderId
-                            ? { ...transaction, status: "cancelled" }
-                            : transaction
-                    )
-                );
+                router.visit(window.location.href, {
+                    // Jika ingin hanya muat ulang props tertentu:
+                    // only: ['transactions'],
+                    // Pertahankan posisi scroll
+                    preserveScroll: true,
+                    // Ganti history state agar terlihat seperti reload
+                    replace: true,
+                });
             })
             .catch((error) => {
                 toast.error(
@@ -717,14 +805,30 @@ export default function PurchaseIndex() {
 
     // Rating handler
     const handleRating = useCallback(
-        (orderId, rating, comment, item_type, item_id, day_rent) => {
-            console.log({ orderId, item_id, day_rent });
+        (orderId, rating, comment, item_type, item) => {
+            console.log("Rating data:", {
+                orderId,
+                rating,
+                comment,
+                item_type,
+                item,
+            });
             setIsCancelling(true);
             setCancellingOrderId(orderId);
 
             router.post(
                 route("mitra.rating.store", { orderId }),
-                { rating, comment, item_type, item_id, day_rent },
+                {
+                    rating,
+                    comment,
+                    item_type,
+                    item_id:
+                        item_type === "ticket"
+                            ? item?.item?.event?.id
+                            : item?.item_id,
+                    day_rent: item?.rent_days,
+                    transaction_item_id: item?.id,
+                },
                 {
                     preserveScroll: true,
                     onSuccess: () => {
@@ -738,13 +842,17 @@ export default function PurchaseIndex() {
                                     ...trx,
                                     items: (trx.items || []).map((it) => {
                                         const matches =
-                                            it?.item_id === item_id &&
+                                            (item_type === "ticket"
+                                                ? it?.item?.event?.id ===
+                                                  item?.item?.event?.id
+                                                : it?.item_id ===
+                                                  item?.item_id) &&
                                             (it?.item_type === item_type ||
                                                 it?.item_type?.toLowerCase?.() ===
                                                     item_type?.toLowerCase?.()) &&
-                                            (day_rent
+                                            (item?.rent_days
                                                 ? String(it?.rent_days) ===
-                                                  String(day_rent)
+                                                  String(item?.rent_days)
                                                 : true);
 
                                         if (!matches) return it;
@@ -786,7 +894,7 @@ export default function PurchaseIndex() {
     const renderTransaction = useCallback(
         (transaction) => (
             <TransactionItem
-                key={transaction.id}
+                key={transaction?.id}
                 transaction={transaction}
                 onPay={handlePay}
                 onRedirectPay={handleRedirectPay}
@@ -794,10 +902,11 @@ export default function PurchaseIndex() {
                 handleCancel={handleCancel}
                 handleRating={handleRating}
                 isLoading={
-                    isCancelling && cancellingOrderId === transaction.order_id
+                    isCancelling && cancellingOrderId === transaction?.order_id
                 }
                 isRatingDialogOpen={isRatingDialogOpen}
                 setIsRatingDialogOpen={setIsRatingDialogOpen}
+                ziggy={ziggy}
             />
         ),
         [
@@ -809,6 +918,7 @@ export default function PurchaseIndex() {
             isCancelling,
             cancellingOrderId,
             isRatingDialogOpen,
+            ziggy,
         ]
     );
 

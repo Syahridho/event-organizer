@@ -500,6 +500,7 @@ export default function UserDashboard({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
+                                {console.log(transactionItems)}
                                 {transactionItems.length > 0 ? (
                                     transactionItems.map((item) => {
                                         const serviceInfo =
@@ -531,9 +532,19 @@ export default function UserDashboard({
                                                 </TableCell>
                                                 <TableCell>
                                                     <span
-                                                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusColorClass}`}
+                                                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                            item.transaction
+                                                                .status ===
+                                                            "cancelled"
+                                                                ? "bg-red-100 text-red-800"
+                                                                : statusColorClass
+                                                        }`}
                                                     >
-                                                        {item.status}
+                                                        {item.transaction
+                                                            .status ===
+                                                        "cancelled"
+                                                            ? "Dibatalkan Pembeli"
+                                                            : item.status}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="text-right">

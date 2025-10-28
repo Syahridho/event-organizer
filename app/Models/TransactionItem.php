@@ -20,7 +20,7 @@ class TransactionItem extends Model
         'price',
         'rent_days',
         'status',
-        'delivery_option',
+        'delivery_type',
         'delivery_fee',
         'delivery_fee_status',
         'note',

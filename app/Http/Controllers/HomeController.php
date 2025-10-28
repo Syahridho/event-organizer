@@ -218,6 +218,7 @@ class HomeController extends Controller
             'created_at' => $service->created_at,
             'updated_at' => $service->updated_at,
         ];
+
     
         return Inertia::render('Home/DetailService', [
             'id' => $id,
@@ -304,7 +305,7 @@ class HomeController extends Controller
 
     public function showProperty($id)
     {
-        $transaction = TransactionItem::where('item_type', 'property')
+        $transaction = TransactionItem::where('item_type', 'rent_property')
             ->where('item_id', $id)
             ->whereHas('transaction', function ($query) {
                 $query->where('status', '=', 'settlement');
@@ -365,6 +366,8 @@ class HomeController extends Controller
             'created_at' => $property->created_at,
             'updated_at' => $property->updated_at,
         ];
+
+
 
         return Inertia::render('Home/DetailProperty', [
             'id' => $id,

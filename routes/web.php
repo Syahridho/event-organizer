@@ -43,7 +43,7 @@ use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TicketController;
-
+use App\Http\Controllers\MitraProfileController;
 
 // Main homepage
 Route::get('/', [HomeController::class, 'index'])->name('welcome');
@@ -65,6 +65,9 @@ Route::get('/events/{id}', [HomeController::class, 'showEvent'])->name('events.s
 Route::get('/services/{id}', [HomeController::class, 'showService'])->name('services.show');
 Route::get('/buildings/{id}', [HomeController::class, 'showBuilding'])->name('buildings.show');
 Route::get('/propertys/{id}', [HomeController::class, 'showProperty'])->name('propertys.show'); // FIXED: Changed from /propertys
+
+// Mitra profile page
+Route::get('/mitra/{username}', [MitraProfileController::class, 'show'])->name('mitra.profile');
 
 // Midtrans payment routes
 Route::middleware(['auth'])->group(function () {
@@ -153,6 +156,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
     Route::put('/cart/{id}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
+    
+    // Add route for updating delivery option
+    Route::post('/cart/update-delivery-type', [CartController::class, 'updateDeliveryType'])->name('cart.update-delivery');
 
     // Purchase history and management
     Route::prefix('purchase')->name('purchase.')->group(function () {
@@ -173,13 +179,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Legacy POST checkout payload retained under distinct name
         Route::post('/checkout', [CheckoutController::class, 'show'])->name('checkout.store');
 
-    Route::post('/rating/{orderId}', [RatingController::class, 'store'])->name('mitra.rating.store');
-
     // Review routes (optimized with validation for purchase)
     Route::get('/reviews/can-review', [ReviewController::class, 'canReview'])->name('reviews.canReview');
     Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
     Route::put('/reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+    
+    // Transaction-based review routes (from RatingController)
+    Route::post('/rating/{orderId}', [ReviewController::class, 'storeFromTransaction'])->name('mitra.rating.store');
+    Route::get('/reviews/user-transaction', [ReviewController::class, 'getUserReviewForTransaction'])->name('reviews.user.transaction');
 
     // Admin routes
     Route::middleware(['role:admin'])->group(function () {

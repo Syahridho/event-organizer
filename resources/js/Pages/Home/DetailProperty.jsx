@@ -515,6 +515,7 @@ const DetailProperty = () => {
                                     {/* Review Section */}
                                     <section className="mt-8">
                                         <ReviewSection
+                                            key={property.id}
                                             itemType="App\Models\RentProperty"
                                             itemId={property.id}
                                             user={user}

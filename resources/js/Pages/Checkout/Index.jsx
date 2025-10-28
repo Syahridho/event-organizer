@@ -373,6 +373,7 @@ export default function CheckoutPage() {
                     type: mapItemType(item.type),
                     quantity: parseInt(item.quantity),
                     price: parseInt(item.price),
+                    delivery_type: item.delivery_type || null,
                     rent_days: item.rent_days,
                     name: `${item.name} (${item.type})`,
                 }));
@@ -883,6 +884,15 @@ export default function CheckoutPage() {
                                                             </span>
                                                         </div>
                                                     )}
+
+                                                {item?.delivery_type && (
+                                                    <div className="text-xs text-gray-600">
+                                                        {item.delivery_type ===
+                                                        "delivery"
+                                                            ? "Diantar ke alamat anda"
+                                                            : "Anda menjemput properti"}
+                                                    </div>
+                                                )}
 
                                                 {[
                                                     "service",

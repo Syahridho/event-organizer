@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Services\WalletService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MitraTransactionController extends Controller
 {
@@ -20,41 +21,77 @@ class MitraTransactionController extends Controller
     {
         // Ambil pengguna yang sedang login
         $user = Auth::user();
-
-        // Tentukan model-model yang relevan untuk relasi polimorfik
-        $itemModels = [
-            Service::class,
-            Building::class,
-            RentProperty::class,
-        ];
-
-        // Robust direct filter by item_type and owned item ids to include legacy aliases
+        
+        // Ambil ID item yang dimiliki oleh user untuk filtering kepemilikan
         $serviceIds = Service::where('user_id', $user->id)->pluck('id');
         $buildingIds = Building::where('user_id', $user->id)->pluck('id');
         $rentPropertyIds = RentProperty::where('user_id', $user->id)->pluck('id');
-
-        $transactionItems = TransactionItem::query()
-            ->where(function ($q) use ($serviceIds, $buildingIds, $rentPropertyIds) {
-                $q->where(function ($qq) use ($serviceIds) {
-                    $qq->where('item_type', 'service')->whereIn('item_id', $serviceIds);
-                })->orWhere(function ($qq) use ($buildingIds) {
-                    $qq->where('item_type', 'building')->whereIn('item_id', $buildingIds);
-                })->orWhere(function ($qq) use ($rentPropertyIds) {
-                    // Support multiple legacy morph-type storage values
-                    $qq->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
-                       ->whereIn('item_id', $rentPropertyIds);
-                });
-            })
-            ->whereHas('transaction', function ($q) {
-                $q->where('status', 'settlement');
-            })
-            ->orWhere(function ($q) use ($rentPropertyIds) {
-                $q->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
-                  ->whereIn('item_id', $rentPropertyIds)
-                  ->whereHas('transaction', function ($qq) {
-                      $qq->where('status', 'pending');
+        
+        // Sub-query untuk mendapatkan status transaksi Delivery Fee (sinkron dengan transaksi DEL-ORD terpisah)
+        $deliveryFeeStatusSubquery = DB::table('transaction_items as tf')
+            // Hanya ambil baris biaya antar
+            ->where('tf.type', 'Delivery Fee')
+            // Gabung ke transaksi untuk baca status
+            ->join('transactions as t', 'tf.transaction_id', '=', 't.id')
+            // Sinkronisasi berdasarkan item yang sama
+            ->whereColumn('tf.item_id', 'transaction_items.item_id')
+            ->whereColumn('tf.item_type', 'transaction_items.item_type')
+            // Selaraskan hari sewa, termasuk kasus keduanya null
+            ->where(function ($q) {
+                $q->whereColumn('tf.rent_days', 'transaction_items.rent_days')
+                  ->orWhere(function ($qq) {
+                      $qq->whereNull('tf.rent_days')
+                         ->whereNull('transaction_items.rent_days');
                   });
             })
+            // Ambil status transaksi (terbaru)
+            ->select('t.status')
+            ->orderByDesc('t.updated_at')
+            ->orderByDesc('tf.id')
+            ->limit(1);
+        
+        $transactionItems = TransactionItem::query()
+            // Melampirkan status pembayaran biaya antar ke item utama
+            ->addSelect(['delivery_fee_payment_status' => $deliveryFeeStatusSubquery])
+            
+            // Filter item yang BUKAN 'Delivery Fee' secara GLOBAL
+            ->where('type', '!=', 'Delivery Fee')
+            
+            // Membungkus semua klausa OR untuk filtering kepemilikan
+            ->where(function ($query) use ($serviceIds, $buildingIds, $rentPropertyIds) {
+                
+                // --- KLAUSA A: Service, Building, RentProperty DENGAN Status Settlement ---
+                $query->where(function ($q) use ($serviceIds, $buildingIds, $rentPropertyIds) {
+                    
+                    // Logika Kepemilikan (Service, Building, RentProperty)
+                    $q->where(function ($qq) use ($serviceIds) {
+                        $qq->where('item_type', 'service')->whereIn('item_id', $serviceIds);
+                    })->orWhere(function ($qq) use ($buildingIds) {
+                        $qq->where('item_type', 'building')->whereIn('item_id', $buildingIds);
+                    })->orWhere(function ($qq) use ($rentPropertyIds) {
+                        // Menggunakan whereIn untuk mencakup semua kemungkinan item_type RentProperty
+                        $qq->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
+                            ->whereIn('item_id', $rentPropertyIds);
+                    })
+                    // WAJIB: Item-item ini harus memiliki status transaksi 'settlement' (lunas)
+                    ->whereHas('transaction', function ($qqq) {
+                        $qqq->where('status', 'settlement');
+                    });
+                })
+                
+                // --- KLAUSA B: OR Kondisi untuk RentProperty Status Pending ---
+                ->orWhere(function ($q) use ($rentPropertyIds) { 
+                    // Item harus berupa RentProperty dan dimiliki Mitra
+                    $q->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
+                      ->whereIn('item_id', $rentPropertyIds)
+                      // Status transaksinya harus 'pending' (masih menunggu pembayaran)
+                      ->whereHas('transaction', function ($qq) {
+                          $qq->where('status', 'pending');
+                      });
+                });
+                
+            }) // <-- Akhir Blok WHERE utama
+            
             ->with([
                 'transaction',
                 'transaction.user',
@@ -64,73 +101,82 @@ class MitraTransactionController extends Controller
             ])
             ->latest()
             ->get();
-
-
-        
+            
         return Inertia::render('Mitra/Transactions/Index', [
             'transactionItems' => $transactionItems,
         ]);
     }
-
     // Fungsi baru untuk mengonfirmasi item transaksi
     public function confirm(Request $request, $transactionItemId)
     {
-        // Validasi: fee boleh null, tapi jika ada, harus angka >= 0
-        $request->validate([
-            'deliveryFee' => 'nullable|numeric|min:0',
-        ]);
+        try {
+            // 1. VALIDASI DATA MASUK
+            $request->validate([
+                'deliveryFee' => 'nullable|numeric|min:0',
+            ]);
 
+            // 2. AMBIL ITEM TRANSAKSI & CEK KEPEMILIKAN
+            $transactionItem = TransactionItem::with('item', 'transaction')->findOrFail($transactionItemId);
 
+            $type = $transactionItem->item_type;
+            $userId = auth()->id();
+            $owns = false;
 
-        // Hindari kegagalan whereHasMorph akibat inkonsistensi alias/class di item_type
-        $transactionItem = TransactionItem::with('item', 'transaction')->findOrFail($transactionItemId);
-
-        $type = $transactionItem->item_type;
-        $userId = auth()->id();
-        $owns = false;
-
-        if (in_array($type, ['service', Service::class, 'App\\Models\\Service'])) {
-            $owns = Service::where('id', $transactionItem->item_id)
-                ->where('user_id', $userId)
-                ->exists();
-        } elseif (in_array($type, ['building', Building::class, 'App\\Models\\Building'])) {
-            $owns = Building::where('id', $transactionItem->item_id)
-                ->where('user_id', $userId)
-                ->exists();
-        } elseif (in_array($type, ['rent_property', 'property', RentProperty::class, 'App\\Models\\RentProperty'])) {
-            $owns = RentProperty::where('id', $transactionItem->item_id)
-                ->where('user_id', $userId)
-                ->exists();
-        }
-
-        if (!$owns) {
-            abort(403, 'Anda tidak berhak mengonfirmasi item transaksi ini.');
-        }
-
-        // Normalisasi dan simpan delivery fee
-        // Jika opsi adalah pickup, pastikan fee = 0
-        $fee = 0;
-        if ($transactionItem->delivery_option === 'delivery') {
-            $feeInput = $request->input('deliveryFee'); // camelCase dari frontend
-            // Ambil hanya digit dan cast ke integer
-            $fee = is_null($feeInput) ? 0 : (int) preg_replace('/[^0-9]/', '', (string) $feeInput);
-            $transactionItem->delivery_fee = $fee;
-
-            // Tandai status fee jika kolomnya tersedia
-            if (in_array('delivery_fee_status', $transactionItem->getFillable())) {
-                $transactionItem->delivery_fee_status = 'submitted';
+            // Logika Kepemilikan (Memastikan Mitra memiliki item yang dikonfirmasi)
+            if (in_array($type, ['service', Service::class, 'App\\Models\\Service'])) {
+                $owns = Service::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+            } elseif (in_array($type, ['building', Building::class, 'App\\Models\\Building'])) {
+                $owns = Building::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+            } elseif (in_array($type, ['rent_property', 'property', RentProperty::class, 'App\\Models\\RentProperty'])) {
+                $owns = RentProperty::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
             }
-        } else {
-            $transactionItem->delivery_fee = 0;
+
+            if (!$owns) {
+                // Hentikan eksekusi jika tidak memiliki item
+                abort(403, 'Anda tidak berhak mengonfirmasi item transaksi ini.');
+            }
+
+            // 3. LOGIKA DELIVERY FEE (Normalisasi dan Simpan)
+            $fee = 0;
+            if ($transactionItem->delivery_type === 'delivery') {
+                $feeInput = $request->input('deliveryFee'); 
+                // Mengambil digit dan cast ke integer
+                $fee = is_null($feeInput) ? 0 : (int) preg_replace('/[^0-9]/', '', (string) $feeInput);
+                
+                $transactionItem->delivery_fee = $fee;
+
+                // Tandai status fee
+                // Periksa apakah kolom delivery_fee_status ada di fillable model
+                if (in_array('delivery_fee_status', $transactionItem->getFillable())) {
+                    $transactionItem->delivery_fee_status = 'submitted';
+                }
+            } else {
+                // Untuk pickup, biaya antar harus 0
+                $transactionItem->delivery_fee = 0;
+            }
+
+            // 4. UPDATE STATUS DAN SIMPAN
+            $transactionItem->status = 'confirmed';
+            $transactionItem->save();
+
+            // 5. RESPON SUKSES
+            return redirect()->back()->with('success', 'Item transaksi berhasil dikonfirmasi.');
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // Tangani error jika item tidak ditemukan (404)
+            Log::warning("Transaction item not found: " . $transactionItemId);
+            abort(404, 'Item transaksi tidak ditemukan.');
+            
+        } catch (\Throwable $e) {
+            // Tangani error PHP/Server lainnya
+            
+            // Log error detail ke file log Laravel
+            Log::error('Confirmation Error for ID ' . $transactionItemId . ': ' . $e->getMessage(), ['exception' => $e]);
+            
+            // Beri respon gagal yang ramah kepada pengguna
+            return redirect()->back()->with('error', 'Gagal mengonfirmasi item. Terjadi kesalahan server.');
         }
-
-        // Update status item
-        $transactionItem->status = 'confirmed';
-        $transactionItem->save();
-
-        return redirect()->back()->with('success', 'Item transaksi berhasil dikonfirmasi.');
     }
-
     // Fungsi baru untuk membatalkan item transaksi dengan alasan + refund ke dompet pembeli
     public function cancel(Request $request, TransactionItem $transactionItem, WalletService $walletService)
     {
@@ -180,14 +226,39 @@ class MitraTransactionController extends Controller
 
     public function otw(Request $request, $transactionItemId)
     {
-        $transactionItem = TransactionItem::where('id', $transactionItemId)
-            ->whereHasMorph('item', [Service::class, Building::class, RentProperty::class], function ($query) {
-                $query->where('user_id', auth()->id());
-            })->firstOrFail();
+        // Ambil item transaksi tanpa whereHasMorph untuk menghindari 404 karena inkonsistensi morph alias
+        $transactionItem = TransactionItem::with('item','transaction')->findOrFail($transactionItemId);
+
+        // Jangan izinkan item biaya antar (Delivery Fee) diubah ke OTW
+        if (strcasecmp($transactionItem->type ?? '', 'Delivery Fee') === 0) {
+            return redirect()->back()->with('error', 'Item biaya antar tidak dapat diubah ke OTW.');
+        }
+
+        $userId = Auth::id();
+        $type = $transactionItem->item_type;
+        $owns = false;
+
+        if (in_array($type, ['service', Service::class, 'App\\Models\\Service'])) {
+            $owns = Service::where('id', $transactionItem->item_id)
+                ->where('user_id', $userId)
+                ->exists();
+        } elseif (in_array($type, ['building', Building::class, 'App\\Models\\Building'])) {
+            $owns = Building::where('id', $transactionItem->item_id)
+                ->where('user_id', $userId)
+                ->exists();
+        } elseif (in_array($type, ['rent_property', 'property', RentProperty::class, 'App\\Models\\RentProperty'])) {
+            $owns = RentProperty::where('id', $transactionItem->item_id)
+                ->where('user_id', $userId)
+                ->exists();
+        }
+
+        if (!$owns) {
+            abort(403, 'Anda tidak berhak mengubah status item transaksi ini.');
+        }
 
         // Periksa status sebelum memperbarui
         if ($transactionItem->status === 'confirmed') {
-            $transactionItem->status = 'otw'; // Atau nama status 'otw'
+            $transactionItem->status = 'otw';
             $transactionItem->save();
 
             return redirect()->back()->with('success', 'Status transaksi berhasil diubah menjadi OTW.');
@@ -197,58 +268,96 @@ class MitraTransactionController extends Controller
     }
 
      public function work(Request $request, $transactionItemId)
-    {
-        // Ambil item transaksi berdasarkan ID dan pastikan itu milik user yang login
-        $transactionItem = TransactionItem::where('id', $transactionItemId)
-            ->whereHasMorph('item', [Service::class, Building::class, RentProperty::class], function ($query) {
-                $query->where('user_id', Auth::id());
-            })->firstOrFail();
+     {
+         // Ambil item transaksi berdasarkan ID tanpa whereHasMorph untuk menghindari 404 karena inkonsistensi alias/class
+         $transactionItem = TransactionItem::with('item','transaction')->findOrFail($transactionItemId);
 
-        // Tentukan status baru berdasarkan status saat ini
-        if ($transactionItem->status === 'otw') {
-            $transactionItem->status = 'work';
-            $transactionItem->save();
+         // Cegah item biaya antar
+         if (strcasecmp($transactionItem->type ?? '', 'Delivery Fee') === 0) {
+             return redirect()->back()->with('error', 'Item biaya antar tidak dapat diubah ke status Kerja.');
+         }
 
-            return redirect()->back()->with('success', 'Status transaksi berhasil diperbarui.');
-        }
+         $userId = Auth::id();
+         $type = $transactionItem->item_type;
+         $owns = false;
 
-        return redirect()->back()->with('error', 'Transaksi tidak dapat diproses.');
-    }
+         if (in_array($type, ['service', Service::class, 'App\\Models\\Service'])) {
+             $owns = Service::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+         } elseif (in_array($type, ['building', Building::class, 'App\\Models\\Building'])) {
+             $owns = Building::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+         } elseif (in_array($type, ['rent_property', 'property', RentProperty::class, 'App\\Models\\RentProperty'])) {
+             $owns = RentProperty::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+         }
+
+         if (!$owns) {
+             abort(403, 'Anda tidak berhak memperbarui status item transaksi ini.');
+         }
+
+         // Tentukan status baru berdasarkan status saat ini
+         if ($transactionItem->status === 'otw') {
+             $transactionItem->status = 'work';
+             $transactionItem->save();
+
+             return redirect()->back()->with('success', 'Status transaksi berhasil diperbarui.');
+         }
+
+         return redirect()->back()->with('error', 'Transaksi tidak dapat diproses.');
+     }
 
     
     public function complete(Request $request, $transactionItemId)
     {
+        // Ambil item transaksi berdasarkan ID tanpa whereHasMorph untuk menghindari 404 karena inkonsistensi alias/class
+        $transactionItem = TransactionItem::with('item','transaction')->findOrFail($transactionItemId);
 
-        // Ambil item transaksi berdasarkan ID dan pastikan itu milik user yang login
-        $transactionItem = TransactionItem::where('id', $transactionItemId)
-            ->whereHasMorph('item', [Service::class, Building::class, RentProperty::class], function ($query) {
-                $query->where('user_id', Auth::id());
-            })->firstOrFail();
-                // Tentukan status baru berdasarkan status saat ini
-                if ($transactionItem->status === 'work' || ($transactionItem->item_type === 'building' && $transactionItem->status === 'confirmed' )) {
-                    $transactionItem->status = 'completed';
-        
-                    // Ambil pengguna saat ini
-                    $user = Auth::user();
-        
-                    // Cari atau buat dompet pengguna dengan algoritma yang lebih efisien
-                    // Gunakan firstOrCreate untuk mencegah duplikasi dan operasi atomik
-                    $wallet = Wallet::firstOrCreate(
-                        ['user_id' => $user->id],
-                        ['balance' => 0]
-                    );
-        
-                    // Tambahkan harga item transaksi ke saldo dompet
-                    $wallet->balance += $transactionItem->price;
-        
-                    // Simpan perubahan pada dompet
-                    $wallet->save();
-        
-                    $transactionItem->save(); // Jangan lupakan untuk menyimpan status transaksi yang sudah diubah
-                    
-                    return redirect()->back()->with('success', 'Transaksi berhasil diselesaikan. Saldo Anda telah diperbarui.');
-                } else {
-                    return redirect()->back()->with('error', 'Transaksi tidak dapat diselesaikan.');
-                }
+
+        // Cegah item biaya antar
+        if (strcasecmp($transactionItem->type ?? '', 'Delivery Fee') === 0) {
+            return redirect()->back()->with('error', 'Item biaya antar tidak dapat diubah ke status Selesai.');
+        }
+
+        $userId = Auth::id();
+        $type = $transactionItem->item_type;
+        $owns = false;
+
+        if (in_array($type, ['service', Service::class, 'App\\Models\\Service'])) {
+            $owns = Service::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+        } elseif (in_array($type, ['building', Building::class, 'App\\Models\\Building'])) {
+            $owns = Building::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+        } elseif (in_array($type, ['rent_property', 'property', RentProperty::class, 'App\\Models\\RentProperty'])) {
+            $owns = RentProperty::where('id', $transactionItem->item_id)->where('user_id', $userId)->exists();
+        }
+
+        if (!$owns) {
+            abort(403, 'Anda tidak berhak menyelesaikan item transaksi ini.');
+        }
+
+        // Tentukan status baru berdasarkan status saat ini
+        if ($transactionItem->status === 'work' || ($transactionItem->item_type === 'building' && $transactionItem->status === 'confirmed')) {
+            $transactionItem->status = 'completed';
+
+            // Ambil pengguna saat ini
+            $user = Auth::user();
+
+            // Cari atau buat dompet pengguna
+            $wallet = Wallet::firstOrCreate(
+                ['user_id' => $user->id],
+                ['balance' => 0]
+            );
+
+            // Tambahkan harga item transaksi ke saldo dompet
+            $wallet->balance += $transactionItem->price;
+
+            $wallet->balance += $transactionItem->delivery_fee;
+
+            // Simpan perubahan pada dompet
+            $wallet->save();
+
+            $transactionItem->save(); // Simpan status transaksi yang diubah
+            
+            return redirect()->back()->with('success', 'Transaksi berhasil diselesaikan. Saldo Anda telah diperbarui.');
+        }
+
+        return redirect()->back()->with('error', 'Transaksi tidak dapat diselesaikan.');
     }
 }
