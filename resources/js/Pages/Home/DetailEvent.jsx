@@ -30,7 +30,6 @@ import ReviewSection from "@/Components/ReviewSection";
 import { createPaymentPayload } from "@/Utils/PaymentHelper";
 
 const getEventStatus = (eventData) => {
-    console.log(eventData);
     const now = new Date();
     const eventEnd = new Date(eventData.event_date_end);
     const eventStart = new Date(eventData.event_date_start);
@@ -187,7 +186,6 @@ const SpeakerCard = ({ speaker, baseUrl, onImageLoad }) => {
 
 // Ticket Stock Badge Component
 const TicketStockBadge = ({ ticket }) => {
-    console.log(ticket);
     const remaining = ticket.remaining ?? 0;
     const percentage =
         ticket.quantity > 0 ? (remaining / ticket.quantity) * 100 : 0;
@@ -234,8 +232,6 @@ const TicketStockBadge = ({ ticket }) => {
 export default function ShowEvent() {
     const { event, auth, ziggy, alreadyRegistered, tax_info, platformTax } =
         usePage().props;
-
-    console.log(tax_info);
 
     const [latitude, longitude] = event?.pin.split(",");
 

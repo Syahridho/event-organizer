@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Review;
+use App\Models\Ticket;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str; // Tambahkan ini untuk helper string
+use Illuminate\Support\Str;
 
 class ReviewController extends Controller
 {
@@ -29,40 +30,61 @@ class ReviewController extends Controller
 
         $validated = $validator->validated();
 
-        // --- ALGORITMA TERCEPAT: Konversi Item Type ke Alias Database ---
-        // Ini mengatasi masalah pencarian 'App\Models\Service' vs 'service' di DB.
-         // --- ALGORITMA TERCEPAT: Konversi Item Type ke Alias Database ---
-        // Ini mengatasi masalah pencarian 'App\Models\Service' vs 'service' di DB.
-        $itemTypeInput = $request->item_type;
+        // Convert item type to database alias
+        $itemTypeInput = $validated['item_type'];
 
-        // Cek apakah input mengandung namespace (tanda \)
+        // Convert namespace to database alias
         if (Str::contains($itemTypeInput, '\\')) {
-            // Jika input adalah App\Models\RentProperty
-            $baseName = Str::afterLast($itemTypeInput, '\\'); // Hasil: RentProperty
-        
-            // Konversi CamelCase (RentProperty) menjadi snake_case (rent_property)
-            $dbAliasType = Str::snake($baseName); // Hasil: rent_property
-        
+            // Extract class name from namespace
+            $baseName = Str::afterLast($itemTypeInput, '\\'); // Result: RentProperty
+            
+            // Convert CamelCase (RentProperty) to snake_case (rent_property)
+            $dbAliasType = Str::snake($baseName); // Result: rent_property
         } else {
-            // Jika input sudah alias (e.g., 'property' atau 'rent_property')
-            $dbAliasType = strtolower($itemTypeInput); // Hasil: property atau rent_property
+            // If input is already alias, use directly
+            $dbAliasType = strtolower($itemTypeInput); // Result: property or rent_property
         }
 
-        // ---------------------------------------------------------------
+        // Handle Event reviews by looking up associated Ticket IDs
+        if ($dbAliasType === 'event') {
+            // 1. Get all ticket IDs related to the event ID
+            $ticketIds = Ticket::where('event_id', $validated['item_id'])->pluck('id');
+            
+            // 2. Query reviews using the Ticket IDs and Ticket item_type
+            $ticketIds = Ticket::where('event_id', $validated['item_id'])->pluck('id');
+            
+            // Query reviews using the Ticket IDs and Ticket item_type
+            $reviews = Review::whereIn('item_id', $ticketIds)
+                ->where('item_type', 'ticket')
+                ->with(['user', 'transactionItem.transaction.user'])
+                ->paginate(10);
+        } else {
+            // Handle non-event (Service, Building, etc.) as before
+            $reviews = Review::forItem($dbAliasType, $validated['item_id'])
+                ->with(['user', 'transactionItem.transaction.user'])
+                ->paginate(10);
+            }
 
-        // Get reviews with eager loading (Muat data user yang memberikan ulasan)
-        $reviews = Review::forItem($dbAliasType, $request->item_id)
-        ->with([
-            'user', 
-            'transactionItem.transaction.user' 
-        ])
-        ->paginate(10);
-
-        // Get statistics, menggunakan alias tipe yang sudah benar
-        $stats = [
-            'average_rating' => Review::getAverageRating($dbAliasType, $request->item_id),
-            'total_reviews' => Review::getTotalReviews($dbAliasType, $request->item_id),
-        ];
+        // Get statistics - handle Event type specially
+        if ($dbAliasType === 'event') {
+            $ticketIds = Ticket::where('event_id', $validated['item_id'])->pluck('id');
+            
+            $stats = [
+                'average_rating' => Review::whereIn('item_id', $ticketIds)
+                ->where('item_type', 'ticket')
+                ->avg('rating'),
+            'total_reviews' => Review::whereIn('item_id', $ticketIds)
+                ->where('item_type', 'ticket')
+                ->count(),
+            ];
+        } else {
+            $stats = [
+                'average_rating' => Review::getAverageRating($dbAliasType, $validated['item_id']),
+                'total_reviews' => Review::where('item_id', $validated['item_id'])
+                ->where('item_type', $dbAliasType)
+                ->count(),
+            ];
+        }
 
         return response()->json([
             'reviews' => $reviews,
@@ -70,34 +92,37 @@ class ReviewController extends Controller
         ]);
     }
 
-    // --- Bagian STORE diubah untuk menggunakan alias pendek yang konsisten ---
+    /**
+     * Store a new review.
+     */
     public function store(Request $request)
     {
-        // Peringatan: Gunakan namespace penuh di sini untuk validasi, tetapi gunakan alias pendek di DB.
         $validator = Validator::make($request->all(), [
-            'item_type' => 'required|string|in:App\Models\Event,App\Models\Service,App\Models\Building,App\Models\RentProperty', // Use RentProperty (singular)
+            'item_type' => 'required|string',
             'item_id' => 'required|integer',
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',
-            'transaction_item_id' => 'nullable|integer', // Add support for transaction_item_id
+            'transaction_item_id' => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $validated = $validator->validated();
+
         $userId = auth()->id();
-        $fullItemType = $request->item_type;
-        $transactionItemId = $request->transaction_item_id;
+        $fullItemType = $validated['item_type'];
+        $transactionItemId = $validated['transaction_item_id'] ?? null;
 
-        // Konversi ke alias database untuk pengecekan review
+        // Convert to database alias for review checking
         $dbAliasType = strtolower(Str::afterLast($fullItemType, '\\'));
-
+        
         // If transaction_item_id is provided, validate it
         if ($transactionItemId) {
             $transactionItem = TransactionItem::where('id', $transactionItemId)
                 ->where('user_id', $userId)
-                ->where('item_id', $request->item_id)
+                ->where('item_id', $validated['item_id'])
                 ->where('item_type', $dbAliasType)
                 ->first();
 
@@ -108,46 +133,21 @@ class ReviewController extends Controller
             }
 
             // Check if this transaction item already has a review
-            if ($transactionItem->reviews_id) {
+            if (Review::hasUserReviewedTransactionItem($userId, $transactionItemId)) {
                 return response()->json([
-                    'error' => 'Item ini sudah diulas.'
+                    'error' => 'Anda sudah memberikan review untuk transaksi ini.'
                 ], 422);
             }
         }
 
-        // --- 1. Cek apakah user sudah mereview (menggunakan alias pendek) ---
-        // Asumsi Review::hasUserReviewed di Model Anda juga menggunakan alias pendek
-        if (Review::hasUserReviewed($userId, $dbAliasType, $request->item_id)) {
-            return response()->json([
-                'error' => 'Anda sudah memberikan review untuk produk ini.'
-            ], 422);
-        }
-
-        // --- 2. Validasi pembelian (menggunakan full namespace karena hasUserPurchasedItem memvalidasi TransactionItem) ---
-        // Skip purchase validation if transaction_item_id is provided (already validated above)
-        if (!$transactionItemId) {
-            $hasPurchased = $this->hasUserPurchasedItem(
-                $userId,
-                $fullItemType, // Gunakan fullItemType di sini jika TransactionItem menyimpan namespace penuh
-                $request->item_id
-            );
-
-            if (!$hasPurchased) {
-                return response()->json([
-                    'error' => 'Anda hanya bisa memberikan review setelah membeli produk ini.'
-                ], 403);
-            }
-        }
-
         try {
-            // --- 3. CREATE REVIEW (gunakan alias pendek untuk konsistensi DB) ---
+            // Create review data
             $reviewData = [
                 'user_id' => $userId,
-                // Simpan alias pendek yang benar-benar digunakan di Model Scope
                 'item_type' => $dbAliasType,
-                'item_id' => $request->item_id,
-                'rating' => $request->rating,
-                'comment' => $request->comment,
+                'item_id' => $validated['item_id'],
+                'rating' => $validated['rating'],
+                'comment' => $validated['comment'] ?? null,
             ];
 
             // Add transaction_item_id if provided
@@ -157,15 +157,9 @@ class ReviewController extends Controller
 
             $review = Review::create($reviewData);
 
-            // If transaction_item_id was provided, update the transaction item
-            if ($transactionItemId && isset($transactionItem)) {
-                $transactionItem->reviews_id = $review->id;
-                $transactionItem->save();
-            }
-
             return response()->json([
                 'message' => 'Review berhasil ditambahkan',
-                'review' => $review,
+                'review' => $review->load('user'),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -175,42 +169,33 @@ class ReviewController extends Controller
     }
 
     /**
-     * Update, Destroy, CanReview - optimized and consistent with DB aliases
-     */
-    
-    /**
      * Check if user has purchased an item.
      * Uses optimized query with joins and consistent type aliasing.
      */
     private function hasUserPurchasedItem($userId, $itemType, $itemId)
     {
-        // Selaraskan tipe item ke alias DB (e.g. "App\Models\Service" => "service")
-        $aliasType = strtolower(\Illuminate\Support\Str::afterLast($itemType, '\\'));
+        // Convert item type to database alias
+        $aliasType = strtolower(Str::afterLast($itemType, '\\'));
     
-        // OPTIMIZED: Handle different item types with fastest algorithm
+        // Handle different item types
         if ($aliasType === 'event') {
             // For events, check if user purchased any ticket for this event
             return TransactionItem::whereHas('transaction', function ($query) use ($userId) {
-                    $query->where('user_id', $userId)
-                          ->where('status', 'settlement'); // Only completed purchases
-                })
-                ->where('item_type', 'ticket')
-                ->whereHas('item', function ($query) use ($itemId) {
-                    // Get tickets that belong to this event
-                    $query->whereHas('ticket', function ($ticketQuery) use ($itemId) {
-                        $ticketQuery->where('event_id', $itemId);
-                    });
-                })
-                ->exists();
+                $query->where('user_id', $userId)
+                      ->where('status', 'settlement'); // Only completed purchases
+            })
+            ->where('item_type', 'ticket')
+            ->where('item_id', $itemId)
+            ->exists();
         } else {
             // For other types (service, building, rent_property, ticket), use direct item_id
             return TransactionItem::whereHas('transaction', function ($query) use ($userId) {
-                    $query->where('user_id', $userId)
-                          ->where('status', 'settlement'); // Only completed purchases
-                })
-                ->where('item_type', $aliasType)
-                ->where('item_id', $itemId)
-                ->exists();
+                $query->where('user_id', $userId)
+                      ->where('status', 'settlement'); // Only completed purchases
+            })
+            ->where('item_type', $aliasType)
+            ->where('item_id', $itemId)
+            ->exists();
         }
     }
     
@@ -227,7 +212,7 @@ class ReviewController extends Controller
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
@@ -237,7 +222,7 @@ class ReviewController extends Controller
         $review->save();
     
         return response()->json([
-            'message' => 'Review berhasil diperbarui',
+        'message' => 'Review berhasil diperbarui',
             'review' => $review->fresh('user'),
         ]);
     }
@@ -255,7 +240,7 @@ class ReviewController extends Controller
     
         return response()->json(['message' => 'Review berhasil dihapus']);
     }
-    
+
     /**
      * Check if user can review an item (for frontend).
      */
@@ -265,32 +250,43 @@ class ReviewController extends Controller
             'item_type' => 'required|string',
             'item_id' => 'required|integer',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-    
+
         $userId = auth()->id();
-    
-        // Gunakan alias pendek yang konsisten dengan kolom DB untuk semua pengecekan
-        $dbAliasType = strtolower(\Illuminate\Support\Str::afterLast($request->item_type, '\\'));
+
+        // Use short alias consistent with DB column for all checking
+        $dbAliasType = strtolower(Str::afterLast($request->item_type, '\\'));
     
         $alreadyReviewed = Review::hasUserReviewed(
             $userId,
             $dbAliasType,
             $request->item_id
         );
-    
+
         $hasPurchased = $this->hasUserPurchasedItem(
             $userId,
-            $request->item_type, // Use full item_type to handle special cases like events
+            $request->item_type,
             $request->item_id
         );
-    
+
+        $transactionItemId = $request->transaction_item_id ?? null;
+        $alreadyReviewedThisTransaction = false;
+        
+        if ($transactionItemId) {
+            $alreadyReviewedThisTransaction = Review::hasUserReviewedTransactionItem(
+                $userId,
+                $transactionItemId
+            );
+        }
+        
         return response()->json([
-            'can_review' => $hasPurchased && !$alreadyReviewed,
+            'can_review' => $hasPurchased && !$alreadyReviewedThisTransaction,
             'has_purchased' => $hasPurchased,
             'already_reviewed' => $alreadyReviewed,
+            'already_reviewed_this_transaction' => $alreadyReviewedThisTransaction,
         ]);
     }
 
@@ -302,105 +298,67 @@ class ReviewController extends Controller
     {
         try {
             return DB::transaction(function () use ($request, $orderId) {
-                // FAST: Validation and retrieval in one step
+                
+                // Validate data
                 $validated = $request->validate([
-                    'rating'    => 'required|integer|min:1|max:5',
-                    'comment'   => 'nullable|string|max:500',
+                    'rating' => 'required|integer|min:1|max:5',
+                    'comment' => 'nullable|string|max:500',
                     'item_type' => 'required|string',
-                    'item_id'   => 'required|integer',
-                    'day_rent'  => 'nullable|date',
+                    'item_id' => 'required|integer',
+                    'day_rent' => 'nullable|date',
                     'transaction_item_id' => 'required|integer'
                 ]);
 
-                // Efficient access to new data points
-                $itemId  = $validated['item_id'];
-                $rentDay = $validated['day_rent'] ?? null;
+                $transactionItemId = $validated['transaction_item_id'];
+                $userId = auth()->id();
 
-                // Convert full namespace to database alias for consistency
-                $dbAliasType = strtolower(Str::afterLast($validated['item_type'], '\\'));
-
-                // OPTIMIZED: Handle different item types with fastest algorithm
-                $transactionItem = null;
-
-                
-                $transactionItem = TransactionItem::where('id', $validated['transaction_item_id'])
-                    ->where('item_type', $dbAliasType)
+                // Get and authorize transaction item
+                $transactionItem = TransactionItem::with('transaction')
+                    ->where('id', $transactionItemId)
+                    ->whereHas('transaction', function ($q) use ($userId, $orderId) {
+                    $q->where('order_id', $orderId)->where('user_id', $userId);
+                })
                     ->first();
-
-                if (!$transactionItem) {
-                    Log::warning('ReviewController@storeFromTransaction: Transaction item not found', [
-                        'order_id' => $orderId,
-                        'item_type' => $validated['item_type'],
-                        'item_id' => $itemId,
-                        'user_id' => auth()->id(),
-                    ]);
-                    return back()->with('error', 'Transaksi tidak ditemukan.');
-                }
                 
-                if ($transactionItem->reviews_id) {
-                    return back()->with('error', 'Item ini sudah diulas.');
+                if (!$transactionItem) {
+                    abort(404, 'Item transaksi tidak ditemukan atau Anda tidak berhak mengulas.');
                 }
 
-                // Create review (ensure FK transaction_item_id is set to satisfy NOT NULL constraint)
-                $review = new Review([
-                    'user_id'             => auth()->id(),
-                    'rating'              => $validated['rating'],
-                    'comment'             => $validated['comment'] ?? null,
-                    // For events, use the event_id instead of ticket_id for proper review association
-                    'item_id'             => $dbAliasType === 'ticket' ? $itemId : $transactionItem->item_id,
-                    'item_type'           => $dbAliasType === 'ticket' ? 'ticket' : $transactionItem->item_type,
-                    'transaction_item_id' => $transactionItem->id,
-                ]);
+                // Use updateOrCreate to avoid duplicate entry errors
+                $review = Review::updateOrCreate(
+                    [
+                        'user_id' => $userId,
+                        'transaction_item_id' => $transactionItemId, 
+                    ],
+                    [
+                        'rating' => $validated['rating'],
+                        'comment' => $validated['comment'] ?? null,
+                        'item_id' => $transactionItem->item_id, 
+                        'item_type' => $transactionItem->item_type,
+                    ]
+                );
 
-                $saved = $review->save();
-
-                if (!$saved || !$review->id) {
-                    Log::warning('ReviewController@storeFromTransaction: Review save failed', [
-                        'order_id' => $orderId,
-                        'item_type' => $validated['item_type'],
-                        'item_id' => $itemId,
-                        'user_id' => auth()->id(),
-                        'payload' => [
-                            'rating'  => $validated['rating'],
-                            'comment' => $validated['comment'] ?? null,
-                            'day_rent'=> $rentDay ?? null,
-                        ],
-                    ]);
-                    return back()->with('error', 'Item yang diulas tidak valid.');
-                }
-
-                 // Link review id to transaction item
                 $transactionItem->reviews_id = $review->id;
+
                 $transactionItem->save();
 
-                // Optional debug: log the rent day for traceability
-                Log::info('ReviewController@storeFromTransaction: Review stored', [
-                    'order_id' => $orderId,
-                    'review_id' => $review->id,
-                    'item_id' => $itemId,
-                    'day_rent' => $rentDay ?? null,
-                    'user_id' => auth()->id(),
-                ]);
-
-                return back()->with('success', 'Ulasan berhasil disimpan!');
+                return back();
             });
         } catch (\Throwable $e) {
-            Log::error('ReviewController@storeFromTransaction: Exception', [
-                'order_id' => $orderId,
+            Log::error('Review Submission Fatal Error', [
+                'order_id' => $orderId, 
                 'user_id' => auth()->id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error' => $e->getMessage()
             ]);
-
-            // For debug: expose the exception message in flash. Consider hiding in production.
-            return back()->with('error', 'Terjadi kesalahan saat menyimpan ulasan: ' . $e->getMessage());
+                
+            return back()->with('error', 'Terjadi kesalahan sistem yang fatal. Mohon coba lagi.');
         }
     }
 
     /**
      * Get user's review for a specific transaction item
      * This helps frontend determine if user can edit their review
-     */
+            */
     public function getUserReviewForTransaction(Request $request)
     {
         $validator = Validator::make($request->all(), [

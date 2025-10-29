@@ -14,16 +14,19 @@ return new class extends Migration
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            // Link to transaction_items to avoid cycle (transaction_items.reviews_id is not FK)
             $table->foreignId('transaction_item_id')->constrained()->onDelete('cascade');
 
-            // Added fields for indexing and fast lookups
-            $table->unsignedBigInteger('item_id');
+            // Essential columns for polymorphic 'morphTo' relationship
+            // These are simple columns WITHOUT foreign key constraints or indexes
+            $table->integer('item_id');
             $table->string('item_type');
 
             $table->integer('rating');
             $table->text('comment')->nullable();
             $table->timestamps();
+            
+            // Unique constraint ensuring a user can only review a specific transaction item once
+            $table->unique(['user_id', 'transaction_item_id'], 'reviews_user_transaction_item_unique');
         });
     }
 

@@ -94,7 +94,20 @@ class Review extends Model
     }
 
     /**
-     * Check if user already reviewed an item.
+     * Check if user already reviewed a specific transaction item.
+     * UPDATED: Now checks by transaction_item_id instead of item_id + item_type
+     */
+    public static function hasUserReviewedTransactionItem($userId, $transactionItemId)
+    {
+        return static::where('user_id', $userId)
+                     ->where('transaction_item_id', $transactionItemId)
+                     ->exists();
+    }
+
+    /**
+     * DEPRECATED: Keep for backward compatibility but not recommended
+     * Check if user already reviewed an item (any transaction).
+     * This will return true if user reviewed this item in ANY transaction.
      */
     public static function hasUserReviewed($userId, $itemType, $itemId)
     {

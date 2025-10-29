@@ -219,8 +219,41 @@ const TransactionItem = React.memo(
                     <div className="space-y-3">
                         {transaction?.items?.map((item) => {
                             // Check if transaction is completed or event is finished
+                            const isRentDatePast = (rentDateString) => {
+                                if (!rentDateString) return false;
+
+                                // 1. Dapatkan Tanggal Hari Ini (Diubah ke Tengah Malam WIB)
+
+                                const now = new Date();
+
+                                // Gunakan fungsi Intl.DateTimeFormat untuk mendapatkan string tanggal WIB
+
+                                const wibDateString = new Intl.DateTimeFormat(
+                                    "en-CA",
+                                    {
+                                        timeZone: "Asia/Jakarta", // Zona Waktu Jakarta (WIB)
+
+                                        year: "numeric",
+
+                                        month: "2-digit",
+
+                                        day: "2-digit",
+                                    }
+                                )
+                                    .format(now)
+                                    .replace(/-/g, "/"); // Format: YYYY/MM/DD
+
+                                const rentDateEnd = new Date(rentDateString);
+
+                                rentDateEnd.setDate(rentDateEnd.getDate() + 1);
+
+                                rentDateEnd.setHours(0, 0, 0, 0);
+                                return now.getTime() > rentDateEnd.getTime();
+                            };
+
                             const isTransactionCompleted =
-                                transaction.status === "completed";
+                                item?.status === "completed" ||
+                                isRentDatePast(item?.rent_days);
                             const isEventFinished = item?.item?.event
                                 ? isEventPast(item?.item?.event.event_date_end)
                                 : false;

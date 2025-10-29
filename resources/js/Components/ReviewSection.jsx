@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Star, Loader2, Edit2, Trash2, MessageSquare } from "lucide-react";
+import { Star, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/avatar";
@@ -26,11 +26,7 @@ export default function ReviewSection({
     const [reviews, setReviews] = useState([]);
     const [stats, setStats] = useState({ average_rating: 0, total_reviews: 0 });
     const [rating, setRating] = useState(0);
-    const [hoverRating, setHoverRating] = useState(0);
     const [comment, setComment] = useState("");
-    const [editingId, setEditingId] = useState(null);
-    const [editRating, setEditRating] = useState(0);
-    const [editComment, setEditComment] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [canReview, setCanReview] = useState(false);
@@ -53,12 +49,17 @@ export default function ReviewSection({
                         page: page,
                     },
                 });
-                console.log(response);
-                setReviews(response.data.reviews.data);
-                setStats(response.data.stats);
+                console.log("Full Response:", response);
+                // console.log("Reviews Data:", response?.data);
+
+                // Handle nested data structure from API
+                const apiData = response.data.data || response.data;
+
+                setReviews(apiData.reviews.data);
+                setStats(apiData.stats);
                 setPagination({
-                    current_page: response.data.reviews.current_page,
-                    last_page: response.data.reviews.last_page,
+                    current_page: apiData.reviews.current_page,
+                    last_page: apiData.reviews.last_page,
                 });
             } catch (error) {
                 console.error("Error fetching reviews:", error);
@@ -96,106 +97,6 @@ export default function ReviewSection({
             checkCanReview();
         }
     }, [fetchReviews, checkCanReview, user]);
-
-    // Submit review
-    const handleSubmitReview = async (e) => {
-        e.preventDefault();
-
-        if (rating === 0) {
-            toast.error("Silakan pilih rating");
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const payload = {
-                item_type: itemType,
-                item_id: itemId,
-                rating: rating,
-                comment: comment,
-            };
-
-            // Add transaction_item_id if available (for transaction-based reviews)
-            if (transactionItemId) {
-                payload.transaction_item_id = transactionItemId;
-            }
-
-            const response = await axios.post("/reviews", payload);
-
-            setReviews([response.data.review, ...reviews]);
-            setRating(0);
-            setComment("");
-            setCanReview(false);
-            setAlreadyReviewed(true);
-            toast.success("Review berhasil ditambahkan");
-            fetchReviews(); // Refresh to update stats
-        } catch (error) {
-            console.error("Error submitting review:", error);
-            toast.error(
-                error.response?.data?.error || "Gagal menambahkan review"
-            );
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Update review
-    const handleUpdateReview = async (e, reviewId) => {
-        e.preventDefault();
-
-        if (editRating === 0) {
-            toast.error("Silakan pilih rating");
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const response = await axios.put(`/reviews/${reviewId}`, {
-                rating: editRating,
-                comment: editComment,
-            });
-
-            setReviews(
-                reviews.map((review) =>
-                    review.id === reviewId
-                        ? {
-                              ...review,
-                              rating: editRating,
-                              comment: editComment,
-                          }
-                        : review
-                )
-            );
-
-            setEditingId(null);
-            setEditRating(0);
-            setEditComment("");
-            toast.success("Review berhasil diperbarui");
-            fetchReviews(); // Refresh to update stats
-        } catch (error) {
-            console.error("Error updating review:", error);
-            toast.error("Gagal memperbarui review");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Delete review
-    const handleDeleteReview = async (reviewId) => {
-        if (!confirm("Yakin ingin menghapus review ini?")) return;
-
-        try {
-            await axios.delete(`/reviews/${reviewId}`);
-            setReviews(reviews.filter((review) => review.id !== reviewId));
-            setCanReview(true);
-            setAlreadyReviewed(false);
-            toast.success("Review berhasil dihapus");
-            fetchReviews(); // Refresh to update stats
-        } catch (error) {
-            console.error("Error deleting review:", error);
-            toast.error("Gagal menghapus review");
-        }
-    };
 
     // Load more reviews
     const loadMore = () => {
@@ -239,7 +140,7 @@ export default function ReviewSection({
         return (
             <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                    <button
+                    <Button
                         key={star}
                         type="button"
                         disabled={readonly}
@@ -260,7 +161,7 @@ export default function ReviewSection({
                                     : "text-gray-300"
                             )}
                         />
-                    </button>
+                    </Button>
                 ))}
             </div>
         );
@@ -268,9 +169,8 @@ export default function ReviewSection({
 
     // Review Item Component
     const ReviewItem = ({ review }) => {
-        console.log(review.user);
-        const isOwner = user?.id === review.user_id;
-        const isEditing = editingId === review.id;
+        // Debug: log review data
+        console.log("Review Item:", review);
 
         return (
             <div className="space-y-3 pb-4 border-b last:border-b-0">
@@ -289,102 +189,27 @@ export default function ReviewSection({
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <StarRating
-                                        value={
-                                            isEditing
-                                                ? editRating
-                                                : review.rating
-                                        }
-                                        onChange={setEditRating}
+                                        value={review.rating}
                                         size={16}
-                                        readonly={!isEditing}
+                                        readonly
                                     />
                                     <span className="text-xs text-slate-500">
                                         {formatDate(review.created_at)}
                                     </span>
                                 </div>
                             </div>
-                            {isOwner && !isEditing && (
-                                <div className="flex gap-1 flex-shrink-0">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 w-7 p-0"
-                                        onClick={() => {
-                                            setEditingId(review.id);
-                                            setEditRating(review.rating);
-                                            setEditComment(
-                                                review.comment || ""
-                                            );
-                                        }}
-                                    >
-                                        <Edit2 className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-                                        onClick={() =>
-                                            handleDeleteReview(review.id)
-                                        }
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            )}
                         </div>
 
-                        {isEditing ? (
-                            <form
-                                onSubmit={(e) =>
-                                    handleUpdateReview(e, review.id)
-                                }
-                                className="space-y-2 mt-2"
-                            >
-                                <Textarea
-                                    value={editComment}
-                                    onChange={(e) =>
-                                        setEditComment(e.target.value)
-                                    }
-                                    placeholder="Tulis komentar Anda..."
-                                    className="min-h-[60px] text-sm"
-                                    disabled={isSubmitting}
-                                />
-                                <div className="flex gap-2">
-                                    <Button
-                                        type="submit"
-                                        size="sm"
-                                        disabled={
-                                            isSubmitting || editRating === 0
-                                        }
-                                    >
-                                        {isSubmitting ? (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                        ) : (
-                                            "Simpan"
-                                        )}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setEditingId(null);
-                                            setEditRating(0);
-                                            setEditComment("");
-                                        }}
-                                        disabled={isSubmitting}
-                                    >
-                                        Batal
-                                    </Button>
-                                </div>
-                            </form>
-                        ) : (
-                            review.comment && (
-                                <p className="text-sm md:text-base text-slate-700 whitespace-pre-wrap break-words mt-2">
-                                    {review.comment}
-                                </p>
-                            )
-                        )}
+                        {/* Always show comment section for debugging */}
+                        <div className="mt-2">
+                            <p className="text-sm md:text-base text-slate-700 whitespace-pre-wrap break-words">
+                                {review.comment || (
+                                    <span className="text-slate-400 italic">
+                                        Tidak ada komentar
+                                    </span>
+                                )}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -412,7 +237,7 @@ export default function ReviewSection({
                                     {parseFloat(
                                         stats?.average_rating ?? 0
                                     ).toFixed(1)}{" "}
-                                    dari {stats?.total_reviews ?? "beberapa"}
+                                    dari {stats?.total_reviews}
                                 </span>
                             </div>
                         )}
@@ -420,49 +245,13 @@ export default function ReviewSection({
                 </div>
             </div>
 
-            {/* New Review Form - Only show if user can review */}
-            {user && canReview && (
-                <form
-                    onSubmit={handleSubmitReview}
-                    className="space-y-4 bg-slate-50 p-4 rounded-lg"
-                >
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
-                            Rating Anda
-                        </label>
-                        <StarRating
-                            value={rating}
-                            onChange={setRating}
-                            size={32}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
-                            Komentar (Opsional)
-                        </label>
-                        <Textarea
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            placeholder="Bagikan pengalaman Anda..."
-                            className="min-h-[80px] resize-none"
-                            disabled={isSubmitting}
-                        />
-                    </div>
-                    <Button
-                        type="submit"
-                        disabled={isSubmitting || rating === 0}
-                        className="w-full sm:w-auto"
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Mengirim...
-                            </>
-                        ) : (
-                            "Kirim Review"
-                        )}
-                    </Button>
-                </form>
+            {/* Already reviewed message */}
+            {user && alreadyReviewed && !canReview && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800">
+                        Anda sudah memberikan review untuk produk ini.
+                    </p>
+                </div>
             )}
 
             {/* Reviews List */}
@@ -480,7 +269,7 @@ export default function ReviewSection({
                     </div>
                 ) : (
                     <>
-                        {reviews.map((review) => (
+                        {reviews?.map((review) => (
                             <ReviewItem key={review.id} review={review} />
                         ))}
 
