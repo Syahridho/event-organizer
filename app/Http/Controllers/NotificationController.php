@@ -15,8 +15,10 @@ class NotificationController extends Controller
         $notifications = $user->notifications()->latest()->get()->map(function ($notification) {
             return [
                 'id' => $notification->id,
-                'type' => $notification->data['type'],
-                'message' => $notification->data['message'],
+                // Fallback to notification class name if 'type' key is missing in data
+                'type' => $notification->data['type'] ?? class_basename($notification->type),
+                // Guard against missing 'message' key
+                'message' => $notification->data['message'] ?? 'Pesan tidak tersedia.',
                 'pembelian_id' => $notification->data['pembelian_id'] ?? null,
                 'jumlah' => $notification->data['jumlah'] ?? null,
                 'read_at' => $notification->read_at,

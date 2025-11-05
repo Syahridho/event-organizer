@@ -25,3 +25,5 @@ export const formatRupiahInput = (input) => {
         maximumFractionDigits: 0,
     }).format(numeric || 0);
 };
+
+export default formatRupiah;

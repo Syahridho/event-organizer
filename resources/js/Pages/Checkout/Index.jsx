@@ -851,7 +851,8 @@ export default function CheckoutPage() {
                                                     )}
                                                     className="font-semibold text-sm text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1 group line-clamp-2"
                                                 >
-                                                    {item.name}
+                                                    {item.name} -{" "}
+                                                    {item.ticket_name}
                                                     <FaExternalLinkAlt className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                                                 </Link>
 
@@ -884,13 +885,19 @@ export default function CheckoutPage() {
                                                             </span>
                                                         </div>
                                                     )}
-
-                                                {item?.delivery_type && (
+                                                {item?.type ==
+                                                    "rent_property" && (
                                                     <div className="text-xs text-gray-600">
                                                         {item.delivery_type ===
-                                                        "delivery"
+                                                        null // <-- Pengecekan DALAM
+                                                            ? null
+                                                            : item.delivery_type ===
+                                                              "delivery"
                                                             ? "Diantar ke alamat anda"
-                                                            : "Anda menjemput properti"}
+                                                            : item?.delivery_type ===
+                                                              "pickup"
+                                                            ? "Anda menjemput properti"
+                                                            : null}
                                                     </div>
                                                 )}
 

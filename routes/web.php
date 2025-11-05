@@ -16,15 +16,18 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminSettingController;
 use App\Http\Controllers\Admin\BuildingController as AdminBuildingController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
+use App\Http\Controllers\Admin\EventAttendanceController;
 use App\Http\Controllers\Admin\RentController as AdminRentController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\WithdrawController as AdminWithdrawController;
 use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
+use App\Http\Controllers\Admin\TestimonialController;
 
 use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\Mitra\MitraTransactionController;
 use App\Http\Controllers\Mitra\WithDrawController;
 use App\Http\Controllers\Mitra\RatingController;
+use App\Http\Controllers\User\WithdrawController as UserWithdrawController;
 
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\BuildingController;
@@ -47,6 +50,9 @@ use App\Http\Controllers\MitraProfileController;
 
 // Main homepage
 Route::get('/', [HomeController::class, 'index'])->name('welcome');
+
+// Terms and Conditions
+Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 
 // Product listing pages
 Route::get('/{type}', [ListingController::class, 'show'])
@@ -98,7 +104,7 @@ Route::post('/partner/register', [PartnerController::class, 'store'])->name('par
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
 
 // Authenticated user routes
-Route::middleware(['auth', 'verified'])->group(function () {    
+Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     
 
 
@@ -226,7 +232,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admin/dashboard/chat', [ChatController::class, 'adminChat'])->name('admin.chat');
         Route::get('/admin/dashboard/chat/{user:uuid}', [ChatController::class, 'adminShow'])->name('admin.chat.show');
         Route::post('/admin/dashboard/chat/{user:uuid}', [ChatController::class, 'chat'])->name('admin.chat.store');
-        
+
+        Route::resource('/admin/testimonials', TestimonialController::class, ['as' => 'admin'])->names([
+            'index' => 'admin.testimonials.index',
+            'create' => 'admin.testimonials.create',
+            'store' => 'admin.testimonials.store',
+            'show' => 'admin.testimonials.show',
+            'edit' => 'admin.testimonials.edit',
+            'update' => 'admin.testimonials.update',
+            'destroy' => 'admin.testimonials.destroy',
+        ]);
+
         // Admin dashboard chat routes (alternative paths)
         Route::get('/admin/dashboard/{uuid}', [ChatController::class, 'adminShow'])->name('admin.dashboard.chat.show');
         Route::post('/admin/dashboard/{uuid}', [ChatController::class, 'chat'])->name('admin.dashboard.chat.store');
@@ -238,6 +254,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard', [MitraController::class, 'dashboard'])->name('mitra.dashboard');
 
         Route::resource('/dashboard/events', EventController::class);
+
+        // Event Attendance routes (accessible by both admin and mitra)
+        Route::get('/dashboard/events/{event}/attendance', [App\Http\Controllers\Admin\EventAttendanceController::class, 'show'])->name('dashboard.events.attendance');
+        Route::get('/dashboard/events/{event}/attendance/pdf', [App\Http\Controllers\Admin\EventAttendanceController::class, 'exportPdf'])->name('dashboard.events.attendance.pdf');
+        Route::get('/dashboard/events/{event}/attendance/excel', [App\Http\Controllers\Admin\EventAttendanceController::class, 'exportExcel'])->name('dashboard.events.attendance.excel');
+
         Route::resource('/dashboard/services', ServiceController::class);
         Route::resource('/dashboard/buildings', BuildingController::class);
         Route::resource('/dashboard/rents', RentController::class);
@@ -293,7 +315,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/profile', 'update')->name('profile.update');
         Route::delete('/profile', 'destroy')->name('profile.destroy');
         Route::delete('/profile/photo', 'destroyPhoto')->name('profile.photo.destroy');
+        Route::get('/profile/wallet', 'wallet')->name('profile.wallet');
     });
+
+    // User withdrawal request (member side)
+    Route::post('/profile/withdraw', [UserWithdrawController::class, 'store'])->name('profile.withdraw');
 
     // Chat functionality
     Route::controller(ChatController::class)->prefix('chat')->name('chat.')->group(function () {

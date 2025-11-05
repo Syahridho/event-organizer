@@ -15,41 +15,32 @@ export default function Footer() {
                         </h2>
                         <ul className="text-gray-500 dark:text-gray-400 font-medium">
                             <li className="mb-4">
-                                <Link
-                                    href="#"
+                                <a
+                                    href="https://wa.me/6289512220026"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="hover:underline flex items-center gap-2"
                                 >
                                     <FaWhatsapp /> Whatsapp
-                                </Link>
+                                </a>
                             </li>
                             <li className="mb-4">
-                                <Link
-                                    href="#"
+                                <a
+                                    href="mailto:eventplannusantara@gmail.com"
                                     className="hover:underline flex items-center gap-2"
                                 >
                                     <MdOutlineEmail />
                                     Email
-                                </Link>
+                                </a>
                             </li>
                             <li className="mb-4">
                                 <Link href="#" className="hover:underline">
                                     <div className="flex items-center gap-2">
                                         <FaPhone className="text-sm shrink-0" />
-                                        Pusat Panggilan Khusus Indonesia
+                                        Pusat Panggilan
                                     </div>
                                     <span className="ms-5">
-                                        +628 804 1500 878
-                                    </span>
-                                </Link>
-                            </li>
-                            <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    <div className="flex items-center gap-2">
-                                        <FaPhone className="text-sm inline-block" />
-                                        International
-                                    </div>
-                                    <span className="ms-5">
-                                        +628 21 3973 0888
+                                        +628 95 1222 0026
                                     </span>
                                 </Link>
                             </li>
@@ -61,27 +52,7 @@ export default function Footer() {
                         </h2>
                         <ul className="text-gray-500 dark:text-gray-400 font-medium">
                             <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Blog
-                                </Link>
-                            </li>
-                            <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Karier
-                                </Link>
-                            </li>
-                            <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Afiliasi
-                                </Link>
-                            </li>
-                            <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Mitra
-                                </Link>
-                            </li>
-                            <li className="mb-4">
-                                <Link href="#" className="hover:underline">
+                                <Link href="/terms" className="hover:underline">
                                     Perlindungan
                                 </Link>
                             </li>
@@ -93,23 +64,35 @@ export default function Footer() {
                         </h2>
                         <ul className="text-gray-500 dark:text-gray-400 font-medium">
                             <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Tiket
+                                <Link
+                                    href="/events"
+                                    className="hover:underline"
+                                >
+                                    Event
                                 </Link>
                             </li>
                             <li className="mb-4">
-                                <Link href="#" className="hover:underline">
+                                <Link
+                                    href="/services"
+                                    className="hover:underline"
+                                >
                                     Jasa
                                 </Link>
                             </li>
                             <li className="mb-4">
-                                <Link href="#" className="hover:underline">
+                                <Link
+                                    href="/buildings"
+                                    className="hover:underline"
+                                >
                                     Gedung
                                 </Link>
                             </li>
                             <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Property
+                                <Link
+                                    href="/propertys"
+                                    className="hover:underline"
+                                >
+                                    Properti
                                 </Link>
                             </li>
                         </ul>
@@ -120,18 +103,8 @@ export default function Footer() {
                         </h2>
                         <ul className="text-gray-500 dark:text-gray-400 font-medium">
                             <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Pusat Bantuan
-                                </Link>
-                            </li>
-                            <li className="mb-4">
-                                <Link href="#" className="hover:underline">
+                                <Link href="/terms" className="hover:underline">
                                     Syarat Dan Dukungan
-                                </Link>
-                            </li>
-                            <li className="mb-4">
-                                <Link href="#" className="hover:underline">
-                                    Grup Mitra
                                 </Link>
                             </li>
                         </ul>

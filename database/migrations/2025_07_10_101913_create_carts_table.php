@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('item_type');
             $table->date('rent_days')->nullable()->default(null);
             $table->string('type');
-            $table->string('delivery_type')->default('pickup'); // pickup, delivery
+            $table->enum('delivery_type', ['delivery', 'pickup'])->nullable();
             $table->string('is_unavailable')->default('available');
             $table->integer('item_qty')->default(1);
             $table->timestamps();

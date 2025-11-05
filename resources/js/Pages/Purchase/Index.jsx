@@ -190,7 +190,7 @@ const TransactionItem = React.memo(
             <Card className="mb-4 overflow-hidden hover:shadow-md transition-shadow">
                 <CardContent className="p-4 sm:p-6">
                     {/* Header: Order ID + Status */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div className="flex sm:flex-row sm:items-center justify-between gap-3 mb-4">
                         <Link
                             href={route("purchase.show", transaction.id)}
                             className="group"
@@ -209,7 +209,6 @@ const TransactionItem = React.memo(
                                 </span>
                             </div>
                         </Link>
-                        {console.log(transaction)}
                         <PaymentStatusBadge status={transaction.status} />
                     </div>
 
@@ -295,6 +294,11 @@ const TransactionItem = React.memo(
                                                     status={item.status}
                                                 />
                                             ) : null}
+                                            {item?.status === "sold_out" && (
+                                                <ItemStatusBadge
+                                                    status={item.status}
+                                                />
+                                            )}
                                         </div>
 
                                         <p className="text-xs sm:text-sm text-gray-600 mb-1">
@@ -973,28 +977,44 @@ export default function PurchaseIndex() {
 
                 {/* OPTIMIZED: Enhanced Tabs with horizontal scrolling on mobile */}
                 <Tabs defaultValue={currentTab} className="w-full">
-                    <div className="mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-                        <TabsList className="inline-flex w-auto min-w-full sm:w-full bg-white rounded-lg p-1 shadow-sm border">
-                            {TAB_CONFIG.map((tab) => {
-                                const Icon = tab.icon;
-                                return (
-                                    <Link
-                                        key={tab.key}
-                                        href={`/purchase?tab=${tab.key}`}
-                                        preserveScroll
-                                        preserveState
-                                    >
-                                        <TabsTrigger
-                                            value={tab.key}
-                                            className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 py-2 whitespace-nowrap data-[state=active]:bg-blue-500 data-[state=active]:text-white transition-all"
+                    <div className="relative mb-6">
+                        <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                            <TabsList className="inline-flex w-auto min-w-full bg-white rounded-lg p-1 shadow-sm border">
+                                {TAB_CONFIG.map((tab) => {
+                                    const Icon = tab.icon;
+                                    return (
+                                        <Link
+                                            key={tab.key}
+                                            href={`/purchase?tab=${tab.key}`}
+                                            preserveScroll
+                                            preserveState
                                         >
-                                            <Icon className="w-4 h-4" />
-                                            <span>{tab.label}</span>
-                                        </TabsTrigger>
-                                    </Link>
-                                );
-                            })}
-                        </TabsList>
+                                            <TabsTrigger
+                                                value={tab.key}
+                                                className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 py-2 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white hover:bg-primary/5 transition-all"
+                                            >
+                                                <Icon className="w-4 h-4" />
+                                                <span>{tab.label}</span>
+                                            </TabsTrigger>
+                                        </Link>
+                                    );
+                                })}
+                            </TabsList>
+                        </div>
+
+                        {/* Shadow Kiri: Mulai dari gray-50 (sesuai background) ke transparan */}
+                        <div
+                            className="absolute top-0 bottom-2 left-0 w-5 
+                   bg-gradient-to-r from-gray-50 to-transparent 
+                   pointer-events-none"
+                        />
+
+                        {/* Shadow Kanan: Mulai dari gray-50 (sesuai background) ke transparan */}
+                        <div
+                            className="absolute top-0 bottom-2 right-0 w-5
+                   bg-gradient-to-l from-gray-50 to-transparent 
+                   pointer-events-none"
+                        />
                     </div>
 
                     {TAB_CONFIG.map((tab) => (

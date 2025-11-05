@@ -1,4 +1,4 @@
-import { usePage, router } from "@inertiajs/react";
+import { usePage, router, Head } from "@inertiajs/react";
 import { Bell, CheckCircle, XCircle, Calendar, Trash2 } from "lucide-react";
 import { useState } from "react";
 import MainLayout from "@/Layouts/Main";
@@ -46,6 +46,7 @@ export default function NotificationsIndex() {
 
     return (
         <div className="min-h-screen max-w-3xl mx-auto">
+            <Head title="Notifikasi" />
             <div className="m-6 xl:m-12">
                 <div className="flex mb-6">
                     <h1 className="text-2xl w-full font-bold flex gap-2">

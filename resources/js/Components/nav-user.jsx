@@ -96,6 +96,10 @@ export function NavUser({ user }) {
                                 <Settings />
                                 Pengaturan
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.get(route("profile.wallet"))}>
+                                <CreditCardIcon />
+                                Wallet
+                            </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

@@ -233,6 +233,8 @@ export default function ShowEvent() {
     const { event, auth, ziggy, alreadyRegistered, tax_info, platformTax } =
         usePage().props;
 
+    console.log(event);
+
     const [latitude, longitude] = event?.pin.split(",");
 
     const embedSrc = `https://maps.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
@@ -250,6 +252,7 @@ export default function ShowEvent() {
         const saleStart = new Date(event.ticket_date_start).getTime();
         return now >= saleStart;
     });
+    const isEventBanned = event.status === "banned";
 
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
     const {
@@ -821,15 +824,18 @@ export default function ShowEvent() {
                                 </p>
                             </div>
 
-                            {eventStatus.isOver || eventStatus.isSaleOver ? (
+                            {eventStatus.isOver ||
+                            eventStatus.isSaleOver ||
+                            isEventBanned ? (
                                 <Alert
                                     variant="destructive"
                                     className="mt-2 flex items-start"
                                 >
                                     <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                                     <AlertDescription className="text-sm pt-1">
-                                        {eventStatus.message} Tiket tidak dapat
-                                        dibeli.
+                                        {isEventBanned
+                                            ? "Event ini telah dilarang/banned. Tiket tidak dapat dibeli."
+                                            : `${eventStatus.message} Tiket tidak dapat dibeli.`}
                                     </AlertDescription>
                                 </Alert>
                             ) : (
@@ -855,7 +861,7 @@ export default function ShowEvent() {
                                             />
                                         )}
 
-                                    {isSaleActive && (
+                                    {isSaleActive && !isEventBanned && (
                                         <>
                                             {freeTicket && (
                                                 <>

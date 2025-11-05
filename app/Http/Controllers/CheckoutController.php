@@ -30,6 +30,7 @@ class CheckoutController extends Controller
             ->whereIn('id', $cartIds)
             ->get();
 
+
         if ($carts->count() !== count($cartIds)) {
             return redirect()->back()->withErrors([
                 'message' => 'Beberapa item tidak ditemukan atau bukan milik Anda.'
@@ -54,8 +55,16 @@ class CheckoutController extends Controller
                 return $item->item_id . '_' . $item->item_type . '_' . $item->rent_days;
             });
 
-        // Validate each cart item for double booking
+        // FASTEST ALGORITHM: Check for banned events (O(n) complexity)
+        // Validate each cart item for double booking and banned events
         foreach ($carts as $cart) {
+            // Check for banned events first
+            if ($cart->type === 'ticket' && $cart->item && $cart->item->event && $cart->item->event->status === 'banned') {
+                return redirect()->route('cart.index')->withErrors([
+                    'message' => "Event '{$cart->item->event->name}' telah dilarang/banned. Silakan hapus tiket dari keranjang."
+                ]);
+            }
+
             if (in_array($cart->type, ['service', 'building', 'property']) && $cart->rent_days) {
                 $normalizedType = $this->normalizeItemType($cart->item_type, $cart->type);
                 $key = $cart->item_id . '_' . $normalizedType . '_' . $cart->rent_days;

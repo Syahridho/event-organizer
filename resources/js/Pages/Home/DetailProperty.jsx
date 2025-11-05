@@ -114,6 +114,10 @@ const DetailProperty = () => {
             toast.error("Silahkan pilih tanggal sewa properti");
             return;
         }
+        if (user.id === property.user_id) {
+            toast.error("Tidak bisa membeli property sendiri");
+            return;
+        }
 
         setIsLoading((prev) => ({ ...prev, cart: true }));
 
@@ -154,6 +158,11 @@ const DetailProperty = () => {
     const handlePayment = useCallback(
         async (e) => {
             if (e) e.preventDefault();
+
+            if (user.id === property.user_id) {
+                toast.error("Tidak bisa membeli property sendiri");
+                return;
+            }
 
             // Validation checks
             if (!selectedDate) {

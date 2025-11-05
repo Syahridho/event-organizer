@@ -50,6 +50,10 @@ const STATUS_CONFIG = {
         label: "Dibatalkan",
         className: "bg-red-100 text-red-800 border-red-300 hover:bg-red-200",
     },
+    sold_out: {
+        label: "Habis Terjual",
+        className: "bg-red-100 text-red-800 border-red-300 hover:bg-red-200",
+    },
 };
 
 // Default fallback configuration
@@ -59,6 +63,7 @@ const DEFAULT_CONFIG = {
 };
 
 const ItemStatusBadge = ({ status }) => {
+    console.log(status);
     // O(1) lookup for status configuration
     const config = status
         ? STATUS_CONFIG[status] || DEFAULT_CONFIG

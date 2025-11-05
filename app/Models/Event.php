@@ -46,6 +46,13 @@ class Event extends Model
 
     public function transactionItems()
     {
-        return $this->morphMany(TransactionItem::class, 'item');
+        return $this->hasManyThrough(
+            TransactionItem::class,
+            Ticket::class,
+            'event_id',     // Foreign key on tickets table
+            'item_id',      // Foreign key on transaction_items table
+            'id',           // Local key on events table
+            'id'            // Local key on tickets table
+        )->where('transaction_items.item_type', 'ticket');
     }
 }

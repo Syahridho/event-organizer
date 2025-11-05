@@ -19,6 +19,8 @@ const breadcrumbs = [
 export default function UserEvent() {
     const { events, flash } = usePage().props;
 
+    console.log(events);
+
     useEffect(() => {
         if (flash?.success) {
             toast.success(flash?.success);

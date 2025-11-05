@@ -115,7 +115,7 @@ export default function SearchChatBar() {
                     >
                         <Combobox
                             as="div"
-                            className="max-w-2xl mx-auto overflow-hidden transition-all transform bg-white divide-y divide-gray-500 shadow-2xl divide-opacity-10 rounded-xl bg-opacity-80 ring-1 ring-black ring-opacity-5 backdrop-blur backdrop-filter"
+                            className="max-w-2xl mx-auto overflow-hidden mt-20 transition-all transform bg-white divide-y divide-gray-500 shadow-2xl divide-opacity-10 rounded-xl bg-opacity-80 ring-1 ring-black ring-opacity-5 backdrop-blur backdrop-filter"
                         >
                             <div className="relative">
                                 {loading ? (

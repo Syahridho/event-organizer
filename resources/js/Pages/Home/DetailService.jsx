@@ -101,6 +101,10 @@ const DetailService = () => {
             toast.error("Silahkan pilih tanggal sewa jasa");
             return;
         }
+        if (user.id === service.user_id) {
+            toast.error("Tidak bisa membeli service sendiri");
+            return;
+        }
         setIsLoading((prev) => ({ ...prev, cart: true }));
 
         const itemsToAdd = { [service.id]: 1 };
@@ -140,6 +144,11 @@ const DetailService = () => {
     const handlePayment = useCallback(
         async (e) => {
             if (e) e.preventDefault();
+
+            if (user.id === service.user_id) {
+                toast.error("Tidak bisa membeli service sendiri");
+                return;
+            }
 
             if (!selectedDate) {
                 toast.error("Silahkan pilih tanggal sewa jasa");

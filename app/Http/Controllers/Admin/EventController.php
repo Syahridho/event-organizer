@@ -13,7 +13,10 @@ class EventController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Events/Index', [
-            'events' => Event::with('speakers')->latest()->get(),
+            'events' => Event::with('speakers')
+                ->withCount(['transactionItems' => fn($q) => $q->whereHas('transaction', fn($tq) => $tq->where('status', 'settlement'))])
+                ->latest()
+                ->get(),
         ]);
     }
 

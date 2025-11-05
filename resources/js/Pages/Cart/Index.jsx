@@ -245,6 +245,54 @@ const checkItemStatus = (item) => {
         }
     }
 
+    // Rule 6: Ticket Sold Out (NEW RULE)
+    if (item.type === "ticket" && item.is_sold) {
+        return {
+            disabled: true,
+            reason: "Tiket sudah habis terjual. Silakan hapus dari keranjang.",
+            type: "ticket_sold",
+            severity: "error",
+            allowDelete: true, // Special flag for sold tickets
+        };
+    }
+
+    // Rule 7: Mitra on Leave (NEW RULE)
+    if (item.is_mitra_on_leave) {
+        return {
+            disabled: true,
+            reason: "Mitra sedang cuti pada tanggal yang dipilih. Silakan pilih tanggal lain.",
+            type: "mitra_on_leave",
+            severity: "warning",
+        };
+    }
+
+    // Rule 8: Banned Event (NEW RULE)
+    if (
+        item.type === "ticket" &&
+        (item.item?.event?.status === "banned" || item.is_event_banned)
+    ) {
+        return {
+            disabled: true,
+            reason: "Event ini telah dilarang/banned. Tidak dapat dibeli.",
+            type: "event_banned",
+            severity: "error",
+            allowDelete: true, // Allow deletion for banned tickets
+        };
+    }
+
+    // Rule 9: Already Booked by User (NEW RULE)
+    if (item.is_already_booked_by_me) {
+        return {
+            disabled: true,
+            reason:
+                item.booking_conflict_reason ||
+                "Item ini sudah dibooking oleh Anda. Silakan hapus dari keranjang.",
+            type: "already_booked_by_me",
+            severity: "error",
+            allowDelete: true, // Allow deletion for already booked items
+        };
+    }
+
     return { disabled: false, reason: null, type: null, severity: null };
 };
 
@@ -306,8 +354,6 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
         }
     }, [serverCarts, dispatch]);
 
-    console.log("Cart Items from Redux Store:", cartItems);
-
     const [selectedItems, setSelectedItems] = useState(new Set());
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -329,6 +375,10 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             rent_expired: [],
             event_ended: [],
             sales_ended: [],
+            mitra_on_leave: [],
+            ticket_sold: [], // New category for sold tickets
+            event_banned: [], // New category for banned events
+            already_booked_by_me: [], // New category for already booked by user
         };
 
         safeCartItems.forEach((item) => {
@@ -408,9 +458,32 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             const item = safeCartItems.find((i) => i.id === cartId);
             if (item) {
                 const status = checkItemStatus(item);
-                if (status.disabled) {
+                if (
+                    status.disabled &&
+                    status.type !== "ticket_sold" &&
+                    status.type !== "event_banned" &&
+                    status.type !== "already_booked_by_me"
+                ) {
                     toast.error(status.reason);
                     return;
+                }
+                // Allow quantity changes for sold tickets but show warning
+                if (status.type === "ticket_sold") {
+                    toast.warning(
+                        "Tiket sudah habis terjual. Silakan hapus dari keranjang."
+                    );
+                }
+                // Allow quantity changes for banned tickets but show warning
+                if (status.type === "event_banned") {
+                    toast.warning(
+                        "Event ini telah dilarang/banned. Silakan hapus dari keranjang."
+                    );
+                }
+                // Allow quantity changes for already booked items but show warning
+                if (status.type === "already_booked_by_me") {
+                    toast.warning(
+                        "Item ini sudah dibooking oleh Anda. Silakan hapus dari keranjang."
+                    );
                 }
             }
 
@@ -476,9 +549,32 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             const item = safeCartItems.find((i) => i.id === cartId);
             if (item) {
                 const status = checkItemStatus(item);
-                if (status.disabled) {
+                if (
+                    status.disabled &&
+                    status.type !== "ticket_sold" &&
+                    status.type !== "event_banned" &&
+                    status.type !== "already_booked_by_me"
+                ) {
                     toast.error(status.reason);
                     return;
+                }
+                // Allow selection for sold tickets but show warning
+                if (status.type === "ticket_sold") {
+                    toast.warning(
+                        "Tiket sudah habis terjual. Silakan hapus dari keranjang."
+                    );
+                }
+                // Allow selection for banned tickets but show warning
+                if (status.type === "event_banned") {
+                    toast.warning(
+                        "Event ini telah dilarang/banned. Silakan hapus dari keranjang."
+                    );
+                }
+                // Allow selection for already booked items but show warning
+                if (status.type === "already_booked_by_me") {
+                    toast.warning(
+                        "Item ini sudah dibooking oleh Anda. Silakan hapus dari keranjang."
+                    );
                 }
             }
 
@@ -561,14 +657,14 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
 
     // OPTIMIZED: Calculate tax dynamically using taxInfo from backend (O(1) complexity)
     const taxAmount = useMemo(() => {
-        if (!taxInfo || !selectedTotal) return 0;
+        if (!taxInfo) return 0;
 
         if (taxInfo.type === "percent") {
             // Percentage-based tax (e.g., 11% = 0.11 * subtotal)
             return Math.round(selectedTotal * (taxInfo.value / 100));
         } else {
             // Fixed tax amount
-            return taxInfo.value;
+            return parseFloat(taxInfo.value);
         }
     }, [taxInfo, selectedTotal]);
 
@@ -584,16 +680,16 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
 
         setIsCheckingOut(true);
 
-        console.log(selectedCartItems);
-
         try {
-            console.log(selectedCartItems);
             const checkoutData = {
                 cart_ids: Array.from(selectedItems),
                 items: selectedCartItems.map((item) => ({
                     cart_id: item.id,
                     id: item.item_id,
-                    name: item.item?.name,
+                    name:
+                        item.type === "ticket"
+                            ? item.item?.event.name
+                            : item.item?.name,
                     ticket_name:
                         item.type === "ticket" ? item.item?.name : null,
                     type: item.type,
@@ -610,7 +706,6 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                 })),
                 total: selectedTotal,
             };
-            console.log(checkoutData);
 
             router.visit("/checkout", {
                 method: "post",
@@ -691,7 +786,6 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                     cartItem.type === "ticket"
                         ? cartItem.item?.event?.thumbnail
                         : cartItem.item?.thumbnail;
-
                 if (!thumbnailPath) {
                     return `https://placehold.co/96x96/e5e7eb/7f8388?text=${(
                         cartItem.type || "I"
@@ -703,7 +797,7 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                 // Logika untuk menangani path yang mungkin sudah lengkap atau perlu penambahan
                 const path = thumbnailPath.replace(/^\/+/, "");
                 if (path.includes("randoms") || path.includes("storage")) {
-                    return `${ziggy.url}/${path}`;
+                    return `${ziggy.url}/storage/${path}`;
                 }
                 return `${ziggy.url}/storage/thumbnails/${path}`;
             };
@@ -727,7 +821,12 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                 onCheckedChange={() =>
                                     handleSelectItem(item.id)
                                 }
-                                disabled={status.disabled}
+                                disabled={
+                                    status.disabled &&
+                                    status.type !== "ticket_sold" &&
+                                    status.type !== "event_banned" &&
+                                    status.type !== "already_booked_by_me"
+                                }
                                 className="mt-1 flex-shrink-0"
                             />
 
@@ -852,7 +951,8 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
 
                                     {/* FASTEST ALGORITHM: Simplified Delivery Options (KODE BARU) */}
                                     {item.type === "property" &&
-                                        !status.disabled && (
+                                        (!status.disabled ||
+                                            status.type === "ticket_sold") && (
                                             <div className="mb-4">
                                                 <label className="text-sm font-semibold text-gray-900 block mb-2">
                                                     Pilihan Pengiriman
@@ -905,6 +1005,15 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                                             );
                                                         }
                                                     }}
+                                                    disabled={
+                                                        status.disabled &&
+                                                        status.type !==
+                                                            "ticket_sold" &&
+                                                        status.type !==
+                                                            "event_banned" &&
+                                                        status.type !==
+                                                            "already_booked_by_me"
+                                                    }
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Pilih jenis pengiriman" />
@@ -922,45 +1031,56 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                         )}
 
                                     {/* Quantity Selector (Ticket only in this block) */}
-                                    {item.type === "ticket" &&
-                                        !status.disabled && (
-                                            <div className="flex items-center border rounded-lg shadow-sm bg-white">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        handleQtyChange(
-                                                            item.id,
-                                                            item.item_qty - 1
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        item.item_qty <= 1 ||
-                                                        status.disabled
-                                                    }
-                                                    className="h-9 w-9"
-                                                >
-                                                    <Minus className="w-4 h-4" />
-                                                </Button>
-                                                <span className="px-4 font-semibold min-w-[50px] text-center text-gray-900">
-                                                    {item.item_qty}
-                                                </span>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        handleQtyChange(
-                                                            item.id,
-                                                            item.item_qty + 1
-                                                        )
-                                                    }
-                                                    disabled={status.disabled}
-                                                    className="h-9 w-9"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        )}
+                                    {item.type === "ticket" && (
+                                        <div className="flex items-center border rounded-lg shadow-sm bg-white">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() =>
+                                                    handleQtyChange(
+                                                        item.id,
+                                                        item.item_qty - 1
+                                                    )
+                                                }
+                                                disabled={
+                                                    item.item_qty <= 1 ||
+                                                    (status.disabled &&
+                                                        status.type !==
+                                                            "ticket_sold" &&
+                                                        status.type !==
+                                                            "event_banned")
+                                                }
+                                                className="h-9 w-9"
+                                            >
+                                                <Minus className="w-4 h-4" />
+                                            </Button>
+                                            <span className="px-4 font-semibold min-w-[50px] text-center text-gray-900">
+                                                {item.item_qty}
+                                            </span>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() =>
+                                                    handleQtyChange(
+                                                        item.id,
+                                                        item.item_qty + 1
+                                                    )
+                                                }
+                                                disabled={
+                                                    status.disabled &&
+                                                    status.type !==
+                                                        "ticket_sold" &&
+                                                    status.type !==
+                                                        "event_banned" &&
+                                                    status.type !==
+                                                        "already_booked_by_me"
+                                                }
+                                                className="h-9 w-9"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    )}
 
                                     {/* Subtotal Display */}
                                     <div className="text-left md:text-right">
@@ -1182,14 +1302,6 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                                         {formatRupiah(
                                                             selectedTotal
                                                         )}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-600">
-                                                        Biaya Aplikasi
-                                                    </span>
-                                                    <span className="font-semibold text-green-600">
-                                                        Gratis
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">

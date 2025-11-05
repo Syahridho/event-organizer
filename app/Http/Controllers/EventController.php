@@ -112,15 +112,43 @@ class EventController extends Controller
     {
         return Inertia::render('Mitra/Events/Index', [
             'events' => Event::with('speakers', 'tickets')
+                ->withCount(['transactionItems as settled_transactions_count' => function ($query) {
+                    $query->whereHas('transaction', function ($subQuery) {
+                        $subQuery->where('status', 'settlement');
+                    });
+                }])
                 ->where('user_id', Auth::id())
                 ->latest()
                 ->get(),
         ]);
     }
 
+    /**
+     * Helper function to check if an event has settled transactions.
+     */
+    private function eventHasSettledTransactions(Event $event)
+    {
+        return $event->transactionItems()
+            ->whereHas('transaction', function ($query) {
+                $query->where('status', 'settlement');
+            })
+            ->exists();
+    }
+
     public function update(EventUpdateRequest $request, Event $event)
     {
         try {
+            // === VALIDASI BARU ===
+            // Cek otorisasi
+            if ($event->user_id !== Auth::id()) {
+                abort(403);
+            }
+
+            $message = 'Acara ini tidak dapat diubah karena sudah memiliki tiket terjual. Harap hubungi administrator jika Anda perlu melakukan perubahan.';
+            if ($this->eventHasSettledTransactions($event)) {
+                abort(403, $message);
+            }
+            // === AKHIR VALIDASI ===
             $data = $request->validated();
     
             $data['event_date_start'] = Carbon::parse($data['event_date_start'])->format('Y-m-d H:i:s');
@@ -354,6 +382,17 @@ class EventController extends Controller
     public function destroy(Event $event)
     {
         try {
+            // === VALIDASI BARU ===
+            // Cek otorisasi
+            if ($event->user_id !== Auth::id()) {
+                abort(403);
+            }
+
+            $message = 'Acara ini tidak dapat dihapus karena sudah memiliki tiket terjual. Harap hubungi administrator jika Anda perlu melakukan perubahan.';
+            if ($this->eventHasSettledTransactions($event)) {
+                abort(403, $message);
+            }
+            // === AKHIR VALIDASI ===
             if ($event->thumbnail && Storage::disk('public')->exists('thumbnails/' . $event->thumbnail)) {
                 Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
             }

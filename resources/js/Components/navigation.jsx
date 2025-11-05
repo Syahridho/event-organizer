@@ -13,6 +13,7 @@ import {
     LogOut,
     Search,
     Bell,
+    LayoutDashboardIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ import {
 
 export default function Navigation() {
     const { auth, ziggy, counts } = usePage().props;
+    console.log(auth);
     const { setTheme, theme } = useTheme();
     const dispatch = useDispatch();
 
@@ -137,6 +139,27 @@ export default function Navigation() {
                                 Pesanan Saya
                             </Link>
                         </DropdownMenuItem>
+                        {auth?.user?.role === "admin" ? (
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/admin/dashboard"
+                                    className="flex items-center"
+                                >
+                                    <LayoutDashboardIcon className="mr-2 h-4 w-4" />
+                                    Dashboard Admin
+                                </Link>
+                            </DropdownMenuItem>
+                        ) : auth?.user?.role === "mitra" ? (
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/dashboard"
+                                    className="flex items-center"
+                                >
+                                    <LayoutDashboardIcon className="mr-2 h-4 w-4" />
+                                    Dashboard Mitra
+                                </Link>
+                            </DropdownMenuItem>
+                        ) : null}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                             onClick={() => router.post(route("logout"))}
@@ -426,7 +449,7 @@ export default function Navigation() {
 
             {/* Bottom Navigation - Mobile Only */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg">
-                <div className="grid grid-cols-4 h-16">
+                <div className="grid grid-cols-3 h-16">
                     <Link
                         href="/"
                         className={`flex flex-col items-center justify-center text-xs transition-colors ${

@@ -1126,7 +1126,7 @@ export default function UpdateEvent() {
                                             Loading...
                                         </>
                                     ) : (
-                                        "Simpan"
+                                        "Edit"
                                     )}
                                 </Button>
                             </div>

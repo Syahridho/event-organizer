@@ -10,7 +10,7 @@ const breadcrumbs = [
         href: "/dashboard",
     },
     {
-        title: "Service",
+        title: "Properti",
         href: "/dashboard/service",
     },
 ];

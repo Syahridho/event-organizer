@@ -20,6 +20,17 @@ class AdminSetting extends Model
         'contact_phone',
         'address',
         'about_us',
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'seo_image',
+        'seo_twitter_card',
+        'seo_og_type',
+        'seo_canonical_url',
+        'seo_robots',
+        'seo_author',
+        'seo_publisher',
+        'maintenance_mode',
     ];
 
     /**

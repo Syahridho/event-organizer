@@ -7,6 +7,7 @@ use App\Models\Leave;
 use App\Models\Event;
 use App\Models\Building;
 use App\Models\Service;
+use App\Models\Testimonial;
 use App\Models\ItemPhoto;
 use Illuminate\Http\Request;
 use App\Models\RentProperty;
@@ -20,40 +21,56 @@ class HomeController extends Controller
     public function index()
     {
         $events = Event::where('status', 'active')
+            ->inRandomOrder()
+            ->limit(10)
             ->get();
 
         $services = Service::where('status', 'active')
+            ->inRandomOrder()
+            ->limit(10)
             ->get();
 
         $buildings = Building::where('status', 'active')
+            ->inRandomOrder()
+            ->limit(10)
             ->get();
 
         $propertys = RentProperty::where('status', 'active')
+            ->inRandomOrder()
+            ->limit(10)
             ->get();
+
+        $testimonials = Testimonial::orderBy('created_at', 'desc')->get();
+
 
         return  Inertia::render('Welcome', [
             'events' => $events,
             'services' => $services,
             'buildings' => $buildings,
             'propertys' => $propertys,
+            'testimonials' => $testimonials,
         ]);
     }
 
     public function home()
     {
         $events = Event::where('status', 'active')
+            ->inRandomOrder()
             ->latest()
             ->get();
 
         $services = Service::where('status', 'active')
+            ->inRandomOrder()
             ->latest()
             ->get();
 
         $buildings = Building::where('status', 'active')
+            ->inRandomOrder()
             ->latest()
             ->get();
             
         $propertys = RentProperty::where('status', 'active')
+            ->inRandomOrder()
             ->latest()
             ->get();
 
@@ -69,6 +86,7 @@ class HomeController extends Controller
     public function ticket()
     {
         $events = Event::where('status', 'Confirmed')
+            ->inRandomOrder()
             ->latest()
             ->paginate(10); 
 
@@ -183,12 +201,12 @@ class HomeController extends Controller
         ->where('item_type', 'service')
         ->where(function($query) {
             $query->where(function($q) {
-                // Cuti tanggal spesifik yang masih akan datang
+            
                 $q->whereNotNull('date')
                   ->whereDate('date', '>=', now());
             })
             ->orWhere(function($q) {
-                // Cuti mingguan (day_of_week tidak null)
+            
                 $q->whereNotNull('day_of_week')
                   ->whereNull('date');
             });
@@ -380,10 +398,15 @@ class HomeController extends Controller
         ]);
     }
 
+    public function terms()
+    {
+        return Inertia::render('Terms');
+    }
+
     public function search(Request $request)
     {
         $keyword = $request->query('keyword');
-        $type = $request->query('type'); // event, building, service, property
+        $type = $request->query('type');
 
         if (empty($keyword)) {
             return Inertia::render('Search/Index', [
@@ -397,7 +420,7 @@ class HomeController extends Controller
         $results = [];
 
         if ($type === 'event') {
-            $results = Event::when($keyword, fn($q) => 
+            $results = Event::when($keyword, fn($q) =>
                 $q->where('name', 'like', "%{$keyword}%")
             )->get()->map(fn($item) => [
                 'id' => $item->id,
@@ -406,7 +429,7 @@ class HomeController extends Controller
                 'type' => 'event',
             ]);
         } elseif ($type === 'building') {
-            $results = Building::when($keyword, fn($q) => 
+            $results = Building::when($keyword, fn($q) =>
                 $q->where('name', 'like', "%{$keyword}%")
             )->get()->map(fn($item) => [
                 'id' => $item->id,
@@ -415,7 +438,7 @@ class HomeController extends Controller
                 'type' => 'building',
             ]);
         } elseif ($type === 'service') {
-            $results = Service::when($keyword, fn($q) => 
+            $results = Service::when($keyword, fn($q) =>
                 $q->where('name', 'like', "%{$keyword}%")
             )->get()->map(fn($item) => [
                 'id' => $item->id,
@@ -424,7 +447,7 @@ class HomeController extends Controller
                 'type' => 'service',
             ]);
         } elseif ($type === 'property') {
-            $results = RentProperty::when($keyword, fn($q) => 
+            $results = RentProperty::when($keyword, fn($q) =>
                 $q->where('name', 'like', "%{$keyword}%")
             )->get()->map(fn($item) => [
                 'id' => $item->id,

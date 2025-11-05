@@ -33,6 +33,8 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/admin/dashboard" },
@@ -47,8 +49,37 @@ export default function AdminSettingDashboard({ auth, setting }) {
         String(setting?.tax_value || 0)
     );
 
+    const [seoTitle, setSeoTitle] = React.useState(setting?.seo_title || "");
+    const [seoDescription, setSeoDescription] = React.useState(
+        setting?.seo_description || ""
+    );
+    const [seoKeywords, setSeoKeywords] = React.useState(
+        setting?.seo_keywords || ""
+    );
+    const [seoImage, setSeoImage] = React.useState(setting?.seo_image || "");
+    const [seoTwitterCard, setSeoTwitterCard] = React.useState(
+        setting?.seo_twitter_card || "summary"
+    );
+    const [seoOgType, setSeoOgType] = React.useState(
+        setting?.seo_og_type || "website"
+    );
+    const [seoCanonicalUrl, setSeoCanonicalUrl] = React.useState(
+        setting?.seo_canonical_url || ""
+    );
+    const [seoRobots, setSeoRobots] = React.useState(
+        setting?.seo_robots || "index"
+    );
+    const [seoAuthor, setSeoAuthor] = React.useState(setting?.seo_author || "");
+    const [seoPublisher, setSeoPublisher] = React.useState(
+        setting?.seo_publisher || ""
+    );
+    const [maintenanceMode, setMaintenanceMode] = React.useState(
+        setting?.maintenance_mode || false
+    );
+
     const [isModal, setIsModal] = React.useState({
         tax: false,
+        seo: false,
     });
     const [isLoading, setIsLoading] = React.useState(false);
 
@@ -80,11 +111,78 @@ export default function AdminSettingDashboard({ auth, setting }) {
         }
     };
 
+    const handleSaveSeo = async () => {
+        try {
+            setIsLoading(true);
+
+            router.post(
+                route("admin.settings.store"),
+                {
+                    seo_title: seoTitle,
+                    seo_description: seoDescription,
+                    seo_keywords: seoKeywords,
+                    seo_image: seoImage,
+                    seo_twitter_card: seoTwitterCard,
+                    seo_og_type: seoOgType,
+                    seo_canonical_url: seoCanonicalUrl,
+                    seo_robots: seoRobots,
+                    seo_author: seoAuthor,
+                    seo_publisher: seoPublisher,
+                },
+                {
+                    onSuccess: () => {
+                        setIsModal((prev) => ({ ...prev, seo: false }));
+                    },
+                    onError: (errors) => {
+                        console.error("Error update SEO:", errors);
+                    },
+                    onFinish: () => {
+                        setIsLoading(false);
+                    },
+                }
+            );
+        } catch (error) {
+            console.error("Terjadi kesalahan:", error);
+            setIsLoading(false);
+        }
+    };
+
+    const handleToggleMaintenance = async (checked) => {
+        try {
+            setIsLoading(true);
+
+            router.post(
+                route("admin.settings.store"),
+                {
+                    maintenance_mode: checked,
+                },
+                {
+                    onSuccess: () => {
+                        setMaintenanceMode(checked);
+                    },
+                    onError: (errors) => {
+                        console.error("Error toggle maintenance:", errors);
+                        // Revert the switch if there's an error
+                        setMaintenanceMode(!checked);
+                    },
+                    onFinish: () => {
+                        setIsLoading(false);
+                    },
+                }
+            );
+        } catch (error) {
+            console.error("Terjadi kesalahan:", error);
+            setIsLoading(false);
+            // Revert the switch if there's an error
+            setMaintenanceMode(!checked);
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
             <div className="flex flex-1 flex-col gap-4 p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-4">
+                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <div className="aspect-video rounded-xl bg-muted/50 ">
                         <Card className="h-full">
                             <CardHeader>
@@ -232,7 +330,292 @@ export default function AdminSettingDashboard({ auth, setting }) {
                             </CardHeader>
                         </Card>
                     </div>
-                    <div className="aspect-video rounded-xl bg-muted/50 "></div>
+                    <div className="aspect-video rounded-xl bg-muted/50 ">
+                        <Card className="h-full">
+                            <CardHeader>
+                                <CardTitle className="mb-2 flex items-center gap-2">
+                                    SEO
+                                    <Dialog
+                                        open={isModal.seo}
+                                        onOpenChange={(value) =>
+                                            setIsModal((prev) => ({
+                                                ...prev,
+                                                seo: value,
+                                            }))
+                                        }
+                                    >
+                                        <DialogTrigger>
+                                            <PencilLine
+                                                size={18}
+                                                className="text-muted-foreground"
+                                            />
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                            <DialogHeader>
+                                                <DialogTitle>
+                                                    SEO Settings
+                                                </DialogTitle>
+                                                <DialogDescription className="text-red-600">
+                                                    ⚠ Pastikan pengaturan SEO
+                                                    sudah sesuai
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="grid gap-4">
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_title">
+                                                        SEO Title
+                                                    </Label>
+                                                    <Input
+                                                        id="seo_title"
+                                                        value={seoTitle}
+                                                        onChange={(e) =>
+                                                            setSeoTitle(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Enter SEO title"
+                                                        maxLength={60}
+                                                    />
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {seoTitle.length}/60
+                                                        characters
+                                                    </span>
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_description">
+                                                        SEO Description
+                                                    </Label>
+                                                    <Textarea
+                                                        id="seo_description"
+                                                        value={seoDescription}
+                                                        onChange={(e) =>
+                                                            setSeoDescription(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Enter SEO description"
+                                                        maxLength={160}
+                                                    />
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {seoDescription.length}
+                                                        /160 characters
+                                                    </span>
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_keywords">
+                                                        SEO Keywords
+                                                    </Label>
+                                                    <Input
+                                                        id="seo_keywords"
+                                                        value={seoKeywords}
+                                                        onChange={(e) =>
+                                                            setSeoKeywords(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Enter SEO keywords (comma separated)"
+                                                    />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_image">
+                                                        SEO Image URL
+                                                    </Label>
+                                                    <Input
+                                                        id="seo_image"
+                                                        value={seoImage}
+                                                        onChange={(e) =>
+                                                            setSeoImage(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Enter SEO image URL"
+                                                        type="url"
+                                                    />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_twitter_card">
+                                                        Twitter Card Type
+                                                    </Label>
+                                                    <Select
+                                                        value={seoTwitterCard}
+                                                        onValueChange={
+                                                            setSeoTwitterCard
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="summary">
+                                                                Summary
+                                                            </SelectItem>
+                                                            <SelectItem value="summary_large_image">
+                                                                Summary Large
+                                                                Image
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_og_type">
+                                                        Open Graph Type
+                                                    </Label>
+                                                    <Select
+                                                        value={seoOgType}
+                                                        onValueChange={
+                                                            setSeoOgType
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="website">
+                                                                Website
+                                                            </SelectItem>
+                                                            <SelectItem value="article">
+                                                                Article
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_canonical_url">
+                                                        Canonical URL
+                                                    </Label>
+                                                    <Input
+                                                        id="seo_canonical_url"
+                                                        value={seoCanonicalUrl}
+                                                        onChange={(e) =>
+                                                            setSeoCanonicalUrl(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Enter canonical URL"
+                                                        type="url"
+                                                    />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_robots">
+                                                        Robots Meta
+                                                    </Label>
+                                                    <Select
+                                                        value={seoRobots}
+                                                        onValueChange={
+                                                            setSeoRobots
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="index">
+                                                                Index, Follow
+                                                            </SelectItem>
+                                                            <SelectItem value="follow">
+                                                                Index, No Follow
+                                                            </SelectItem>
+                                                            <SelectItem value="noindex">
+                                                                No Index, Follow
+                                                            </SelectItem>
+                                                            <SelectItem value="nofollow">
+                                                                No Index, No
+                                                                Follow
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_author">
+                                                        Author
+                                                    </Label>
+                                                    <Input
+                                                        id="seo_author"
+                                                        value={seoAuthor}
+                                                        onChange={(e) =>
+                                                            setSeoAuthor(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Enter author name"
+                                                    />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="seo_publisher">
+                                                        Publisher
+                                                    </Label>
+                                                    <Input
+                                                        id="seo_publisher"
+                                                        value={seoPublisher}
+                                                        onChange={(e) =>
+                                                            setSeoPublisher(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Enter publisher name"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <DialogClose asChild>
+                                                    <Button variant="outline">
+                                                        Batal
+                                                    </Button>
+                                                </DialogClose>
+                                                <Button
+                                                    onClick={handleSaveSeo}
+                                                    disabled={isLoading}
+                                                >
+                                                    {isLoading
+                                                        ? "Menyimpan..."
+                                                        : "Simpan"}
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </CardTitle>
+                                <CardDescription>
+                                    {setting?.seo_title ||
+                                        "SEO belum dikonfigurasi"}
+                                </CardDescription>
+                            </CardHeader>
+                        </Card>
+                    </div>
+                    <div className="aspect-video rounded-xl bg-muted/50 ">
+                        <Card className="h-full">
+                            <CardHeader>
+                                <CardTitle className="mb-2">
+                                    Mode Pemeliharaan
+                                </CardTitle>
+                                <CardDescription>
+                                    Aktifkan mode pemeliharaan untuk menampilkan
+                                    halaman pemeliharaan kepada pengguna
+                                </CardDescription>
+                                <div className="flex items-center space-x-2 pt-4">
+                                    <Switch
+                                        id="maintenance-mode"
+                                        checked={maintenanceMode}
+                                        onCheckedChange={
+                                            handleToggleMaintenance
+                                        }
+                                        disabled={isLoading}
+                                    />
+                                    <Label htmlFor="maintenance-mode">
+                                        {maintenanceMode ? "Aktif" : "Nonaktif"}
+                                    </Label>
+                                </div>
+                                {maintenanceMode && (
+                                    <div className="bg-orange-50 p-3 rounded-lg mt-3">
+                                        <p className="text-sm text-orange-800">
+                                            ⚠ Mode pemeliharaan aktif. Semua
+                                            pengguna akan melihat halaman
+                                            pemeliharaan kecuali admin.
+                                        </p>
+                                    </div>
+                                )}
+                            </CardHeader>
+                        </Card>
+                    </div>
                     <div className="aspect-video rounded-xl bg-muted/50 "></div>
                     <div className="aspect-video rounded-xl bg-muted/50 "></div>
                 </div>

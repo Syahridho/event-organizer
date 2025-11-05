@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\WalletTransaction;
 use App\Notifications\WithdrawalRequestedNotification;
 use App\Notifications\WithdrawalStatusNotification;
 
@@ -69,6 +70,17 @@ class WithdrawController extends Controller
 
                 $wallet->balance -= $withdraw->amount;
                 $wallet->save();
+
+                // Log wallet transaction as DEBIT referencing this withdrawal
+                WalletTransaction::create([
+                    'wallet_id'      => $wallet->id,
+                    'user_id'        => $user->id,
+                    'amount'         => $withdraw->amount,
+                    'type'           => 'DEBIT',
+                    'reference_type' => 'withdraw',
+                    'reference_id'   => $withdraw->id,
+                    'description'    => 'Withdrawal completed #' . $withdraw->id,
+                ]);
 
                 $user->notify(new WithdrawalStatusNotification($withdraw, 'completed'));
                 

@@ -15,7 +15,7 @@ import {
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { TbUserUp } from "react-icons/tb";
-
+import { Boxes } from "lucide-react";
 import { PiMoneyWavyLight } from "react-icons/pi";
 import { TiMessages } from "react-icons/ti";
 
@@ -54,11 +54,6 @@ const admin = [
         ],
     },
     {
-        title: "Pengaturan",
-        url: "/admin/settings",
-        icon: Settings,
-    },
-    {
         title: "Pengajuan jadi Mitra",
         url: "/admin/mitra",
         icon: TbUserUp,
@@ -67,6 +62,16 @@ const admin = [
         title: "Penarikan Mitra",
         url: "/admin/withdraw",
         icon: FaMoneyBillTransfer,
+    },
+    {
+        title: "Kustom Testimoni",
+        url: "/admin/testimonials",
+        icon: Boxes,
+    },
+    {
+        title: "Pengaturan",
+        url: "/admin/settings",
+        icon: Settings,
     },
 ];
 
@@ -123,29 +128,6 @@ const mitra = [
         title: "Penarikan Uang",
         url: "/dashboard/withdraw",
         icon: FaMoneyBillTransfer,
-    },
-    {
-        title: "testing",
-        url: "#",
-        icon: Fan,
-        items: [
-            {
-                title: "General",
-                url: "#",
-            },
-            {
-                title: "Team",
-                url: "#",
-            },
-            {
-                title: "Billing",
-                url: "#",
-            },
-            {
-                title: "Limits",
-                url: "#",
-            },
-        ],
     },
 ];
 

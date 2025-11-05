@@ -3,6 +3,8 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Inertia\Inertia;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -25,6 +27,16 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             //
+        });
+
+        $this->renderable(function (Throwable $e, $request) {
+            // Only handle HTTP exceptions for Inertia requests
+            if ($request->header('X-Inertia') && $e instanceof HttpException) {
+                return Inertia::render('Error', [
+                    'status' => $e->getStatusCode(),
+                    'message' => $e->getMessage() ?: 'An error occurred',
+                ])->toResponse($request)->setStatusCode($e->getStatusCode());
+            }
         });
     }
 }

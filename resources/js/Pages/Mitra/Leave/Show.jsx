@@ -337,30 +337,28 @@ export default function Show({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
             <div className="flex flex-1 flex-col mx-6 py-6 space-y-6">
-                <div className="flex items-center justify-between p-4 sm:p-6">
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => router.visit("/dashboard/leaves")}
-                            className="flex items-center gap-2 w-fit"
-                            aria-label="Kembali ke halaman daftar hari cuti"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Kembali
-                        </Button>
-                        <div className="text-center md:text-left">
-                            <h1 className="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2 justify-center md:justify-start">
-                                <Calendar
-                                    className="w-5 h-5 text-blue-500"
-                                    aria-hidden="true"
-                                />
-                                <span>Pengaturan Hari Cuti</span>
-                            </h1>
-                            <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                                Kelola hari cuti untuk{" "}
-                                <span className="font-semibold">{title}</span>
-                            </p>
-                        </div>
+                <div className="flex flex-col gap-4">
+                    <Button
+                        variant="outline"
+                        onClick={() => router.visit("/dashboard/leaves")}
+                        className="flex items-center gap-2 w-fit"
+                        aria-label="Kembali ke halaman daftar hari cuti"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Kembali
+                    </Button>
+                    <div className="text-center md:text-left mb-6">
+                        <h1 className="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2 justify-center md:justify-start">
+                            <Calendar
+                                className="w-5 h-5 text-blue-500"
+                                aria-hidden="true"
+                            />
+                            <span>Pengaturan Hari Cuti</span>
+                        </h1>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                            Kelola hari cuti untuk{" "}
+                            <span className="font-semibold">{title}</span>
+                        </p>
                     </div>
                 </div>
 
@@ -460,7 +458,7 @@ export default function Show({
                                 (selectedDates.length === 0 &&
                                     deletingDates.length === 0)
                             }
-                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors duration-200"
+                            className="text-white shadow-sm transition-colors duration-200"
                             type="button"
                         >
                             {isLoading ? (

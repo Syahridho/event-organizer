@@ -145,7 +145,7 @@ export default function ReviewSection({
                         type="button"
                         disabled={readonly}
                         className={cn(
-                            "transition-colors",
+                            "transition-colors bg-white shadow-none w-0 h-0",
                             !readonly && "hover:scale-110 cursor-pointer"
                         )}
                         onClick={() => !readonly && onChange(star)}

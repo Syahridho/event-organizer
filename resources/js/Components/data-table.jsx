@@ -140,10 +140,14 @@ function DragHandle({ id }) {
     );
 }
 
-function DeleteDialog({ event, onDeleteSuccess }) {
+function DeleteDialog({ event, onDeleteSuccess, disabled }) {
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const handleDelete = () => {
+        if (event.settled_transactions_count > 0) {
+            toast.warning("Udah ada pembelian, Hubungi admin untuk menghapus");
+            return;
+        }
         setIsDeleting(true);
 
         // Menggunakan Inertia router.delete untuk menghapus data di backend
@@ -168,6 +172,7 @@ function DeleteDialog({ event, onDeleteSuccess }) {
                 <DropdownMenuItem
                     onSelect={(e) => e.preventDefault()} // Mencegah DropdownMenu tertutup saat mengklik item
                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    disabled={disabled}
                 >
                     Hapus
                 </DropdownMenuItem>
@@ -364,12 +369,31 @@ const columns = [
                         <DropdownMenuContent align="end" className="w-32">
                             <DropdownMenuItem
                                 onClick={() => {
+                                    if (event.settled_transactions_count > 0) {
+                                        toast.warning(
+                                            "Udah ada pembelian, Hubungi admin untuk mengganti"
+                                        );
+                                        return;
+                                    }
                                     router.get(
                                         `/dashboard/events/${event.id}/edit`
                                     );
                                 }}
                             >
                                 Edit
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    router.visit(
+                                        route(
+                                            "dashboard.events.attendance",
+                                            event.id
+                                        )
+                                    );
+                                }}
+                            >
+                                Peserta
                             </DropdownMenuItem>
 
                             <DropdownMenuSeparator />

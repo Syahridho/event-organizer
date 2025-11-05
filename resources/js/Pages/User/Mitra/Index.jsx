@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useForm, usePage, router } from "@inertiajs/react";
+import { useForm, usePage, router, Head } from "@inertiajs/react";
 import { toast } from "sonner";
 import {
     CircleCheck,
@@ -63,31 +63,33 @@ export default function PartnerRegistration({ existingMitra }) {
     ];
 
     return (
-        <GuestLayout>
-            <div className="py-4 sm:py-6 lg:py-10 xl:py-12 px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-12">
-                <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto">
+        <div className="max-w-2xl mx-auto">
+            <Head title="Gabung jadi mitra" />
+            <div className="py-4 px-3">
+                <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="text-center mb-4 sm:mb-6 lg:mb-10 xl:mb-12">
-                        <div className="flex items-center justify-center mb-3 sm:mb-4 lg:mb-6">
-                            <div className="bg-primary/10 p-3 sm:p-4 lg:p-5 xl:p-6 rounded-full">
-                                <Building2 className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 xl:h-20 xl:w-20 text-primary" />
+                        <div className="flex items-center justify-center mb-3">
+                            <div className="bg-primary/10 p-3 rounded-full">
+                                <Building2 className="h-10 w-10 text-primary" />
                             </div>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold text-slate-800 mb-1 sm:mb-2 lg:mb-3 px-4 leading-tight">
+                        <h1 className="font-bold text-slate-800 mb-1 px-4 leading-tight text-xl">
                             Pendaftaran Mitra Bisnis
                         </h1>
-                        <p className="text-slate-600 text-xs sm:text-sm lg:text-lg xl:text-xl px-4 max-w-3xl mx-auto">
-                            Bergabunglah bersama kami dan kembangkan bisnis Anda ke tingkat yang lebih tinggi
+                        <p className="text-slate-600 px-4 max-w-3xl mx-auto text-base">
+                            Bergabunglah bersama kami dan kembangkan bisnis Anda
+                            ke tingkat yang lebih tinggi
                         </p>
                     </div>
 
                     {/* Stepper */}
-                    <div className="mb-6 sm:mb-8 lg:mb-12">
+                    <div className="mb-6">
                         <Stepper steps={steps} currentStep={currentStep} />
                     </div>
 
                     {/* Step Content */}
-                    <div className="mt-4 sm:mt-6 lg:mt-8 xl:mt-10">
+                    <div className="mt-4">
                         {currentStep === 1 && <Step1RegisterAccount />}
                         {currentStep === 2 && (
                             <Step2PartnerForm
@@ -101,7 +103,7 @@ export default function PartnerRegistration({ existingMitra }) {
                     </div>
                 </div>
             </div>
-        </GuestLayout>
+        </div>
     );
 }
 
@@ -138,12 +140,12 @@ function Step1RegisterAccount() {
     };
 
     return (
-        <Card className="max-w-3xl xl:max-w-4xl 2xl:max-w-5xl mx-auto shadow-xl border-2 hover:shadow-2xl transition-shadow duration-300">
-            <CardHeader className="space-y-1 pb-4 sm:pb-6 lg:pb-8 xl:pb-10">
-                <CardTitle className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold text-center px-2">
+        <Card className="max-w-3xl mx-auto shadow-xl border-2 hover:shadow-2xl transition-shadow duration-300">
+            <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg font-bold text-center px-2">
                     Buat Akun Terlebih Dahulu
                 </CardTitle>
-                <CardDescription className="text-center text-xs sm:text-sm lg:text-base xl:text-lg px-2">
+                <CardDescription className="text-center text-sm px-2">
                     Sudah punya akun?{" "}
                     <a
                         href="/login"
@@ -153,17 +155,11 @@ function Step1RegisterAccount() {
                     </a>
                 </CardDescription>
             </CardHeader>
-            <CardContent className="px-4 sm:px-6 lg:px-8 xl:px-12 pb-6 sm:pb-8 lg:pb-10 xl:pb-12">
-                <form
-                    onSubmit={submit}
-                    className="space-y-3 sm:space-y-4 lg:space-y-6"
-                >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
+            <CardContent className="px-4 pb-6">
+                <form onSubmit={submit} className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
-                            <Label
-                                htmlFor="name"
-                                className="text-sm lg:text-base xl:text-lg"
-                            >
+                            <Label htmlFor="name" className="text-sm">
                                 Nama Lengkap{" "}
                                 <span className="text-red-500">*</span>
                             </Label>
@@ -178,22 +174,19 @@ function Step1RegisterAccount() {
                                 required
                                 className={
                                     errors.name
-                                        ? "border-red-500 text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
-                                        : "text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
+                                        ? "border-red-500 text-sm h-10"
+                                        : "text-sm h-10"
                                 }
                             />
                             {errors.name && (
-                                <p className="text-red-500 text-xs lg:text-sm">
+                                <p className="text-red-500 text-sm">
                                     {errors.name}
                                 </p>
                             )}
                         </div>
 
                         <div className="space-y-2">
-                            <Label
-                                htmlFor="username"
-                                className="text-sm lg:text-base xl:text-lg"
-                            >
+                            <Label htmlFor="username" className="text-sm">
                                 Nama Panggilan{" "}
                                 <span className="text-red-500">*</span>
                             </Label>
@@ -208,12 +201,12 @@ function Step1RegisterAccount() {
                                 required
                                 className={
                                     errors.username
-                                        ? "border-red-500 text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
-                                        : "text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
+                                        ? "border-red-500 text-sm h-10"
+                                        : "text-sm h-10"
                                 }
                             />
                             {errors.username && (
-                                <p className="text-red-500 text-xs lg:text-sm">
+                                <p className="text-red-500 text-sm">
                                     {errors.username}
                                 </p>
                             )}
@@ -221,10 +214,7 @@ function Step1RegisterAccount() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label
-                            htmlFor="email"
-                            className="text-sm lg:text-base xl:text-lg"
-                        >
+                        <Label htmlFor="email" className="text-sm">
                             Email <span className="text-red-500">*</span>
                         </Label>
                         <Input
@@ -236,23 +226,20 @@ function Step1RegisterAccount() {
                             required
                             className={
                                 errors.email
-                                    ? "border-red-500 text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
-                                    : "text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
+                                    ? "border-red-500 text-sm h-10"
+                                    : "text-sm h-10"
                             }
                         />
                         {errors.email && (
-                            <p className="text-red-500 text-xs lg:text-sm">
+                            <p className="text-red-500 text-sm">
                                 {errors.email}
                             </p>
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
-                            <Label
-                                htmlFor="password"
-                                className="text-sm lg:text-base xl:text-lg"
-                            >
+                            <Label htmlFor="password" className="text-sm">
                                 Password <span className="text-red-500">*</span>
                             </Label>
                             <Input
@@ -266,12 +253,12 @@ function Step1RegisterAccount() {
                                 required
                                 className={
                                     errors.password
-                                        ? "border-red-500 text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
-                                        : "text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
+                                        ? "border-red-500 text-sm h-10"
+                                        : "text-sm h-10"
                                 }
                             />
                             {errors.password && (
-                                <p className="text-red-500 text-xs lg:text-sm">
+                                <p className="text-red-500 text-sm">
                                     {errors.password}
                                 </p>
                             )}
@@ -280,7 +267,7 @@ function Step1RegisterAccount() {
                         <div className="space-y-2">
                             <Label
                                 htmlFor="password_confirmation"
-                                className="text-sm lg:text-base xl:text-lg"
+                                className="text-sm"
                             >
                                 Konfirmasi Password{" "}
                                 <span className="text-red-500">*</span>
@@ -299,12 +286,12 @@ function Step1RegisterAccount() {
                                 required
                                 className={
                                     errors.password_confirmation
-                                        ? "border-red-500 text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
-                                        : "text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
+                                        ? "border-red-500 text-sm h-10"
+                                        : "text-sm h-10"
                                 }
                             />
                             {errors.password_confirmation && (
-                                <p className="text-red-500 text-xs lg:text-sm">
+                                <p className="text-red-500 text-sm">
                                     {errors.password_confirmation}
                                 </p>
                             )}
@@ -314,18 +301,18 @@ function Step1RegisterAccount() {
                     <Button
                         type="submit"
                         disabled={processing}
-                        className="w-full mt-4 sm:mt-6 lg:mt-8 h-11 lg:h-13 xl:h-16 text-sm sm:text-base lg:text-lg xl:text-xl"
+                        className="w-full mt-4 text-sm"
                         size="lg"
                     >
                         {processing ? (
                             <>
-                                <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 mr-2 animate-spin" />
+                                <Clock className="h-4 w-4 mr-2 animate-spin" />
                                 <span>Mendaftar...</span>
                             </>
                         ) : (
                             <>
                                 <span>Daftar & Lanjutkan</span>
-                                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ml-2" />
+                                <ArrowRight className="h-4 w-4 ml-2" />
                             </>
                         )}
                     </Button>
@@ -367,28 +354,28 @@ function Step2PartnerForm({ user, onSuccess }) {
     };
 
     return (
-        <Card className="max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto shadow-xl border-2 hover:shadow-2xl transition-shadow duration-300">
-            <CardHeader className="space-y-1 pb-4 sm:pb-6 lg:pb-8 xl:pb-10">
-                <CardTitle className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold text-center px-2">
+        <Card className="max-w-5xl mx-auto shadow-xl border-2 hover:shadow-2xl transition-shadow duration-300">
+            <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg font-bold text-center px-2">
                     Lengkapi Data Mitra
                 </CardTitle>
-                <CardDescription className="text-center text-xs sm:text-sm lg:text-base xl:text-lg px-2">
+                <CardDescription className="text-center text-sm px-2">
                     Isi formulir di bawah ini untuk mendaftar sebagai mitra
                     resmi kami
                 </CardDescription>
             </CardHeader>
-            <CardContent className="px-3 sm:px-4 lg:px-8 xl:px-12 2xl:px-16 pb-6 sm:pb-8 lg:pb-10 xl:pb-12">
+            <CardContent className="px-3 pb-6">
                 <form
                     onSubmit={handleSubmit}
                     className="space-y-4 sm:space-y-6 lg:space-y-8"
                 >
                     {/* User Info Display */}
-                    <div className="bg-slate-50 rounded-lg p-3 sm:p-4 lg:p-6 xl:p-8 border">
-                        <h3 className="font-semibold text-slate-700 mb-2 sm:mb-3 lg:mb-4 flex items-center text-sm sm:text-base lg:text-lg xl:text-xl">
-                            <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 mr-2" />
+                    <div className="bg-slate-50 rounded-lg p-3 border">
+                        <h3 className="font-semibold text-slate-700 mb-2 sm:mb-3 lg:mb-4 flex items-center text-base">
+                            <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                             Informasi Akun
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 xl:gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                             <InfoItem
                                 icon={
                                     <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
@@ -414,10 +401,10 @@ function Step2PartnerForm({ user, onSuccess }) {
                     </div>
 
                     {/* Company Information */}
-                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                        <div className="flex items-center gap-2 lg:gap-3 pb-2 lg:pb-3 border-b">
-                            <FileText className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 text-primary" />
-                            <h3 className="font-semibold text-base sm:text-lg lg:text-xl xl:text-2xl">
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <h3 className="font-semibold text-base">
                                 Informasi Perusahaan
                             </h3>
                         </div>
@@ -425,7 +412,7 @@ function Step2PartnerForm({ user, onSuccess }) {
                         <div className="space-y-2">
                             <Label
                                 htmlFor="address"
-                                className="text-sm lg:text-base xl:text-lg flex items-center gap-1"
+                                className="text-sm flex items-center gap-1"
                             >
                                 <MapPin className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 inline" />
                                 Alamat Kantor/Domisili Lengkap{" "}
@@ -441,8 +428,8 @@ function Step2PartnerForm({ user, onSuccess }) {
                                 placeholder="Contoh: Jalan Merdeka No. 10, RT 02/RW 05, Kelurahan Menteng, Kecamatan Menteng, Jakarta Pusat 10310"
                                 className={
                                     errors.address
-                                        ? "border-red-500 text-sm lg:text-base xl:text-lg"
-                                        : "text-sm lg:text-base xl:text-lg"
+                                        ? "border-red-500 text-sm "
+                                        : "text-sm "
                                 }
                             />
                             {errors.address && (
@@ -453,10 +440,7 @@ function Step2PartnerForm({ user, onSuccess }) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label
-                                htmlFor="description"
-                                className="text-sm lg:text-base xl:text-lg"
-                            >
+                            <Label htmlFor="description" className="text-sm">
                                 Deskripsi Layanan{" "}
                                 <span className="text-red-500">*</span>
                             </Label>
@@ -470,8 +454,8 @@ function Step2PartnerForm({ user, onSuccess }) {
                                 placeholder="Jelaskan bidang usaha dan layanan yang Anda tawarkan (minimal 10 karakter)"
                                 className={
                                     errors.description
-                                        ? "border-red-500 text-sm lg:text-base xl:text-lg"
-                                        : "text-sm lg:text-base xl:text-lg"
+                                        ? "border-red-500 text-sm "
+                                        : "text-sm "
                                 }
                             />
                             {errors.description && (
@@ -483,18 +467,18 @@ function Step2PartnerForm({ user, onSuccess }) {
                     </div>
 
                     {/* Legal Documents */}
-                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                        <div className="flex items-center gap-2 lg:gap-3 pb-2 lg:pb-3 border-b">
-                            <UploadCloud className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 text-primary" />
-                            <h3 className="font-semibold text-base sm:text-lg lg:text-xl xl:text-2xl">
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b">
+                            <UploadCloud className="h-4 w-4 text-primary" />
+                            <h3 className="font-semibold text-base">
                                 Dokumen Legalitas
                             </h3>
                         </div>
 
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 lg:p-5 xl:p-6">
-                            <div className="flex items-start gap-2 lg:gap-3">
-                                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-amber-600 mt-0.5 shrink-0" />
-                                <p className="text-xs sm:text-sm lg:text-base xl:text-lg text-amber-800">
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                                <p className="text-sm text-amber-800">
                                     Dokumen akan diverifikasi oleh tim kami.
                                     Pastikan file jelas dan valid. Format yang
                                     diterima: JPG, PNG, PDF
@@ -503,10 +487,7 @@ function Step2PartnerForm({ user, onSuccess }) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label
-                                htmlFor="npwp_number"
-                                className="text-sm lg:text-base xl:text-lg"
-                            >
+                            <Label htmlFor="npwp_number" className="text-sm">
                                 Nomor NPWP{" "}
                                 <span className="text-red-500">*</span>
                             </Label>
@@ -520,18 +501,18 @@ function Step2PartnerForm({ user, onSuccess }) {
                                 placeholder="Masukkan 15-20 digit Nomor NPWP"
                                 className={
                                     errors.npwp_number
-                                        ? "border-red-500 text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
-                                        : "text-sm lg:text-base xl:text-lg h-10 lg:h-12 xl:h-14"
+                                        ? "border-red-500 text-sm h-10"
+                                        : "text-sm h-10"
                                 }
                             />
                             {errors.npwp_number && (
-                                <p className="text-red-500 text-xs lg:text-sm">
+                                <p className="text-red-500 text-sm">
                                     {errors.npwp_number}
                                 </p>
                             )}
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                             <FileUploadField
                                 id="npwp_file"
                                 label="Scan Kartu NPWP"
@@ -564,25 +545,25 @@ function Step2PartnerForm({ user, onSuccess }) {
                     <Button
                         type="submit"
                         disabled={processing}
-                        className="w-full mt-4 sm:mt-6 lg:mt-8 h-11 lg:h-13 xl:h-16 text-sm sm:text-base lg:text-lg xl:text-xl"
+                        className="w-full mt-4 text-sm"
                         size="lg"
                     >
                         {processing ? (
                             <>
-                                <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 mr-2 animate-spin" />
+                                <Clock className="h-4 w-4 mr-2 animate-spin" />
                                 <span>Mengirim Data...</span>
                             </>
                         ) : (
                             <>
                                 <span>Ajukan Pendaftaran</span>
-                                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ml-2" />
+                                <CheckCircle2 className="h-4 w-4 ml-2" />
                             </>
                         )}
                     </Button>
 
                     {Object.keys(errors).length > 0 && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 lg:p-5">
-                            <p className="text-red-800 text-xs sm:text-sm lg:text-base">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <p className="text-red-800 text-base">
                                 Terdapat {Object.keys(errors).length} kesalahan
                                 pada formulir. Silakan periksa kembali.
                             </p>
@@ -598,13 +579,13 @@ function Step2PartnerForm({ user, onSuccess }) {
 function Step3Status({ existingMitra }) {
     if (!existingMitra) {
         return (
-            <Card className="max-w-3xl xl:max-w-4xl 2xl:max-w-5xl mx-auto shadow-xl border-2">
-                <CardContent className="p-6 sm:p-8 lg:p-12 xl:p-16 text-center">
-                    <Clock className="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 xl:h-24 xl:w-24 mx-auto text-slate-400 mb-4 lg:mb-6 animate-pulse" />
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-slate-700 mb-2">
+            <Card className="max-w-3xl mx-auto shadow-xl border-2">
+                <CardContent className="p-6 text-center">
+                    <Clock className="h-12 w-12 mx-auto text-slate-400 mb-4 animate-pulse" />
+                    <h2 className="text-xl font-bold text-slate-700 mb-2">
                         Loading...
                     </h2>
-                    <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-slate-600">
+                    <p className="text-base text-slate-600">
                         Sedang memuat status pengajuan Anda
                     </p>
                 </CardContent>
@@ -630,7 +611,7 @@ function Step3Status({ existingMitra }) {
             <Button
                 size="lg"
                 onClick={() => router.visit(route("mitra.dashboard"))}
-                className="bg-green-600 hover:bg-green-700 text-sm sm:text-base lg:text-lg xl:text-xl h-11 lg:h-13 xl:h-16 px-6 lg:px-8 xl:px-10"
+                className="bg-green-600 hover:bg-green-700 text-base"
             >
                 Menuju Dashboard Mitra
             </Button>
@@ -646,7 +627,7 @@ function Step3Status({ existingMitra }) {
             <Button
                 size="lg"
                 onClick={() => router.visit(route("partner.create"))}
-                className="bg-red-600 hover:bg-red-700 text-sm sm:text-base lg:text-lg xl:text-xl h-11 lg:h-13 xl:h-16 px-6 lg:px-8 xl:px-10"
+                className="bg-red-600 hover:bg-red-700 text-base"
             >
                 Ajukan Kembali
             </Button>
@@ -666,37 +647,33 @@ function Step3Status({ existingMitra }) {
 
     return (
         <Card
-            className={`max-w-3xl xl:max-w-4xl 2xl:max-w-5xl mx-auto shadow-xl border-2 ${bgColor} hover:shadow-2xl transition-shadow duration-300`}
+            className={`max-w-3xl mx-auto shadow-xl border-2 ${bgColor} hover:shadow-2xl transition-shadow duration-300`}
         >
-            <CardContent className="p-6 sm:p-8 lg:p-12 xl:p-16 2xl:p-20 text-center">
+            <CardContent className="p-6 text-center">
                 <IconComponent
-                    className={`h-16 w-16 sm:h-20 sm:w-20 lg:h-28 lg:w-28 xl:h-32 xl:w-32 2xl:h-40 2xl:w-40 mx-auto mb-4 sm:mb-6 lg:mb-8 xl:mb-10 ${iconColor} ${
+                    className={`h-16 w-16 mx-auto mb-4 ${iconColor} ${
                         isPending ? "animate-pulse" : ""
                     }`}
                 />
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-slate-800 mb-3 sm:mb-4 lg:mb-6 px-2">
+                <h2 className="text-2xl font-bold text-slate-800 mb-3 px-2">
                     {title}
                 </h2>
-                <p className="text-sm sm:text-base lg:text-lg xl:text-xl 2xl:text-2xl text-slate-700 mb-6 sm:mb-8 lg:mb-10 xl:mb-12 leading-relaxed px-2 max-w-3xl mx-auto">
+                <p className="text-base text-slate-700 mb-6 leading-relaxed px-2 max-w-3xl mx-auto">
                     {description}
                 </p>
 
                 {isPending && (
-                    <div className="bg-white rounded-lg p-4 sm:p-6 lg:p-8 xl:p-10 shadow-md">
-                        <div className="flex items-center justify-center gap-2 lg:gap-3 text-slate-600">
-                            <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 animate-pulse" />
-                            <span className="font-medium text-sm sm:text-base lg:text-lg xl:text-xl">
+                    <div className="bg-white rounded-lg p-4 shadow-md">
+                        <div className="flex items-center justify-center gap-2 text-slate-600">
+                            <Clock className="h-4 w-4 animate-pulse" />
+                            <span className="font-medium text-sm">
                                 Status: Menunggu Verifikasi
                             </span>
                         </div>
                     </div>
                 )}
 
-                {buttonAction && (
-                    <div className="mt-4 sm:mt-6 lg:mt-8 xl:mt-10">
-                        {buttonAction}
-                    </div>
-                )}
+                {buttonAction && <div className="mt-4">{buttonAction}</div>}
             </CardContent>
         </Card>
     );
@@ -704,14 +681,12 @@ function Step3Status({ existingMitra }) {
 
 // ==================== Helper Components ====================
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-white rounded-md p-2 sm:p-3 lg:p-4 xl:p-5 border shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex items-center gap-1 sm:gap-2 text-slate-500 text-[10px] sm:text-xs lg:text-sm xl:text-base mb-1">
+    <div className="bg-white rounded-md p-2 border shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-1 text-slate-500 text-sm mb-1">
             {icon}
             <span className="font-medium uppercase">{label}</span>
         </div>
-        <p className="text-slate-800 font-medium truncate text-xs sm:text-sm lg:text-base xl:text-lg">
-            {value}
-        </p>
+        <p className="text-slate-800 font-medium truncate text-sm">{value}</p>
     </div>
 );
 
@@ -724,15 +699,15 @@ const FileUploadField = ({
     progress,
 }) => (
     <div className="space-y-2">
-        <Label htmlFor={id} className="block text-sm lg:text-base xl:text-lg">
+        <Label htmlFor={id} className="block text-sm">
             {label} <span className="text-red-500">*</span>
             <br />
-            <span className="text-[10px] sm:text-xs lg:text-sm text-slate-500 font-normal">
+            <span className="text-sm text-slate-500 font-normal">
                 {sublabel}
             </span>
         </Label>
         {progress && progress.percentage && (
-            <div className="w-full h-1.5 sm:h-2 lg:h-3 bg-slate-200 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
                     className="h-full bg-primary transition-all duration-300"
                     style={{ width: `${progress.percentage}%` }}
@@ -746,15 +721,15 @@ const FileUploadField = ({
             accept=".jpg,.jpeg,.png,.pdf"
             className={
                 error
-                    ? "border-red-500 text-xs sm:text-sm lg:text-base cursor-pointer"
-                    : "text-xs sm:text-sm lg:text-base cursor-pointer"
+                    ? "border-red-500 text-sm cursor-pointer"
+                    : "text-sm cursor-pointer"
             }
         />
         {progress && progress.percentage && (
-            <p className="text-[10px] sm:text-xs lg:text-sm text-slate-500">
+            <p className="text-sm text-slate-500">
                 Mengunggah: {progress.percentage}%
             </p>
         )}
-        {error && <p className="text-red-500 text-xs lg:text-sm">{error}</p>}
+        {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
 );

@@ -13,7 +13,7 @@ use Inertia\Inertia;
 class PurchaseController extends Controller
 {
     public function index()
-    {        
+    {
         $transactions = Transaction::with([
             'items.item' => function ($morph) {
                 $morph->morphWith([
@@ -28,6 +28,57 @@ class PurchaseController extends Controller
         ->where('user_id', auth()->id())
         ->latest()
         ->get();
+
+        // Check for sold out items and cancel transactions accordingly
+        foreach ($transactions as $transaction) {
+            $hasSoldOutItems = false;
+
+            foreach ($transaction->items as $item) {
+                // Check if item is ticket and has quota
+                if ($item->item_type === 'ticket' && isset($item->item->quota)) {
+                    // Check if there are successful transactions for the same ticket/date
+                    $successfulTransactions = Transaction::where('status', 'settlement')
+                        ->whereHas('items', function ($q) use ($item) {
+                            $q->where('item_id', $item->item_id)
+                                ->where('item_type', 'ticket')
+                                ->where('rent_days', $item->rent_days);
+                        })
+                        ->where('id', '!=', $transaction->id) // Exclude current transaction
+                        ->count();
+
+                    // If there are successful transactions and quota is low, mark as sold_out
+                    if ($successfulTransactions > 0 && $item->item->quota <= 1) {
+                        $item->status = 'sold_out';
+                        $item->save();
+                        $hasSoldOutItems = true;
+                    }
+                }
+
+                // Check if item is already marked as sold_out
+                if ($item->status === 'sold_out') {
+                    $hasSoldOutItems = true;
+                }
+            }
+
+            // If transaction has sold out items and is still pending, cancel the entire transaction
+            if ($hasSoldOutItems && $transaction->status === 'pending') {
+                $transaction->update(['status' => 'cancelled']);
+
+                // Also cancel in Midtrans if possible
+                try {
+                    \Midtrans\Config::$serverKey = config('midtrans.server_key');
+                    \Midtrans\Config::$isProduction = config('midtrans.is_production');
+                    \Midtrans\Transaction::cancel($transaction->order_id);
+                } catch (\Exception $e) {
+                    \Log::info('Could not cancel in Midtrans (might already be cancelled)', [
+                        'order_id' => $transaction->order_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+
+        // dd($transactions);
 
         return Inertia::render('Purchase/Index', [
             'transactions' => $transactions,

@@ -19,9 +19,37 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+
+        // Ensure wallet exists for the current user
+        $wallet = \App\Models\Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0]
+        );
+
+        // Fetch recent wallet transactions for the current user
+        $transactions = \App\Models\WalletTransaction::where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get()
+            ->map(function ($tx) {
+                return [
+                    'id' => $tx->id,
+                    'amount' => (float) $tx->amount,
+                    'type' => $tx->type,
+                    'description' => $tx->description,
+                    'reference_type' => $tx->reference_type,
+                    'reference_id' => $tx->reference_id,
+                    'created_at' => $tx->created_at?->toDateTimeString(),
+                ];
+            });
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
+            // Wallet props so the embedded Wallet component syncs correctly
+            'balance' => (float) $wallet->balance,
+            'transactions' => $transactions,
         ]);
     }
 
@@ -89,5 +117,41 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    /**
+     * Show user's wallet: current balance and transaction history.
+     */
+    public function wallet(Request $request): Response
+    {
+        $user = $request->user();
+
+        // Ensure wallet exists
+        $wallet = \App\Models\Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0]
+        );
+
+        // Fetch recent transactions (latest first)
+        $transactions = \App\Models\WalletTransaction::where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get()
+            ->map(function ($tx) {
+                return [
+                    'id' => $tx->id,
+                    'amount' => (float) $tx->amount,
+                    'type' => $tx->type,
+                    'description' => $tx->description,
+                    'reference_type' => $tx->reference_type,
+                    'reference_id' => $tx->reference_id,
+                    'created_at' => $tx->created_at?->toDateTimeString(),
+                ];
+            });
+
+        return Inertia::render('Profile/Wallet', [
+            'balance' => (float) $wallet->balance,
+            'transactions' => $transactions,
+        ]);
     }
 }

@@ -275,6 +275,18 @@ const columns = [
                             >
                                 Banned
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() =>
+                                    router.visit(
+                                        route(
+                                            "admin.events.attendance",
+                                            event.id
+                                        )
+                                    )
+                                }
+                            >
+                                Attendance
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -532,7 +544,7 @@ export function DataTable({ data: initialData }) {
                             Filter aktif:
                         </span>
                         <Badge variant="secondary" className="gap-1">
-                             {statusFilter === "active" && "Aktif"}
+                            {statusFilter === "active" && "Aktif"}
                             {statusFilter === "inactive" && "Tidak Aktif"}
                             {statusFilter === "completed" && "Selesai"}
                             {statusFilter === "banned" && "Dilarang"}

@@ -1,5 +1,5 @@
 import { Head, Link, usePage, router } from "@inertiajs/react";
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import {
     LogOut,
     AlignJustify,
@@ -293,17 +293,19 @@ const CategorySection = ({ title, items, type, baseUrl, id }) => {
     );
 };
 
-// Komponen TestimonialSection yang diperbaiki
-function TestimonialSection() {
+// Komponen TestimonialSection yang menggunakan props
+function TestimonialSection({ testimonials: propTestimonials }) {
     const [selectedIndex, setSelectedIndex] = useState(0);
+
+    const testimonials = propTestimonials || [];
 
     const handleNext = useCallback(() => {
         setSelectedIndex((prev) => (prev + 1) % testimonials.length);
-    }, []);
+    }, [testimonials.length]);
 
     const selectedTestimonial = useMemo(
         () => testimonials[selectedIndex],
-        [selectedIndex]
+        [testimonials, selectedIndex]
     );
 
     return (
@@ -332,78 +334,101 @@ function TestimonialSection() {
                     </TabsList>
 
                     <TabsContent value="testimoni" className="mt-12">
-                        <div className="grid lg:grid-cols-2 gap-12 items-start">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-6">
-                                {testimonials.map((user, idx) => (
-                                    <Card
-                                        key={idx}
-                                        className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                                            selectedIndex === idx
-                                                ? "ring-2 ring-primary shadow-lg scale-105"
-                                                : "hover:shadow-md"
-                                        }`}
-                                        onClick={() => setSelectedIndex(idx)}
-                                    >
-                                        <CardContent className="p-6 text-center space-y-4">
-                                            <Avatar className="w-16 h-16 mx-auto">
-                                                <AvatarImage
-                                                    src={`${user.image}&random=${idx}`}
-                                                    alt={user.name}
+                        {testimonials.length > 0 ? (
+                            <div className="grid lg:grid-cols-2 gap-12 items-start">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-6">
+                                    {testimonials.map((user, idx) => (
+                                        <Card
+                                            key={user.id}
+                                            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                                                selectedIndex === idx
+                                                    ? "ring-2 ring-primary shadow-lg scale-105"
+                                                    : "hover:shadow-md"
+                                            }`}
+                                            onClick={() =>
+                                                setSelectedIndex(idx)
+                                            }
+                                        >
+                                            <CardContent className="p-6 text-center space-y-4">
+                                                <Avatar className="w-16 h-16 mx-auto">
+                                                    <AvatarImage
+                                                        src={
+                                                            user.author_image_url ||
+                                                            `https://picsum.photos/300/300?random=${idx}`
+                                                        }
+                                                        alt={user.author_name}
+                                                    />
+                                                    <AvatarFallback>
+                                                        {user.author_name.charAt(
+                                                            0
+                                                        )}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <h3 className="font-semibold text-foreground line-clamp-1">
+                                                        {user.author_name}
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground line-clamp-1">
+                                                        {user.author_title}
+                                                    </p>
+                                                </div>
+                                                <Rating
+                                                    initialRating={
+                                                        user.star_rating
+                                                    }
+                                                    emptySymbol={
+                                                        <Star className="w-4 h-4 text-muted fill-muted" />
+                                                    }
+                                                    fullSymbol={
+                                                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                                    }
+                                                    readonly
                                                 />
-                                                <AvatarFallback>
-                                                    {user.name.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <h3 className="font-semibold text-foreground line-clamp-1">
-                                                    {user.name}
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground line-clamp-1">
-                                                    {user.role}
-                                                </p>
-                                            </div>
-                                            <Rating
-                                                initialRating={user.rating}
-                                                emptySymbol={
-                                                    <Star className="w-4 h-4 text-muted fill-muted" />
-                                                }
-                                                fullSymbol={
-                                                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                                }
-                                                readonly
-                                            />
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
 
-                            <Card className="lg:sticky lg:top-8">
-                                <CardHeader>
-                                    <div className="w-12 h-1 bg-primary rounded-full mb-2" />
-                                    <h3 className="text-2xl font-bold text-card-foreground">
-                                        {selectedTestimonial.name}
-                                    </h3>
-                                    <p className="text-muted-foreground">
-                                        {selectedTestimonial.role}
-                                    </p>
-                                </CardHeader>
-                                <CardContent>
-                                    <blockquote className="text-lg leading-relaxed text-muted-foreground border-l-4 border-primary pl-4 italic">
-                                        "{selectedTestimonial.message}"
-                                    </blockquote>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button
-                                        variant="ghost"
-                                        onClick={handleNext}
-                                        className="p-0 text-primary hover:text-primary/80"
-                                    >
-                                        Testimoni Selanjutnya
-                                        <ChevronRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        </div>
+                                {selectedTestimonial && (
+                                    <Card className="lg:sticky lg:top-8">
+                                        <CardHeader>
+                                            <div className="w-12 h-1 bg-primary rounded-full mb-2" />
+                                            <h3 className="text-2xl font-bold text-card-foreground">
+                                                {
+                                                    selectedTestimonial.author_name
+                                                }
+                                            </h3>
+                                            <p className="text-muted-foreground">
+                                                {
+                                                    selectedTestimonial.author_title
+                                                }
+                                            </p>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <blockquote className="text-lg leading-relaxed text-muted-foreground border-l-4 border-primary pl-4 italic">
+                                                "{selectedTestimonial.quote}"
+                                            </blockquote>
+                                        </CardContent>
+                                        <CardFooter>
+                                            <Button
+                                                variant="ghost"
+                                                onClick={handleNext}
+                                                className="p-0 text-primary hover:text-primary/80"
+                                            >
+                                                Testimoni Selanjutnya
+                                                <ChevronRight className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <p className="text-muted-foreground text-lg">
+                                    No testimonials available
+                                </p>
+                            </div>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="tentang" className="mt-12">
@@ -460,8 +485,15 @@ function TestimonialSection() {
 }
 
 export default function Welcome() {
-    const { auth, ziggy, events, buildings, services, propertys } =
-        usePage().props;
+    const {
+        auth,
+        ziggy,
+        events,
+        buildings,
+        services,
+        propertys,
+        testimonials,
+    } = usePage().props;
     const sheetCloseRef = useRef();
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -714,7 +746,7 @@ export default function Welcome() {
                 </div>
 
                 {/* Testimonial Section */}
-                <TestimonialSection />
+                <TestimonialSection testimonials={testimonials} />
 
                 {/* CTA Section */}
                 <section className="py-20 ">

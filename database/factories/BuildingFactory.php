@@ -22,7 +22,7 @@ class BuildingFactory extends Factory
     {
         
         return [
-            'user_id' => 2, // User::factory(), 
+            'user_id' => User::where('role', 'mitra')->inRandomOrder()->value('id') ?? User::factory()->create(['role' => 'mitra'])->id,
             'name' => $this->faker->company . ' Hall',
             'location' => $this->faker->address,
             'description' => $this->faker->paragraph,

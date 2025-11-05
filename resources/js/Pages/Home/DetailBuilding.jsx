@@ -109,6 +109,10 @@ const DetailBuilding = () => {
             toast.error("Silahkan pilih tanggal sewa gedung");
             return;
         }
+        if (user.id === building.user_id) {
+            toast.error("Tidak bisa membeli building sendiri");
+            return;
+        }
 
         setIsLoading((prev) => ({ ...prev, cart: true }));
 
@@ -144,6 +148,11 @@ const DetailBuilding = () => {
     const handlePayment = useCallback(
         async (e) => {
             if (e) e.preventDefault();
+
+            if (user.id === building.user_id) {
+                toast.error("Tidak bisa membeli building sendiri");
+                return;
+            }
 
             if (!selectedDate) {
                 toast.error("Silahkan pilih tanggal sewa gedung");

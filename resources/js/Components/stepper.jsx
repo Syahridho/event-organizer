@@ -1,6 +1,6 @@
 import React from "react";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/Lib/utils";
 
 export function Stepper({ steps, currentStep }) {
     return (
@@ -19,7 +19,7 @@ export function Stepper({ steps, currentStep }) {
                                 {/* Circle */}
                                 <div
                                     className={cn(
-                                        "w-8 h-8 sm:w-10 sm:h-10 lg:w-14 lg:h-14 xl:w-16 xl:h-16 2xl:w-20 2xl:h-20 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm lg:text-base xl:text-lg 2xl:text-xl transition-all duration-300 border-2 lg:border-3 xl:border-4 z-10 shrink-0",
+                                        "w-8 h-8 sm:w-10 sm:h-10 lg:w-14 lg:h-14 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm lg:text-base xl:text-lg 2xl:text-xl transition-all duration-300 border-2 lg:border-3 xl:border-4 z-10 shrink-0",
                                         {
                                             "bg-primary text-primary-foreground border-primary shadow-lg":
                                                 isCompleted,
@@ -41,10 +41,12 @@ export function Stepper({ steps, currentStep }) {
                                 <div className="mt-2 lg:mt-3 xl:mt-4 text-center hidden sm:block px-1 lg:px-2">
                                     <p
                                         className={cn(
-                                            "text-[10px] sm:text-xs lg:text-base xl:text-lg 2xl:text-xl font-medium lg:font-semibold transition-colors break-words",
+                                            "text-[10px] sm:text-xs lg:text-base font-medium lg:font-semibold transition-colors break-words",
                                             {
-                                                "text-primary": isCompleted || isCurrent,
-                                                "text-muted-foreground": isUpcoming,
+                                                "text-primary":
+                                                    isCompleted || isCurrent,
+                                                "text-muted-foreground":
+                                                    isUpcoming,
                                             }
                                         )}
                                     >
@@ -64,8 +66,10 @@ export function Stepper({ steps, currentStep }) {
                                     className={cn(
                                         "flex-1 h-0.5 lg:h-1 xl:h-1.5 mx-1 sm:mx-2 lg:mx-4 xl:mx-6 transition-all duration-300 -mt-10 sm:-mt-12 lg:-mt-16 xl:-mt-20 2xl:-mt-24 rounded-full",
                                         {
-                                            "bg-primary shadow-md": stepNumber < currentStep,
-                                            "bg-muted": stepNumber >= currentStep,
+                                            "bg-primary shadow-md":
+                                                stepNumber < currentStep,
+                                            "bg-muted":
+                                                stepNumber >= currentStep,
                                         }
                                     )}
                                 />

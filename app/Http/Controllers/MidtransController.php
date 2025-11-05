@@ -465,21 +465,22 @@ class MidtransController extends Controller
                                         ->where('rent_days', $item->rent_days);
                                 })
                                 ->get();
-                            
+
                             foreach ($otherTransactions as $other) {
-                                $other->update(['status' => 'expired']);
-    
+                                $other->update(['status' => 'cancelled']);
+                                $other->items()->update(['status' => 'sold_out']);
+
                                 try {
                                     \Midtrans\Transaction::cancel($other->order_id);
                                 } catch (\Exception $e) {
                                     Log::error('Gagal cancel di Midtrans', [
-                                        'order_id' => $other->order_id, 
+                                        'order_id' => $other->order_id,
                                         'error' => $e->getMessage()
                                     ]);
                                 }
-                                Log::info('Transaksi lain dibatalkan', [
-                                    'order_id' => $other->order_id, 
-                                    'item_id' => $item->item_id, 
+                                Log::info('Transaksi lain dibatalkan dengan status sold_out', [
+                                    'order_id' => $other->order_id,
+                                    'item_id' => $item->item_id,
                                     'rent_days' => $item->rent_days
                                 ]);
                             }

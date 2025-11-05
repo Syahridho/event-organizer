@@ -13,7 +13,7 @@ class ServiceFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' =>  2, //User::factory(), // atau gunakan id user tertentu
+            'user_id' => User::where('role', 'mitra')->inRandomOrder()->value('id') ?? User::factory()->create(['role' => 'mitra'])->id,
             'name' => $this->faker->word(),
             'thumbnail' => 'dubby.webp',
             'description' => $this->faker->paragraph(),

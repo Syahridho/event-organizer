@@ -32,6 +32,7 @@ class Cart extends Model
         'is_sold_out',
         'is_booked_by_other',
         'is_already_booked_by_me',
+        'is_mitra_on_leave',
     ];
 
     public function user()
@@ -53,6 +54,11 @@ class Cart extends Model
         public function getIsAlreadyBookedByMeAttribute()
         {
             return $this->attributes['is_already_booked_by_me'] ?? false;
+        }
+
+        public function getIsMitraOnLeaveAttribute()
+        {
+            return $this->attributes['is_mitra_on_leave'] ?? false;
         }
 
     public function item()

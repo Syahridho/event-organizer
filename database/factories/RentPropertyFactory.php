@@ -21,7 +21,7 @@ class RentPropertyFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => 2,//User::factory(),
+            'user_id' => User::where('role', 'mitra')->inRandomOrder()->value('id') ?? User::factory()->create(['role' => 'mitra'])->id,
             'name' => $this->faker->company,
             'description' => $this->faker->paragraph,
             'thumbnail' => 'dubby.webp',
