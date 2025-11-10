@@ -55,6 +55,8 @@ export default function Index({
 }) {
     const ziggy = { url: "" };
 
+    console.log(propertys);
+
     const formatPrice = (price) => {
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
@@ -355,7 +357,7 @@ export default function Index({
                                             </span>
                                         </div>
                                         <Button
-                                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors duration-200 w-full"
+                                            className="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white shadow-sm transition-colors duration-200 w-full"
                                             onClick={() =>
                                                 router.visit(
                                                     `/dashboard/leaves/${item.id}?type=${item.item_type}`

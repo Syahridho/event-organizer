@@ -23,7 +23,7 @@ class LeaveController extends Controller
         $services = Service::where('user_id', $userId)->latest()->get();
         $buildings = Building::where('user_id', $userId)->latest()->get() ?? [];
         $property = RentProperty::where('user_id', $userId)->latest()->get() ?? [];
-        
+
         // Get leaves with optimized query
         $leaves = Leave::where('user_id', $userId)
             ->select(['id', 'item_id', 'item_type', 'date', 'day_of_week', 'created_at'])
@@ -31,11 +31,12 @@ class LeaveController extends Controller
             ->orderBy('day_of_week')
             ->get();
 
+
         return Inertia::render('Mitra/Leave/Index', [
             'title' => 'Manajemen Cuti',
             'services' => $services,
             'buildings' => $buildings,
-            'property' => $property,
+            'propertys' => $property,
             'leaves' => $leaves,
             'pagination' => [
                 'total' => $services->count() + count($buildings) + count($property),

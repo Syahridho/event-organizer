@@ -307,7 +307,7 @@ const TransactionItem = React.memo(
                                                 : item?.item_type === "ticket"
                                                 ? `Tiket ${item?.item?.name}`
                                                 : item?.item_type === "service"
-                                                ? "Jasa Layanan"
+                                                ? "Jasa"
                                                 : item?.item_type === "building"
                                                 ? "Sewa Gedung"
                                                 : item?.item_type ===
@@ -342,20 +342,40 @@ const TransactionItem = React.memo(
                                         )}
 
                                         {/* Price */}
-                                        <div className="mt-2">
-                                            <p className="font-bold text-sm sm:text-base text-gray-900">
-                                                Rp{" "}
-                                                {formatRupiah(
-                                                    item.price * item.qty
-                                                )}
-                                            </p>
-
-                                            {!isDeliveryFeeOrder && (
-                                                <p className="text-xs text-gray-500">
-                                                    Harga Satuan Rp{" "}
-                                                    {formatRupiah(item.price)}
+                                        <div className="flex justify-between pt-2 items-center">
+                                            <div>
+                                                <Link
+                                                    className="bg-primary text-white px-3 py-2 text-sm rounded-md shadow-md"
+                                                    href={`chat/${
+                                                        item.item_type !==
+                                                        "ticket"
+                                                            ? item?.item?.user
+                                                                  ?.uuid
+                                                            : item?.item?.event
+                                                                  ?.user?.uuid
+                                                    }`}
+                                                >
+                                                    {" "}
+                                                    Chat
+                                                </Link>
+                                            </div>
+                                            <div className="mt-2">
+                                                <p className="font-bold text-sm sm:text-base text-gray-900">
+                                                    Rp{" "}
+                                                    {formatRupiah(
+                                                        item.price * item.qty
+                                                    )}
                                                 </p>
-                                            )}
+
+                                                {!isDeliveryFeeOrder && (
+                                                    <p className="text-xs text-gray-500">
+                                                        Harga Satuan Rp{" "}
+                                                        {formatRupiah(
+                                                            item.price
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Rating section: show existing review (shadcn Card) or the rating button */}
@@ -400,7 +420,8 @@ const TransactionItem = React.memo(
                                                 </CardContent>
                                             </Card>
                                         ) : (
-                                            shouldShowCompletedState && (
+                                            shouldShowCompletedState &&
+                                            item?.status !== "sold_out" && (
                                                 <div className="mt-3">
                                                     <Dialog
                                                         onOpenChange={(open) =>
@@ -707,16 +728,6 @@ export default function PurchaseIndex() {
     const searchParams = new URLSearchParams(window.location.search);
     const currentTab = searchParams.get("tab") || "all";
 
-    // Flash messages effect
-    useEffect(() => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
-    }, [flash]);
-
     // OPTIMIZED: Memoized getThumbnail function
     const getThumbnail = useCallback(
         (item) => {
@@ -962,7 +973,6 @@ export default function PurchaseIndex() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <Head title="Pembelian" />
-            <Toaster position="top-right" richColors />
 
             <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
                 {/* Page Header */}

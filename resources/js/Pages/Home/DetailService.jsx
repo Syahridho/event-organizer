@@ -49,6 +49,7 @@ import { createPaymentPayload } from "@/Utils/PaymentHelper";
 const DetailService = () => {
     const { service, ziggy, transaction, user, leaves, photos, tax_info } =
         usePage().props;
+    console.log(leaves);
 
     const dispatch = useDispatch();
 

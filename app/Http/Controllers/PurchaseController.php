@@ -17,10 +17,10 @@ class PurchaseController extends Controller
         $transactions = Transaction::with([
             'items.item' => function ($morph) {
                 $morph->morphWith([
-                    Ticket::class => ['event'],
-                    Service::class => ['itemPhotos'],
-                    Building::class => ['itemPhotos'],
-                    RentProperty::class => ['itemPhotos'],
+                    Ticket::class => ['event.user'],
+                    Service::class => ['itemPhotos', 'user'],
+                    Building::class => ['itemPhotos', 'user'],
+                    RentProperty::class => ['itemPhotos', 'user'],
                 ]);
             },
             'items.review'

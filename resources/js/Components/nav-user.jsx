@@ -88,15 +88,20 @@ export function NavUser({ user }) {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() =>
+                                    router.get(route("profile.edit"))
+                                }
+                            >
                                 <UserCircleIcon />
                                 Akun
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Settings />
-                                Pengaturan
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.get(route("profile.wallet"))}>
+
+                            <DropdownMenuItem
+                                onClick={() =>
+                                    router.get(route("profile.wallet"))
+                                }
+                            >
                                 <CreditCardIcon />
                                 Wallet
                             </DropdownMenuItem>

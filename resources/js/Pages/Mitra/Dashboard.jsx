@@ -29,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     Select,
     SelectContent,
@@ -438,6 +439,13 @@ export default function UserDashboard({
                                     : "Tidak Ada Penambahan"}
                             </p>
                         </CardContent>
+                        <div className="mt-2">
+                            <Button variant="secondary" size="sm" asChild>
+                                <a href="/dashboard/withdraw">
+                                    Lihat Riwayat Penarikan
+                                </a>
+                            </Button>
+                        </div>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -478,6 +486,152 @@ export default function UserDashboard({
                             </p>
                         </CardContent>
                     </Card>
+                </div>
+                {/* Chart Pendapatan 7 Hari (shadcn Card + simple bars) */}
+                <div className="rounded-xl border bg-card text-card-foreground shadow">
+                    <CardHeader>
+                        <CardTitle>Chart Pendapatan 7 Hari</CardTitle>
+                        <CardDescription>
+                            Ringkasan pendapatan harian terakhir
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {(() => {
+                            // Susun tanggal 7 hari terakhir
+                            const days = Array.from({ length: 7 }, (_, i) => {
+                                const d = new Date();
+                                d.setHours(0, 0, 0, 0);
+                                d.setDate(d.getDate() - (6 - i));
+                                return d;
+                            });
+                            const dayKey = (d) => format(d, "yyyy-MM-dd");
+
+                            // Inisialisasi map tanggal -> jumlah
+                            const sums = Object.fromEntries(
+                                days.map((d) => [dayKey(d), 0])
+                            );
+
+                            // Akumulasi pendapatan dari item yang sudah dibayar/selesai
+                            const paidStatuses = [
+                                "settlement",
+                                "completed",
+                                "capture",
+                            ];
+                            let hasPaid = false;
+                            (transactionItems || []).forEach((it) => {
+                                try {
+                                    const status = it?.transaction?.status;
+                                    if (!paidStatuses.includes(status)) return;
+                                    hasPaid = true;
+
+                                    const k = format(
+                                        new Date(it.created_at),
+                                        "yyyy-MM-dd"
+                                    );
+                                    if (sums[k] !== undefined) {
+                                        const price = Number(it.price || 0);
+                                        const deliveryFee = Number(
+                                            it.delivery_fee || 0
+                                        );
+                                        const qty = Number(it.qty || 1);
+                                        sums[k] += price * qty + deliveryFee;
+                                    }
+                                } catch (_e) {
+                                    // abaikan parsing error
+                                }
+                            });
+
+                            // Fallback: jika tidak ada item berstatus dibayar, gunakan semua item
+                            if (!hasPaid) {
+                                (transactionItems || []).forEach((it) => {
+                                    try {
+                                        const k = format(
+                                            new Date(it.created_at),
+                                            "yyyy-MM-dd"
+                                        );
+                                        if (sums[k] !== undefined) {
+                                            const price = Number(it.price || 0);
+                                            const deliveryFee = Number(
+                                                it.delivery_fee || 0
+                                            );
+                                            const qty = Number(it.qty || 1);
+                                            sums[k] +=
+                                                price * qty + deliveryFee;
+                                        }
+                                    } catch (_e) {}
+                                });
+                            }
+
+                            const labels = days.map((d) =>
+                                format(d, "dd MMM", { locale: id })
+                            );
+                            const values = days.map(
+                                (d) => sums[dayKey(d)] || 0
+                            );
+                            const max = Math.max(1, ...values);
+                            const total = values.reduce((a, b) => a + b, 0);
+                            return (
+                                <div>
+                                    <div className="h-40 grid grid-cols-7 gap-3 items-end">
+                                        {values.map((v, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="group flex flex-col items-center gap-1"
+                                            >
+                                                <Badge
+                                                    variant="outline"
+                                                    className="px-1.5 py-0 text-[10px] bg-primary/10 text-primary border border-primary/30"
+                                                >
+                                                    Rp {formatRupiah(v)}
+                                                </Badge>
+                                                <div className="w-full h-full bg-muted rounded-md overflow-hidden relative">
+                                                    <div
+                                                        className="absolute bottom-0 left-0 right-0 rounded-t-md bg-gradient-to-t from-primary to-primary/60 transition-all duration-300 group-hover:from-primary/90"
+                                                        style={{
+                                                            height: `${
+                                                                (v / max) * 100
+                                                            }%`,
+                                                            minHeight:
+                                                                v > 0
+                                                                    ? "3px"
+                                                                    : 0,
+                                                        }}
+                                                        title={`Rp ${formatRupiah(
+                                                            v
+                                                        )}`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-2 grid grid-cols-7 gap-3 text-xs text-muted-foreground">
+                                        {labels.map((lbl, idx) => {
+                                            const isToday =
+                                                idx === labels.length - 1;
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className={`text-center ${
+                                                        isToday
+                                                            ? "text-primary font-semibold"
+                                                            : ""
+                                                    }`}
+                                                >
+                                                    {lbl}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="mt-3 text-xs text-muted-foreground">
+                                        Total 7 hari:{" "}
+                                        <span className="font-medium">
+                                            Rp {formatRupiah(total)}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </CardContent>
                 </div>
 
                 <div className="rounded-xl border bg-card text-card-foreground shadow">

@@ -1,0 +1,378 @@
+# Ringkasan
+
+Dokumen ini menyajikan Sequence Diagram sederhana untuk tiga peran (User, Mitra/Partner, Admin) pada Event Organizer System. Setiap diagram menggunakan urutan peserta dari kiri ke kanan: Aktor, Frontend (Web/Mobile), Backend API Gateway, layanan internal (AuthService, CatalogService, OrderService, PaymentService, ReviewService, ChatService, ModerationService, NotificationService, PayoutService, AnalyticsService), Basis Data, dan layanan eksternal (Midtrans, RajaOngkir). Diagram menggunakan autonumber, activation/deactivation, serta blok alt/else dan opt untuk alur sukses/gagal yang ringkas.
+
+## Role: User
+
+### Skenario: Autentikasi — Login/Register Sederhana
+
+Tujuan: Pengguna melakukan login atau registrasi; bila registrasi, sistem mengirim verifikasi email/OTP; akhir skenario adalah berhasil login atau muncul pesan kesalahan.
+
+```plantuml
+@startuml
+autonumber
+participant "User" as User
+participant "Frontend (Web/Mobile)" as FE
+participant "Backend API Gateway" as API
+participant "Layanan Autentikasi (AuthService)" as Auth
+participant "Layanan Notifikasi (NotificationService)" as Notif
+database "Basis Data" as DB
+
+User -> FE: Isi data login / registrasi
+activate FE
+FE -> API: POST /auth (login/registrasi)
+activate API
+API -> Auth: validasi input + proses daftar/masuk
+activate Auth
+note right of Auth
+ - Validasi input & hashing sandi
+ - Cek duplikasi email saat registrasi
+end note
+Auth -> DB: SELECT/INSERT pengguna
+activate DB
+DB --> Auth: data pengguna / dibuat
+deactivate DB
+alt Registrasi
+  Auth -> Notif: kirimEmailVerifikasi()
+  activate Notif
+  Notif --> User: Email verifikasi terkirim
+  deactivate Notif
+  Auth --> API: status menunggu verifikasi
+else Login
+  Auth --> API: sesi/token dibuat
+end
+deactivate Auth
+API -> FE: 200 OK / 401 Tidak Berwenang
+deactivate API
+FE --> User: Tampilkan hasil (dashboard / galat)
+deactivate FE
+@enduml
+```
+
+### Skenario: Order & Pembayaran — Checkout Sederhana (Validasi Stok, Ongkir, Midtrans)
+
+Tujuan: Pengguna checkout; sistem validasi stok, menghitung ongkir via RajaOngkir, melakukan pembayaran via Midtrans; sukses: order terbayar dan notifikasi; gagal: pesan kegagalan.
+
+```plantuml
+@startuml
+autonumber
+participant "User" as User
+participant "Frontend (Web/Mobile)" as FE
+participant "Backend API Gateway" as API
+participant "Layanan Pemesanan (OrderService)" as Order
+participant "Layanan Pembayaran (PaymentService)" as Payment
+participant "Layanan Notifikasi (NotificationService)" as Notif
+database "Basis Data" as DB
+participant "RajaOngkir (API Pengiriman)" as RO
+participant "Midtrans (Gerbang Pembayaran)" as Midtrans
+
+User -> FE: Klik Checkout
+activate FE
+FE -> API: POST /checkout/validate
+activate API
+API -> Order: validasiStok()
+activate Order
+Order -> DB: cek ketersediaan stok/slot
+activate DB
+DB --> Order: cukup / tidak cukup
+deactivate DB
+alt Stok cukup
+  Order --> API: valid
+  API -> RO: GET /cost (hitung ongkir)
+  RO --> API: ongkir / galat
+  alt Ongkir berhasil
+    API -> Payment: buatSnapToken(orderId)
+    activate Payment
+    Payment -> DB: catat percobaan pembayaran
+    activate DB
+    DB --> Payment: tersimpan
+    deactivate DB
+    Payment --> API: snapToken
+    deactivate Payment
+    API -> FE: 200 OK (snapToken)
+    deactivate API
+    FE --> User: Jalankan SDK/pengalihan Midtrans
+    alt Pembayaran sukses
+      Midtrans --> API: webhook callback
+      activate API
+      note right of API
+        Validasi tanda tangan (signature) & idempoten
+      end note
+      API -> Payment: tandaiLunas()
+      activate Payment
+      Payment -> DB: perbarui status bayar + order
+      activate DB
+      DB --> Payment: diperbarui
+      deactivate DB
+      par Notifikasi paralel
+        Payment -> Notif: beriTahuPengguna(order dibayar)
+        activate Notif
+        Notif --> FE: Notifikasi dikirim (push) ke User
+        deactivate Notif
+      |||
+        Payment -> Notif: beriTahuMitra(order dibayar)
+        activate Notif
+        Notif --> FE: Notifikasi dikirim (push) ke Mitra
+        deactivate Notif
+      end
+      deactivate Payment
+      API --> Midtrans: 200 OK
+      deactivate API
+    else Pembayaran gagal/kedaluwarsa
+      Midtrans --> API: webhook status=gagal/kedaluwarsa
+      activate API
+      API -> Payment: tandaiGagal()
+      activate Payment
+      Payment -> DB: perbarui status gagal
+      activate DB
+      DB --> Payment: diperbarui
+      deactivate DB
+      Payment -> Notif: beriTahuPenggunaGagal()
+      activate Notif
+      Notif --> FE: Notifikasi gagal pembayaran
+      deactivate Notif
+      deactivate Payment
+      API --> Midtrans: 200 OK
+      deactivate API
+    end
+  else Ongkir gagal
+    API -> FE: 502 Bad Gateway (coba ulang dengan jeda)
+    deactivate API
+  end
+else Stok tidak cukup
+  Order --> API: stok tidak cukup
+  API -> FE: 409 Konflik
+  deactivate API
+end
+deactivate FE
+@enduml
+```
+
+## Role: Mitra/Partner
+
+### Skenario: Pesanan & Pemenuhan — Konfirmasi/Tolak, Update Status, Bukti
+
+Tujuan: Mitra menerima pesanan, memilih konfirmasi atau menolak, memperbarui status pemenuhan, dan mengunggah bukti; berakhir dengan status terbaru serta notifikasi.
+
+```plantuml
+@startuml
+autonumber
+participant "Mitra" as Mitra
+participant "Frontend (Web/Mobile)" as FE
+participant "Backend API Gateway" as API
+participant "Layanan Pemesanan (OrderService)" as Order
+participant "Layanan Notifikasi (NotificationService)" as Notif
+database "Basis Data" as DB
+
+Notif --> FE: Notifikasi pesanan baru
+Mitra -> FE: Buka detail pesanan
+activate FE
+FE -> API: GET /dashboard/orders/{id}
+activate API
+API -> Order: ambilDetailPesanan()
+activate Order
+Order -> DB: SELECT order berdasarkan id
+activate DB
+DB --> Order: detail pesanan
+deactivate DB
+Order --> API: detail
+deactivate Order
+API -> FE: 200 OK
+deactivate API
+
+Mitra -> FE: Konfirmasi / Tolak
+FE -> API: POST /orders/{id}/confirm|reject
+activate API
+API -> Order: konfirmasiAtauTolak()
+activate Order
+alt Konfirmasi
+  Order -> DB: UPDATE status=confirmed
+else Penolakan
+  Order -> DB: UPDATE status=rejected + alasan
+end
+deactivate DB
+Order --> API: diperbarui
+deactivate Order
+API -> FE: 200 OK
+deactivate API
+
+Mitra -> FE: Update status + unggah bukti
+FE -> API: POST /orders/{id}/status + berkas
+activate API
+API -> Order: perbaruiPemenuhan()
+activate Order
+Order -> DB: UPDATE progres + referensi bukti
+activate DB
+DB --> Order: diperbarui
+deactivate DB
+Order --> API: ok
+deactivate Order
+API -> Notif: beriTahuPengguna()
+activate Notif
+Notif --> FE: Notifikasi ke User
+deactivate Notif
+API -> FE: 200 OK
+deactivate API
+deactivate FE
+@enduml
+```
+
+### Skenario: Withdrawal — Ajukan Penarikan Sederhana
+
+Tujuan: Mitra mengajukan penarikan; sistem menghitung saldo dan biaya/komisi, lalu menyetujui atau menolak dengan alasan dan mengirim notifikasi.
+
+```plantuml
+@startuml
+autonumber
+participant "Mitra" as Mitra
+participant "Frontend (Web/Mobile)" as FE
+participant "Backend API Gateway" as API
+participant "Layanan Pencairan Dana (PayoutService)" as Payout
+participant "Layanan Notifikasi (NotificationService)" as Notif
+database "Basis Data" as DB
+
+Mitra -> FE: Ajukan penarikan
+activate FE
+FE -> API: POST /payouts/request
+activate API
+API -> Payout: hitungDanAjukan()
+activate Payout
+Payout -> DB: hitung saldo tertahan - fee/komisi
+activate DB
+DB --> Payout: jumlah
+deactivate DB
+alt Valid & saldo cukup
+  Payout -> DB: INSERT permintaan payout (pending)
+  activate DB
+  DB --> Payout: tersimpan
+  deactivate DB
+  Payout --> API: diantrikan untuk peninjauan
+  API -> Notif: beriTahuMitraStatus()
+  activate Notif
+  Notif --> FE: Notifikasi status payout
+  deactivate Notif
+else Tidak valid / saldo kurang
+  Payout --> API: tolak(alasan)
+  API -> Notif: beriTahuKegagalan()
+  activate Notif
+  Notif --> FE: Notifikasi penolakan
+  deactivate Notif
+end
+deactivate Payout
+API -> FE: 200 OK / 400 Permintaan tidak valid
+deactivate API
+deactivate FE
+@enduml
+```
+
+## Role: Admin
+
+### Skenario: Moderasi — Approve/Reject Sederhana
+
+Tujuan: Admin meninjau item pending (listing/review) dan memutuskan approve/reject dengan alasan; sistem mengirim notifikasi kepada pemilik.
+
+```plantuml
+@startuml
+autonumber
+participant "Admin" as Admin
+participant "Frontend (Web/Mobile)" as FE
+participant "Backend API Gateway" as API
+participant "Layanan Moderasi (ModerationService)" as Mod
+participant "Layanan Notifikasi (NotificationService)" as Notif
+database "Basis Data" as DB
+participant "Layanan Katalog (CatalogService)" as Catalog
+participant "Layanan Ulasan (ReviewService)" as Review
+
+Admin -> FE: Buka antrian moderasi
+activate FE
+FE -> API: GET /admin/moderations
+activate API
+API -> Mod: daftarPending()
+activate Mod
+Mod -> DB: SELECT item pending
+activate DB
+DB --> Mod: daftar item
+deactivate DB
+Mod --> API: daftar
+deactivate Mod
+API -> FE: 200 OK
+deactivate API
+
+Admin -> FE: Approve/Reject item
+FE -> API: POST /admin/moderations/{id}/approve|reject
+activate API
+API -> Mod: putuskan(approve/reject, alasan)
+activate Mod
+alt Approve
+  Mod -> DB: UPDATE status=published
+else Reject
+  Mod -> DB: UPDATE status=rejected + alasan
+end
+deactivate DB
+Mod --> API: diperbarui
+deactivate Mod
+API -> Notif: beriTahuPemilik()
+activate Notif
+Notif --> FE: Notifikasi ke Mitra/User
+deactivate Notif
+API -> FE: 200 OK
+deactivate API
+deactivate FE
+@enduml
+```
+
+### Skenario: Refund/Sengketa — Integrasi Midtrans Ringkas
+
+Tujuan: Admin memproses refund/sengketa melalui Midtrans; sukses memperbarui status dan mengirim notifikasi, gagal mengembalikan alasan kesalahan.
+
+```plantuml
+@startuml
+autonumber
+participant "Admin" as Admin
+participant "Frontend (Web/Mobile)" as FE
+participant "Backend API Gateway" as API
+participant "Layanan Pemesanan (OrderService)" as Order
+participant "Layanan Pembayaran (PaymentService)" as Payment
+participant "Layanan Notifikasi (NotificationService)" as Notif
+database "Basis Data" as DB
+participant "Midtrans (Gerbang Pembayaran)" as Midtrans
+
+Admin -> FE: Ajukan refund/sengketa
+activate FE
+FE -> API: POST /admin/refund
+activate API
+API -> Order: validasiKelayakanRefund()
+activate Order
+Order -> DB: cek order & pembayaran
+activate DB
+DB --> Order: memenuhi syarat / tidak
+deactivate DB
+alt Memenuhi syarat
+  Order --> API: ok
+  API -> Payment: prosesRefund(jumlah, penuh/parsial)
+  activate Payment
+  Payment -> Midtrans: panggil API refund
+  activate Midtrans
+  Midtrans --> Payment: hasil sukses/gagal
+  deactivate Midtrans
+  alt Sukses
+    Payment -> DB: UPDATE status refund
+    activate DB
+    DB --> Payment: diperbarui
+    deactivate DB
+    Payment -> Notif: beriTahuUserDanMitra()
+    activate Notif
+    Notif --> FE: Notifikasi status refund
+    deactivate Notif
+  else Gagal
+    Payment --> API: rincian galat
+  end
+  deactivate Payment
+else Tidak memenuhi syarat
+  Order --> API: alasan penolakan
+end
+API -> FE: 200 OK / 400 Gagal
+deactivate API
+deactivate FE
+@enduml
+```

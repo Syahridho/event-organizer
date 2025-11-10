@@ -423,6 +423,28 @@ class MidtransController extends Controller
                     ]);
     
     
+                    // Notifikasi status pending ke user (informasi pembayaran)
+                    if ($request->transaction_status === 'pending') {
+                        if ($transaction->user) {
+                            $transaction->user->notify(new \App\Notifications\PaymentStatusNotification(
+                                'Menunggu pembayaran',
+                                'Transaksi Anda menunggu pembayaran. Silakan selesaikan sesuai petunjuk.',
+                                [
+                                    'type' => 'transaction_pending',
+                                    'status' => 'pending',
+                                    'order_id' => $transaction->order_id,
+                                    'amount' => $transaction->total,
+                                    'payment_type' => $transaction->payment_type ?? $request->payment_type,
+                                    'va_number' => $vaInfo['va_number'] ?? null,
+                                    'bank_name' => $vaInfo['bank_name'] ?? null,
+                                    'bill_key' => $vaInfo['bill_key'] ?? null,
+                                    'biller_code' => $vaInfo['biller_code'] ?? null,
+                                    'role' => 'user'
+                                ]
+                            ));
+                        }
+                    }
+
                     // LOGIKA PENANGANAN TRANSAKSI SETTLEMENT
                     if ($request->transaction_status !== 'pending') {
                         
@@ -451,8 +473,43 @@ class MidtransController extends Controller
                                     ]);
                                 }
                                 
+                                // Notifikasi pembayaran biaya antar
+                                $buyer = $transaction->user;
+                                if ($buyer) {
+                                    $buyer->notify(new \App\Notifications\PaymentStatusNotification(
+                                        'Biaya antar dibayar',
+                                        'Biaya antar untuk pesanan Anda telah dibayar.',
+                                        [
+                                            'type' => 'delivery_fee_settled',
+                                            'status' => 'settlement',
+                                            'order_id' => $request->order_id,
+                                            'amount' => $deliveryFeeItem->price,
+                                            'role' => 'user'
+                                        ]
+                                    ));
+                                }
+
+                                $ownerId = ($mainItem->item->user_id ?? ($mainItem->item->event->user_id ?? null)) ?? ($deliveryFeeItem->item->user_id ?? null);
+                                if ($ownerId) {
+                                    $owner = \App\Models\User::find($ownerId);
+                                    if ($owner) {
+                                        $itemName = $mainItem->item->name ?? $mainItem->type ?? 'Item';
+                                        $owner->notify(new \App\Notifications\PaymentStatusNotification(
+                                            'Biaya antar untuk pesanan dibayar',
+                                            'Biaya antar untuk item ' . $itemName . ' telah dibayar.',
+                                            [
+                                                'type' => 'mitra_delivery_fee_paid',
+                                                'status' => 'settlement',
+                                                'order_id' => $request->order_id,
+                                                'amount' => $deliveryFeeItem->price,
+                                                'role' => 'mitra'
+                                            ]
+                                        ));
+                                    }
+                                }
+                                
                                 // HENTIKAN PROSES KARENA TRANSAKSI ONGKIR TIDAK MEMBATALKAN YANG LAIN
-                                return response()->json(['status' => 'success']); 
+                                return response()->json(['status' => 'success']);
                             }
                         }
                         
@@ -462,13 +519,19 @@ class MidtransController extends Controller
                                 ->where('status', 'pending')
                                 ->whereHas('items', function ($q) use ($item) {
                                     $q->where('item_id', $item->item_id)
-                                        ->where('rent_days', $item->rent_days);
+                                    ->where('item_type', $item->item_type) 
+                                    ->where('rent_days', $item->rent_days);
                                 })
                                 ->get();
 
                             foreach ($otherTransactions as $other) {
+                                $other->items()
+                                ->where('item_id', $item->item_id)
+                                ->where('item_type', $item->item_type)
+                                ->where('rent_days', $item->rent_days)
+                                ->update(['status' => 'sold_out']);
+                                
                                 $other->update(['status' => 'cancelled']);
-                                $other->items()->update(['status' => 'sold_out']);
 
                                 try {
                                     \Midtrans\Transaction::cancel($other->order_id);
@@ -478,20 +541,79 @@ class MidtransController extends Controller
                                         'error' => $e->getMessage()
                                     ]);
                                 }
-                                Log::info('Transaksi lain dibatalkan dengan status sold_out', [
+                                
+                                Log::info('Transaksi lain dibatalkan karena item sold_out', [
                                     'order_id' => $other->order_id,
-                                    'item_id' => $item->item_id,
-                                    'rent_days' => $item->rent_days
+                                    'conflicting_item_id' => $item->item_id
                                 ]);
+
+                                // Kirim notifikasi ke user yang transaksinya dibatalkan karena sold out
+                                if ($other->user) {
+                                    $other->user->notify(new \App\Notifications\PaymentStatusNotification(
+                                        'Transaksi dibatalkan',
+                                        'Pesanan Anda dibatalkan karena item telah terjual oleh pembeli lain.',
+                                        [
+                                            'type' => 'cancelled_due_to_sold_out',
+                                            'status' => 'cancelled',
+                                            'order_id' => $other->order_id,
+                                            'amount' => $other->total,
+                                            'role' => 'user'
+                                        ]
+                                    ));
+                                }
                             }
                         }
     
                         $user = $transaction->user;
                         if ($user) {
-                            // Logika notifikasi (Jika Anda menggunakannya)
-                            // $user->notify(new TransactionSettled($transaction));
-                            Log::info('Notifikasi transaksi berhasil', [
-                                'order_id' => $transaction->order_id, 
+                            // Notifikasi ke pembeli (user) - transaksi sukses (settlement/capture)
+                            $user->notify(new \App\Notifications\PaymentStatusNotification(
+                                'Pembayaran berhasil',
+                                'Pesanan Anda telah dibayar dan dikonfirmasi.',
+                                [
+                                    'type' => 'transaction_settled',
+                                    'status' => $transaction->status,
+                                    'order_id' => $transaction->order_id,
+                                    'amount' => $transaction->total,
+                                    'payment_type' => $transaction->payment_type,
+                                    'va_number' => $transaction->va_number,
+                                    'bank_name' => $transaction->bank_name,
+                                    'role' => 'user'
+                                ]
+                            ));
+
+                            // Notifikasi ke Mitra pemilik item yang dibayar
+                            foreach ($transaction->items as $tItem) {
+                                $ownerId = $tItem->item->user_id ?? ($tItem->item->event->user_id ?? null);
+                                if ($ownerId) {
+                                    $owner = \App\Models\User::find($ownerId);
+                                    if ($owner) {
+                                        $itemName = $tItem->item->name ?? $tItem->type;
+                                        $owner->notify(new \App\Notifications\PaymentStatusNotification(
+                                            'Pesanan telah dibayar',
+                                            'Pesanan untuk item ' . $itemName . ' telah dibayar.',
+                                            [
+                                                'type' => 'mitra_item_paid',
+                                                'status' => $transaction->status,
+                                                'order_id' => $transaction->order_id,
+                                                'amount' => $tItem->price * $tItem->qty,
+                                                'payment_type' => $transaction->payment_type,
+                                                'role' => 'mitra',
+                                                'items' => [[
+                                                    'item_type' => $tItem->item_type,
+                                                    'item_id' => $tItem->item_id,
+                                                    'name' => $itemName,
+                                                    'qty' => $tItem->qty,
+                                                    'price' => $tItem->price
+                                                ]]
+                                            ]
+                                        ));
+                                    }
+                                }
+                            }
+
+                            Log::info('Notifikasi transaksi settlement terkirim', [
+                                'order_id' => $transaction->order_id,
                                 'user_id' => $user->id
                             ]);
                         }
@@ -504,6 +626,77 @@ class MidtransController extends Controller
                     
                 } else {
                     Log::error('Transaksi tidak ditemukan', ['order_id' => $request->order_id]);
+                }
+            }
+
+            // Handle cancel/expire/deny statuses
+            if (in_array($request->transaction_status, ['cancel', 'expire', 'deny'])) {
+                $transaction = Transaction::where('order_id', $request->order_id)->first();
+                if ($transaction) {
+                    $newStatus = $request->transaction_status === 'expire' ? 'expired' : 'cancelled';
+                    $transaction->update([
+                        'status' => $newStatus,
+                        'status_code' => $request->status_code ?? $transaction->status_code,
+                        'payment_type' => $request->payment_type ?? $transaction->payment_type,
+                    ]);
+
+                    // Notify buyer
+                    if ($transaction->user) {
+                        $title = $newStatus === 'expired' ? 'Transaksi kedaluwarsa' : 'Transaksi dibatalkan';
+                        $message = $newStatus === 'expired'
+                            ? 'Pembayaran Anda kedaluwarsa. Silakan lakukan pemesanan ulang.'
+                            : 'Transaksi Anda dibatalkan oleh payment gateway.';
+                        $transaction->user->notify(new \App\Notifications\PaymentStatusNotification(
+                            $title,
+                            $message,
+                            [
+                                'type' => "transaction_{$newStatus}",
+                                'status' => $newStatus,
+                                'order_id' => $transaction->order_id,
+                                'amount' => $transaction->total,
+                                'role' => 'user'
+                            ]
+                        ));
+                    }
+
+                    // Notify mitra for cancellation only (skip expire)
+                    if ($newStatus === 'cancelled') {
+                        foreach ($transaction->items as $tItem) {
+                            $ownerId = $tItem->item->user_id ?? ($tItem->item->event->user_id ?? null);
+                            if ($ownerId) {
+                                $owner = \App\Models\User::find($ownerId);
+                                if ($owner) {
+                                    $itemName = $tItem->item->name ?? $tItem->type;
+                                    $owner->notify(new \App\Notifications\PaymentStatusNotification(
+                                        'Pesanan dibatalkan',
+                                        'Pesanan untuk item ' . $itemName . ' dibatalkan oleh payment gateway.',
+                                        [
+                                            'type' => 'mitra_item_cancelled',
+                                            'status' => $newStatus,
+                                            'order_id' => $transaction->order_id,
+                                            'amount' => $tItem->price * $tItem->qty,
+                                            'role' => 'mitra',
+                                            'items' => [[
+                                                'item_type' => $tItem->item_type,
+                                                'item_id' => $tItem->item_id,
+                                                'name' => $itemName,
+                                                'qty' => $tItem->qty,
+                                                'price' => $tItem->price
+                                            ]]
+                                        ]
+                                    ));
+                                }
+                            }
+                        }
+                    }
+
+                    $this->clearTransactionCache($transaction->order_id);
+                    Log::info('Transaction status updated from callback', [
+                        'order_id' => $transaction->order_id,
+                        'new_status' => $newStatus
+                    ]);
+                } else {
+                    Log::error('Transaksi tidak ditemukan (cancel/expire/deny)', ['order_id' => $request->order_id]);
                 }
             }
         } else {
@@ -686,6 +879,52 @@ class MidtransController extends Controller
                 'order_id' => $orderId,
                 'midtrans_response' => $midtransResult['data']
             ]);
+
+            // Notifikasi pembatalan ke pembeli (user)
+            $buyer = $transaction->user;
+            if ($buyer) {
+                $buyer->notify(new \App\Notifications\PaymentStatusNotification(
+                    'Transaksi dibatalkan',
+                    'Pesanan Anda telah dibatalkan.',
+                    [
+                        'type' => 'transaction_cancelled',
+                        'status' => 'cancelled',
+                        'order_id' => $orderId,
+                        'amount' => $transaction->total,
+                        'role' => 'user',
+                        'cancel_reason' => $transaction->cancel_reason ?? 'Manual cancellation'
+                    ]
+                ));
+            }
+
+            // Notifikasi pembatalan ke Mitra pemilik item
+            foreach ($transaction->items as $tItem) {
+                $ownerId = $tItem->item->user_id ?? ($tItem->item->event->user_id ?? null);
+                if ($ownerId) {
+                    $owner = \App\Models\User::find($ownerId);
+                    if ($owner) {
+                        $itemName = $tItem->item->name ?? $tItem->type;
+                        $owner->notify(new \App\Notifications\PaymentStatusNotification(
+                            'Pesanan dibatalkan',
+                            'Pesanan untuk item ' . $itemName . ' telah dibatalkan.',
+                            [
+                                'type' => 'mitra_item_cancelled',
+                                'status' => 'cancelled',
+                                'order_id' => $orderId,
+                                'amount' => $tItem->price * $tItem->qty,
+                                'role' => 'mitra',
+                                'items' => [[
+                                    'item_type' => $tItem->item_type,
+                                    'item_id' => $tItem->item_id,
+                                    'name' => $itemName,
+                                    'qty' => $tItem->qty,
+                                    'price' => $tItem->price
+                                ]]
+                            ]
+                        ));
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,

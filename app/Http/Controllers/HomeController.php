@@ -196,24 +196,24 @@ class HomeController extends Controller
         ->where('item_type', 'App\Models\Service')
         ->get();
     
-        $leaves = Leave::where('user_id', $userId)
-        ->where('item_id', $id)
-        ->where('item_type', 'service')
-        ->where(function($query) {
-            $query->where(function($q) {
-            
-                $q->whereNotNull('date')
-                  ->whereDate('date', '>=', now());
+        $leaves = Leave::where('item_id', $id)
+            ->where('item_type', 'service')
+            ->where(function($query) {
+                $query->where(function($q) {
+                
+                    $q->whereNotNull('date')
+                    ->whereDate('date', '>=', now());
+                })
+                ->orWhere(function($q) {
+                
+                    $q->whereNotNull('day_of_week')
+                    ->whereNull('date');
+                });
             })
-            ->orWhere(function($q) {
-            
-                $q->whereNotNull('day_of_week')
-                  ->whereNull('date');
-            });
-        })
-        ->orderBy('date', 'asc')
-        ->orderBy('day_of_week', 'asc')
-        ->get();
+            ->orderBy('date', 'asc')
+            ->orderBy('day_of_week', 'asc')
+            ->get();
+
 
         // Calculate tax-inclusive price
         $finalPrice = TaxHelper::calculateFinalPrice($service->price);
@@ -267,8 +267,7 @@ class HomeController extends Controller
 
         $userId = auth()->id();
 
-        $leaves = Leave::where('user_id', $userId)
-        ->where('item_id', $id)
+        $leaves = Leave::where('item_id', $id)
         ->where('item_type', 'building')
         ->where(function($query) {
             $query->where(function($q) {
@@ -339,8 +338,7 @@ class HomeController extends Controller
 
         $userId = auth()->id();
 
-        $leaves = Leave::where('user_id', $userId)
-        ->where('item_id', $id)
+        $leaves = Leave::where('item_id', $id)
         ->where('item_type', 'rent_property')
         ->where(function($query) {
             $query->where(function($q) {

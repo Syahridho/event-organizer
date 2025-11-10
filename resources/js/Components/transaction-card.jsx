@@ -135,7 +135,7 @@ export function TransactionCard({
     const getDeliveryTitle = (option) => {
         if (option === "delivery") return "Pembeli meminta diantar";
         if (option === "pickup") return "Pembeli akan mengambil sendiri";
-        return "Opsi Tidak Ditentukan";
+        return null;
     };
 
     const isTimeWindowActive = (rentDateString) => {
@@ -412,18 +412,20 @@ export function TransactionCard({
 
                                     {/* --- KONTEN YANG BISA DI-SCROLL (flex-grow dan overflow-y-auto) --- */}
                                     <div className="flex-grow overflow-y-auto p-2 space-y-4">
-                                        <Alert className="bg-primary/5 border-primary/20 flex items-center gap-2">
-                                            <div className="">
-                                                {getDeliveryIcon(
-                                                    item.delivery_type
-                                                )}
-                                            </div>
-                                            <AlertTitle className="text-primary font-bold">
-                                                {getDeliveryTitle(
-                                                    item.delivery_type
-                                                )}
-                                            </AlertTitle>
-                                        </Alert>
+                                        {item.delivery_type !== null && (
+                                            <Alert className="bg-primary/5 border-primary/20 flex items-center gap-2">
+                                                <div className="">
+                                                    {getDeliveryIcon(
+                                                        item.delivery_type
+                                                    )}
+                                                </div>
+                                                <AlertTitle className="text-primary font-bold">
+                                                    {getDeliveryTitle(
+                                                        item.delivery_type
+                                                    )}
+                                                </AlertTitle>
+                                            </Alert>
+                                        )}
 
                                         {/* Tampilkan Detail Alamat HANYA JIKA OPSI DELIVERY */}
                                         {item.delivery_type === "delivery" && (

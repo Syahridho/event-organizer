@@ -1,0 +1,45 @@
+@startuml
+'Pengaturan tampilan hitam-putih agar rapi untuk laporan/skripsi
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam SwimlaneBorderColor black
+skinparam SwimlaneTitleFontWeight bold
+
+title Diagram Aktivitas Event Organizer
+
+|Otentikasi|
+start
+:Masuk (Login);
+
+|Moderasi|
+:Tinjau Pengajuan;
+if (Disetujui?) then (ya)
+  :Setujui Listing/Ulasan;
+else (tidak)
+  :Tolak Listing/Ulasan;
+endif
+
+|Mitra|
+:Kelola Mitra & Kategori;
+
+|Pembayaran/Pesanan|
+:Tangani Refund/Sengketa;
+if (Setujui Refund?) then (ya)
+  :Proses Refund (Midtrans);
+  note right
+    Proses melalui Midtrans
+  end note
+else (tidak)
+  :Tolak Refund/Sengketa;
+endif
+
+|Pelaporan|
+:Lihat Laporan;
+stop
+
+@enduml

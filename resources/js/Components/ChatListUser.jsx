@@ -12,7 +12,7 @@ import {
 export default function ChatListUser() {
     const { chat_with: chatWithUser, auth, ziggy } = usePage().props;
     const { data: users } = usePage().props.users;
-    const { isUserOnline } = useOnlineStatusContext();
+    const { isUserOnline: checkIsUserOnline } = useOnlineStatusContext();
 
     const pathname = ziggy?.location || window.location.pathname;
     const isAdminDashboard = pathname.startsWith("/admin/dashboard/chat");
@@ -55,12 +55,12 @@ export default function ChatListUser() {
                     else if (sendMessage) chat = sendMessage;
 
                     // Fastest UI Integration: Local Status Determination
-                    const isUserOnline = isUserOnline(user.id);
+                    const userIsOnline = checkIsUserOnline(user.id);
 
                     // Single Formatter Call: Integrate global status with local data
                     const statusText = getUserStatusIndo(
                         user.last_seen_at,
-                        isUserOnline
+                        userIsOnline
                     );
 
                     return (
@@ -158,7 +158,7 @@ export default function ChatListUser() {
                                 {/* Dynamic Status Display below username */}
                                 <div
                                     className={`text-xs sm:hidden mt-1 ${
-                                        isUserOnline
+                                        userIsOnline
                                             ? "text-green-500"
                                             : "text-gray-400"
                                     }`}

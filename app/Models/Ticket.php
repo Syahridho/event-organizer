@@ -27,4 +27,16 @@ class Ticket extends Model
     {
         return $this->morphMany(TransactionItem::class, 'item');
     }
+
+    public function user()
+    {
+        return $this->hasOneThrough(
+            User::class,
+            Event::class,
+            'id', 
+            'id', 
+            'event_id', 
+            'user_id'   
+        );
+    }
 }

@@ -1,0 +1,53 @@
+@startuml
+'Style agar rapi seperti laporan
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderColor black
+skinparam SwimlaneBorderColor black
+skinparam SwimlaneTitleFontWeight bold
+
+title Diagram Aktivitas Sistem (Mitra/Partner)
+
+|Otentikasi|
+start
+:Masuk (Login);
+
+|Profil Mitra|
+:Kelola Profil;
+
+|Mitra|
+:Kelola Listing;
+:Kelola Ketersediaan;
+
+|Obrolan|
+:Tanggapi Chat;
+
+|Pesanan|
+:Terima Pesanan;
+if (Konfirmasi Pesanan?) then (setuju)
+  |Penuhi Pesanan|
+  :Update Status (Konfirmasi/Proses/Kerja);
+  note right
+    Status diupdate oleh Mitra
+    (confirm/otw/process/work/complete)
+  end note
+  |Pembayaran|
+  :Invoice Biaya Kirim (Midtrans);
+  note right
+    Integrasi Midtrans untuk biaya kirim
+  end note
+else (tolak)
+  |Pesanan|
+  :Tolak Pesanan;
+endif
+
+|Keuangan|
+:Ajukan Penarikan Dana;
+note right
+  Proses penarikan dana oleh Mitra
+end note
+
+stop
+@enduml

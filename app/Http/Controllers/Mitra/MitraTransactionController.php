@@ -159,7 +159,34 @@ class MitraTransactionController extends Controller
             $transactionItem->status = 'confirmed';
             $transactionItem->save();
 
-            // 5. RESPON SUKSES
+            // 5. NOTIFIKASI PEMBELI - ITEM DIKONFIRMASI
+            $buyer = $transactionItem->transaction?->user;
+            if ($buyer) {
+                $itemName = $transactionItem->item->name ?? $transactionItem->type ?? 'Item';
+                $buyer->notify(new \App\Notifications\PaymentStatusNotification(
+                    'Pesanan dikonfirmasi',
+                    'Mitra telah mengonfirmasi pesanan untuk ' . $itemName . '.',
+                    [
+                        'type' => 'item_confirmed',
+                        'status' => 'confirmed',
+                        'order_id' => $transactionItem->transaction?->order_id,
+                        'amount' => ($transactionItem->price * (int)($transactionItem->qty ?? 1)),
+                        'role' => 'user',
+                        'items' => [[
+                            'item_type' => $transactionItem->item_type,
+                            'item_id' => $transactionItem->item_id,
+                            'name' => $itemName,
+                            'qty' => (int)($transactionItem->qty ?? 1),
+                            'price' => $transactionItem->price
+                        ]],
+                        'delivery_type' => $transactionItem->delivery_type,
+                        'delivery_fee' => $transactionItem->delivery_fee,
+                        'rent_days' => $transactionItem->rent_days,
+                    ]
+                ));
+            }
+
+            // 6. RESPON SUKSES
             return redirect()->back()->with('success', 'Item transaksi berhasil dikonfirmasi.');
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -213,6 +240,33 @@ class MitraTransactionController extends Controller
                 $walletService->creditRefund($buyer, $transactionItem);
             });
 
+            // Notifikasi pembeli - item dibatalkan oleh mitra
+            $buyer = $transactionItem->transaction?->user;
+            if ($buyer) {
+                $itemName = $transactionItem->item->name ?? $transactionItem->type ?? 'Item';
+                $buyer->notify(new \App\Notifications\PaymentStatusNotification(
+                    'Pesanan dibatalkan oleh Mitra',
+                    'Item ' . $itemName . ' dibatalkan oleh Mitra. Dana dikreditkan ke dompet Anda.',
+                    [
+                        'type' => 'item_cancelled_by_mitra',
+                        'status' => 'cancelled',
+                        'order_id' => $transactionItem->transaction?->order_id,
+                        'amount' => ($transactionItem->price * (int)($transactionItem->qty ?? 1)) + (int)($transactionItem->delivery_fee ?? 0),
+                        'role' => 'user',
+                        'items' => [[
+                            'item_type' => $transactionItem->item_type,
+                            'item_id' => $transactionItem->item_id,
+                            'name' => $itemName,
+                            'qty' => (int)($transactionItem->qty ?? 1),
+                            'price' => $transactionItem->price
+                        ]],
+                        'delivery_type' => $transactionItem->delivery_type,
+                        'delivery_fee' => $transactionItem->delivery_fee,
+                        'note' => $transactionItem->note_admin,
+                    ]
+                ));
+            }
+
             return redirect()->back()->with('success', 'Item transaksi dibatalkan dan refund dikreditkan ke dompet pembeli.');
         } catch (\Throwable $e) {
             \Log::error('Gagal membatalkan item transaksi atau melakukan refund', [
@@ -261,6 +315,30 @@ class MitraTransactionController extends Controller
             $transactionItem->status = 'otw';
             $transactionItem->save();
 
+            // Notifikasi pembeli - item dalam perjalanan (OTW)
+            $buyer = $transactionItem->transaction?->user;
+            if ($buyer) {
+                $itemName = $transactionItem->item->name ?? $transactionItem->type ?? 'Item';
+                $buyer->notify(new \App\Notifications\PaymentStatusNotification(
+                    'Pesanan dalam perjalanan',
+                    'Mitra sedang OTW untuk item ' . $itemName . '.',
+                    [
+                        'type' => 'item_otw',
+                        'status' => 'otw',
+                        'order_id' => $transactionItem->transaction?->order_id,
+                        'amount' => ($transactionItem->price * (int)($transactionItem->qty ?? 1)),
+                        'role' => 'user',
+                        'items' => [[
+                            'item_type' => $transactionItem->item_type,
+                            'item_id' => $transactionItem->item_id,
+                            'name' => $itemName,
+                            'qty' => (int)($transactionItem->qty ?? 1),
+                            'price' => $transactionItem->price
+                        ]]
+                    ]
+                ));
+            }
+
             return redirect()->back()->with('success', 'Status transaksi berhasil diubah menjadi OTW.');
         }
 
@@ -297,7 +375,31 @@ class MitraTransactionController extends Controller
          if ($transactionItem->status === 'otw') {
              $transactionItem->status = 'work';
              $transactionItem->save();
-
+ 
+             // Notifikasi pembeli - pekerjaan dimulai
+             $buyer = $transactionItem->transaction?->user;
+             if ($buyer) {
+                 $itemName = $transactionItem->item->name ?? $transactionItem->type ?? 'Item';
+                 $buyer->notify(new \App\Notifications\PaymentStatusNotification(
+                     'Pekerjaan dimulai',
+                     'Mitra mulai mengerjakan pesanan untuk item ' . $itemName . '.',
+                     [
+                         'type' => 'item_work_started',
+                         'status' => 'work',
+                         'order_id' => $transactionItem->transaction?->order_id,
+                         'amount' => ($transactionItem->price * (int)($transactionItem->qty ?? 1)),
+                         'role' => 'user',
+                         'items' => [[
+                             'item_type' => $transactionItem->item_type,
+                             'item_id' => $transactionItem->item_id,
+                             'name' => $itemName,
+                             'qty' => (int)($transactionItem->qty ?? 1),
+                             'price' => $transactionItem->price
+                         ]]
+                     ]
+                 ));
+             }
+ 
              return redirect()->back()->with('success', 'Status transaksi berhasil diperbarui.');
          }
 
@@ -354,6 +456,33 @@ class MitraTransactionController extends Controller
             $wallet->save();
 
             $transactionItem->save(); // Simpan status transaksi yang diubah
+
+            // Notifikasi pembeli - pekerjaan selesai
+            $buyer = $transactionItem->transaction?->user;
+            if ($buyer) {
+                $itemName = $transactionItem->item->name ?? $transactionItem->type ?? 'Item';
+                $buyer->notify(new \App\Notifications\PaymentStatusNotification(
+                    'Pesanan selesai',
+                    'Mitra telah menyelesaikan pesanan untuk ' . $itemName . '.',
+                    [
+                        'type' => 'item_completed',
+                        'status' => 'completed',
+                        'order_id' => $transactionItem->transaction?->order_id,
+                        'amount' => ($transactionItem->price * (int)($transactionItem->qty ?? 1)) + (int)($transactionItem->delivery_fee ?? 0),
+                        'role' => 'user',
+                        'items' => [[
+                            'item_type' => $transactionItem->item_type,
+                            'item_id' => $transactionItem->item_id,
+                            'name' => $itemName,
+                            'qty' => (int)($transactionItem->qty ?? 1),
+                            'price' => $transactionItem->price
+                        ]],
+                        'delivery_fee' => $transactionItem->delivery_fee,
+                        'delivery_type' => $transactionItem->delivery_type,
+                        'rent_days' => $transactionItem->rent_days,
+                    ]
+                ));
+            }
             
             return redirect()->back()->with('success', 'Transaksi berhasil diselesaikan. Saldo Anda telah diperbarui.');
         }
