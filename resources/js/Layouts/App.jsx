@@ -51,11 +51,11 @@ export default function AppChat({ children }) {
             <div className="min-h-screen flex flex-col">
                 <Navigation />
 
-                <main className="flex-1 container mx-auto px-4 py-6">
+                <main className="">
                     <div className="relative min-h-screen bg-dots-lighter selection:bg-red-500 selection:text-white">
-                        <div className="px-6 mx-auto max-w-screen-2xl xl:px-0">
+                        <div className="mx-auto max-w-screen-2xl">
                             <div className="h-[calc(100vh-8rem)] py-6">
-                                <div className="flex h-full overflow-hidden border border-gray-700 rounded-lg shadow">
+                                <div className="flex h-full overflow-hidden border border-gray-700 shadow">
                                     <div className={renderSidebarScreen()}>
                                         {/* <MineProfileChat auth={auth} /> */}
                                         <SearchChatBar />

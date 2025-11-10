@@ -154,6 +154,14 @@ const TransactionItem = React.memo(
             [ziggy.url]
         );
 
+        const [isExpired, setIsExpired] = useState(() => {
+            const expiredDate = new Date(
+                transaction.expired_at.replace(" ", "T")
+            );
+            // Grace period: hide actions only after 1s past expired_at
+            return expiredDate.getTime() - 10000 <= Date.now();
+        });
+
         // Hide cancel action for Delivery Fee orders (order_id starts with "DEL-")
         const isDeliveryFeeOrder = (transaction?.order_id || "").startsWith(
             "DEL-"
@@ -209,7 +217,10 @@ const TransactionItem = React.memo(
                                 </span>
                             </div>
                         </Link>
-                        <PaymentStatusBadge status={transaction.status} />
+                        <PaymentStatusBadge
+                            status={transaction.status}
+                            expired_at={transaction.expired_at}
+                        />
                     </div>
 
                     <Separator className="mb-4" />
@@ -285,20 +296,45 @@ const TransactionItem = React.memo(
                                                     item.item?.name ||
                                                     "Produk"}
                                             </h3>
-                                            {console.log(item)}
-                                            {isDeliveryFeeOrder ||
-                                            transaction?.status ===
-                                                "cancelled" ? null : item.item_type !==
-                                              "ticket" ? (
-                                                <ItemStatusBadge
-                                                    status={item.status}
-                                                />
-                                            ) : null}
-                                            {item?.status === "sold_out" && (
-                                                <ItemStatusBadge
-                                                    status={item.status}
-                                                />
-                                            )}
+                                            {console.log(!isExpired)}
+                                            {(() => {
+                                                // Jangan tampilkan badge jika:
+                                                if (isDeliveryFeeOrder)
+                                                    return null;
+                                                if (
+                                                    transaction?.status ===
+                                                    "cancelled"
+                                                )
+                                                    return null;
+                                                if (
+                                                    transaction?.status ===
+                                                        "pending" &&
+                                                    isExpired
+                                                )
+                                                    return null;
+
+                                                // Tampilkan badge sold_out (prioritas tertinggi)
+                                                if (
+                                                    item?.status === "sold_out"
+                                                ) {
+                                                    return (
+                                                        <ItemStatusBadge status="sold_out" />
+                                                    );
+                                                }
+
+                                                // Tampilkan badge untuk non-ticket items
+                                                if (
+                                                    item.item_type !== "ticket"
+                                                ) {
+                                                    return (
+                                                        <ItemStatusBadge
+                                                            status={item.status}
+                                                        />
+                                                    );
+                                                }
+
+                                                return null;
+                                            })()}
                                         </div>
 
                                         <p className="text-xs sm:text-sm text-gray-600 mb-1">
@@ -314,20 +350,17 @@ const TransactionItem = React.memo(
                                                   "rent_property"
                                                 ? "Sewa Properti"
                                                 : item?.item_type}
-                                        </p>
-
-                                        {!isDeliveryFeeOrder && (
-                                            <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                                                <Package className="w-3 h-3" />
-                                                <span>
-                                                    x {item?.qty}{" "}
-                                                    {item?.item_type ===
+                                            {!isDeliveryFeeOrder && (
+                                                <>
+                                                    {" "}
+                                                    {item?.qty}{" "}
+                                                    {item?.item_type !==
                                                     "ticket"
-                                                        ? "Tiket"
-                                                        : "Hari"}
-                                                </span>
-                                            </div>
-                                        )}
+                                                        ? "Hari"
+                                                        : null}
+                                                </>
+                                            )}
+                                        </p>
 
                                         {/* OPTIMIZED: Display rent_days with day name if available */}
                                         {item?.rent_days && (
@@ -345,7 +378,7 @@ const TransactionItem = React.memo(
                                         <div className="flex justify-between pt-2 items-center">
                                             <div>
                                                 <Link
-                                                    className="bg-primary text-white px-3 py-2 text-sm rounded-md shadow-md"
+                                                    className="bg-primary/85 border text-white px-3 py-2 text-sm rounded-md shadow-md"
                                                     href={`chat/${
                                                         item.item_type !==
                                                         "ticket"
@@ -497,6 +530,7 @@ const TransactionItem = React.memo(
                                 <Clock className="w-4 h-4 text-amber-600" />
                                 <Countdown
                                     expired_at={transaction.expired_at}
+                                    onExpired={() => setIsExpired(true)}
                                 />
                             </div>
                         )}
@@ -512,171 +546,162 @@ const TransactionItem = React.memo(
                     </div>
 
                     {/* Action Buttons */}
-                    {transaction.status === "pending" &&
-                        new Date(
-                            transaction.expired_at.replace(" ", "T")
-                        ).getTime() > Date.now() && (
-                            <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t">
-                                {/* Pay Button */}
+                    {transaction?.status === "pending" && !isExpired && (
+                        <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t">
+                            {/* Pay Button */}
+                            <Dialog
+                                open={isPaymentDialogOpen}
+                                onOpenChange={setIsPaymentDialogOpen}
+                            >
+                                <DialogTrigger asChild>
+                                    <Button className="w-full sm:flex-1 bg-blue-500 hover:bg-blue-600 text-sm sm:text-base">
+                                        <CreditCard className="w-4 h-4 mr-2" />
+                                        Bayar Sekarang
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            Konfirmasi Pembayaran
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Anda akan melanjutkan ke halaman
+                                            pembayaran untuk transaksi ini.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                                            <CardContent className="p-4 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">
+                                                        Order ID:
+                                                    </span>
+                                                    <span className="font-mono font-medium text-sm">
+                                                        {transaction.order_id}
+                                                    </span>
+                                                </div>
+                                                <Separator />
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm font-medium text-gray-700">
+                                                        Total:
+                                                    </span>
+                                                    <span className="font-bold text-xl text-blue-600">
+                                                        Rp{" "}
+                                                        {formatRupiah(
+                                                            transaction.total
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                    <DialogFooter className="gap-2 sm:gap-0">
+                                        <DialogClose asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full sm:w-auto"
+                                            >
+                                                Batal
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            onClick={handlePayment}
+                                            className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600"
+                                        >
+                                            Lanjutkan Pembayaran
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+
+                            {/* Cancel Button - hidden for Delivery Fee (DEL-*) orders */}
+                            {!isDeliveryFeeOrder && (
                                 <Dialog
-                                    open={isPaymentDialogOpen}
-                                    onOpenChange={setIsPaymentDialogOpen}
+                                    open={isCancelDialogOpen}
+                                    onOpenChange={setIsCancelDialogOpen}
                                 >
                                     <DialogTrigger asChild>
-                                        <Button className="w-full sm:flex-1 bg-blue-500 hover:bg-blue-600 text-sm sm:text-base">
-                                            <CreditCard className="w-4 h-4 mr-2" />
-                                            Bayar Sekarang
+                                        <Button
+                                            disabled={isLoading}
+                                            variant="destructive"
+                                            className="w-full sm:w-auto text-sm sm:text-base"
+                                        >
+                                            {isLoading
+                                                ? "Membatalkan..."
+                                                : "Batalkan"}
                                         </Button>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-md">
                                         <DialogHeader>
                                             <DialogTitle>
-                                                Konfirmasi Pembayaran
+                                                Konfirmasi Pembatalan
                                             </DialogTitle>
                                             <DialogDescription>
-                                                Anda akan melanjutkan ke halaman
-                                                pembayaran untuk transaksi ini.
+                                                Apakah Anda yakin ingin
+                                                membatalkan transaksi ini?
+                                                Tindakan ini tidak dapat
+                                                dibatalkan.
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <div className="space-y-4 py-4">
-                                            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                                                <CardContent className="p-4 space-y-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm text-gray-600">
-                                                            Order ID:
-                                                        </span>
-                                                        <span className="font-mono font-medium text-sm">
-                                                            {
-                                                                transaction.order_id
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                    <Separator />
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-medium text-gray-700">
-                                                            Total:
-                                                        </span>
-                                                        <span className="font-bold text-xl text-blue-600">
-                                                            Rp{" "}
-                                                            {formatRupiah(
-                                                                transaction.total
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
+                                        <Card className="bg-red-50 border-red-200">
+                                            <CardContent className="p-4 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">
+                                                        Order ID:
+                                                    </span>
+                                                    <span className="font-mono font-medium text-sm">
+                                                        {transaction.order_id}
+                                                    </span>
+                                                </div>
+                                                <Separator />
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">
+                                                        Total:
+                                                    </span>
+                                                    <span className="font-bold text-lg text-red-600">
+                                                        Rp{" "}
+                                                        {formatRupiah(
+                                                            transaction.total
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-3 p-3 bg-red-100 rounded-lg text-sm text-red-700 flex items-start gap-2">
+                                                    <span className="text-lg">
+                                                        ⚠️
+                                                    </span>
+                                                    <span>
+                                                        Transaksi yang
+                                                        dibatalkan tidak dapat
+                                                        dikembalikan
+                                                    </span>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                         <DialogFooter className="gap-2 sm:gap-0">
                                             <DialogClose asChild>
                                                 <Button
                                                     variant="outline"
                                                     className="w-full sm:w-auto"
                                                 >
-                                                    Batal
+                                                    Tidak, Batal
                                                 </Button>
                                             </DialogClose>
                                             <Button
-                                                onClick={handlePayment}
-                                                className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600"
+                                                onClick={handleCancelConfirm}
+                                                variant="destructive"
+                                                className="w-full sm:w-auto"
+                                                disabled={isLoading}
                                             >
-                                                Lanjutkan Pembayaran
+                                                {isLoading
+                                                    ? "Membatalkan..."
+                                                    : "Ya, Batalkan Transaksi"}
                                             </Button>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-
-                                {/* Cancel Button - hidden for Delivery Fee (DEL-*) orders */}
-                                {!isDeliveryFeeOrder && (
-                                    <Dialog
-                                        open={isCancelDialogOpen}
-                                        onOpenChange={setIsCancelDialogOpen}
-                                    >
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                disabled={isLoading}
-                                                variant="destructive"
-                                                className="w-full sm:w-auto text-sm sm:text-base"
-                                            >
-                                                {isLoading
-                                                    ? "Membatalkan..."
-                                                    : "Batalkan"}
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-md">
-                                            <DialogHeader>
-                                                <DialogTitle>
-                                                    Konfirmasi Pembatalan
-                                                </DialogTitle>
-                                                <DialogDescription>
-                                                    Apakah Anda yakin ingin
-                                                    membatalkan transaksi ini?
-                                                    Tindakan ini tidak dapat
-                                                    dibatalkan.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <Card className="bg-red-50 border-red-200">
-                                                <CardContent className="p-4 space-y-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm text-gray-600">
-                                                            Order ID:
-                                                        </span>
-                                                        <span className="font-mono font-medium text-sm">
-                                                            {
-                                                                transaction.order_id
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                    <Separator />
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm text-gray-600">
-                                                            Total:
-                                                        </span>
-                                                        <span className="font-bold text-lg text-red-600">
-                                                            Rp{" "}
-                                                            {formatRupiah(
-                                                                transaction.total
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mt-3 p-3 bg-red-100 rounded-lg text-sm text-red-700 flex items-start gap-2">
-                                                        <span className="text-lg">
-                                                            ⚠️
-                                                        </span>
-                                                        <span>
-                                                            Transaksi yang
-                                                            dibatalkan tidak
-                                                            dapat dikembalikan
-                                                        </span>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                            <DialogFooter className="gap-2 sm:gap-0">
-                                                <DialogClose asChild>
-                                                    <Button
-                                                        variant="outline"
-                                                        className="w-full sm:w-auto"
-                                                    >
-                                                        Tidak, Batal
-                                                    </Button>
-                                                </DialogClose>
-                                                <Button
-                                                    onClick={
-                                                        handleCancelConfirm
-                                                    }
-                                                    variant="destructive"
-                                                    className="w-full sm:w-auto"
-                                                    disabled={isLoading}
-                                                >
-                                                    {isLoading
-                                                        ? "Membatalkan..."
-                                                        : "Ya, Batalkan Transaksi"}
-                                                </Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                )}
-                            </div>
-                        )}
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         );

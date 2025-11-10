@@ -13,7 +13,7 @@ const breadcrumbs = [
         href: "/admin/dashboard",
     },
     {
-        title: "Chat",
+        title: "Pesan",
         href: "/admin/dashboard/chat",
     },
 ];
@@ -80,7 +80,7 @@ export default function AdminChatShow({
     );
 
     return (
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <>
             <Head title="Admin Chat" />
 
             <ChatLayout
@@ -95,7 +95,7 @@ export default function AdminChatShow({
                 setIsTyping={setIsTyping}
                 scrollRef={scrollRef}
             />
-        </div>
+        </>
     );
 }
 

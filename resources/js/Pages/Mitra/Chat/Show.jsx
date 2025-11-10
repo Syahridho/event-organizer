@@ -19,7 +19,7 @@ const breadcrumbs = [
         href: "/dashboard",
     },
     {
-        title: "Chat",
+        title: "Pesan",
         href: "/dashboard/chat",
     },
 ];
@@ -117,7 +117,7 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
         ));
     };
     return (
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <>
             <Head title="Chat" />
 
             <ChatLayout
@@ -132,7 +132,7 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
                 setIsTyping={setIsTyping}
                 scrollRef={scrollRef}
             />
-        </div>
+        </>
     );
 }
 

@@ -33,16 +33,14 @@ export default function ChatSidebar({
                         }
                         className="text-sm font-medium text-blue-600 hover:text-blue-800 mb-3 inline-block"
                     >
-                        ← Back to Chat List
+                        Kembali
                     </Link>
                 )}
                 <h2 className="text-lg font-semibold">
-                    {currentUser ? currentUser.name : "Messages"}
+                    {currentUser ? currentUser.name : "Pesan"}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                    {currentUser
-                        ? `Conversation with ${currentUser.name}`
-                        : "Select a conversation to start messaging"}
+                    {currentUser ? `Chat Dengan ${currentUser.name}` : null}
                 </p>
             </div>
 

@@ -176,11 +176,8 @@ export default function ChatLayout({
                                 </svg>
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                Select a conversation
+                                Belum ada percakapan
                             </h3>
-                            <p className="text-gray-500">
-                                Choose a user from the list to start chatting
-                            </p>
                         </div>
                     </div>
                 )}

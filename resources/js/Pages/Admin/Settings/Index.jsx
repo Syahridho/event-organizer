@@ -616,8 +616,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
                             </CardHeader>
                         </Card>
                     </div>
-                    <div className="aspect-video rounded-xl bg-muted/50 "></div>
-                    <div className="aspect-video rounded-xl bg-muted/50 "></div>
                 </div>
             </div>
         </AppLayout>

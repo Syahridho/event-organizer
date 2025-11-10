@@ -21,8 +21,7 @@ export default function AdminMitraDashboard({ mitras }) {
                     Pengajuan Mitra
                 </h1>
                 <p className="text-muted-foreground">
-                    Kelola semua pengajuan kemitraan di sini. Anda bisa
-                    memfilter, menyortir, dan melihat detail.
+                    Kelola semua pengajuan kemitraan di sini.
                 </p>
 
                 {/* Mempassing data mitras ke komponen DataTable */}

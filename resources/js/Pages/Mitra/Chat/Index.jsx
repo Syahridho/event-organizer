@@ -10,7 +10,7 @@ const breadcrumbs = [
         href: "/dashboard",
     },
     {
-        title: "Chat",
+        title: "Pesan",
         href: "/dashboard/chat",
     },
 ];
@@ -20,11 +20,11 @@ export default function MitraChat() {
     useRealtimeChatUpdates();
 
     return (
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <>
             <Head title="Pesan Mitra" />
 
             <ChatLayout />
-        </div>
+        </>
     );
 }
 

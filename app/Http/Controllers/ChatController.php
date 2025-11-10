@@ -176,7 +176,7 @@ class ChatController extends Controller
             ->orderBy('created_at')
             ->get()
             ->groupBy(function ($message) {
-                return $message->created_at->isToday() ? 'Today' : ($message->created_at->isYesterday() ? 'Yesterday' :
+                return $message->created_at->isToday() ? 'Hari ini' : ($message->created_at->isYesterday() ? 'Kemarin' :
                     $message->created_at->format('F j, Y'));
             })
             ->map(function ($messages, $date) {

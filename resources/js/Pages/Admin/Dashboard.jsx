@@ -1,6 +1,12 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head } from "@inertiajs/react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import {
     BarChart,
     Bar,
@@ -23,12 +29,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    TrendingUp,
-    Calendar,
-    DollarSign,
-    Activity
-} from "lucide-react";
+import { TrendingUp, Calendar, DollarSign, Activity } from "lucide-react";
+import React, { useMemo } from "react";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
@@ -61,9 +63,29 @@ export default function AdminDashboard({
     chartData,
     recentTransactions,
 }) {
+    // Sanitize and prepare chart series
+    const chartSeries = useMemo(() => {
+        const safe = Array.isArray(chartData) ? chartData : [];
+        const sanitized = safe
+            .map((it) => ({
+                day: String(it?.day ?? it?.label ?? ""),
+                sales: Number(it?.sales ?? it?.value ?? 0) || 0,
+            }))
+            .filter((d) => d.day);
+        if (sanitized.length > 0) return sanitized;
+        // Fallback 7 days dataset so chart remains visible
+        const days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+        return days.map((d) => ({ day: d, sales: 0 }));
+    }, [chartData]);
+
     // Calculate weekly trend
-    const weeklySales = chartData?.reduce((sum, item) => sum + item.sales, 0) || 0;
-    const avgDailySales = chartData?.length > 0 ? weeklySales / chartData.length : 0;
+    const weeklySales = chartSeries.reduce(
+        (sum, item) => sum + (Number(item.sales) || 0),
+        0
+    );
+    const avgDailySales =
+        chartSeries.length > 0 ? weeklySales / chartSeries.length : 0;
+    const hasData = chartSeries.some((d) => (Number(d.sales) || 0) > 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -140,10 +162,16 @@ export default function AdminDashboard({
                         </CardHeader>
                         <CardContent>
                             <p className="text-xl sm:text-2xl font-bold text-slate-800">
-                                Rp {(stats?.revenueThisMonth || 0).toLocaleString("id-ID")}
+                                Rp{" "}
+                                {(stats?.revenueThisMonth || 0).toLocaleString(
+                                    "id-ID"
+                                )}
                             </p>
                             <p className="text-xs text-slate-500 mt-1">
-                                Revenue bulan {new Date().toLocaleDateString("id-ID", { month: "long" })}
+                                Revenue bulan{" "}
+                                {new Date().toLocaleDateString("id-ID", {
+                                    month: "long",
+                                })}
                             </p>
                         </CardContent>
                     </Card>
@@ -162,7 +190,9 @@ export default function AdminDashboard({
                                 </CardDescription>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs text-slate-500">Total Minggu Ini</p>
+                                <p className="text-xs text-slate-500">
+                                    Total Minggu Ini
+                                </p>
                                 <p className="text-lg font-bold text-primary">
                                     Rp {weeklySales.toLocaleString("id-ID")}
                                 </p>
@@ -173,67 +203,116 @@ export default function AdminDashboard({
                         <div className="space-y-4">
                             {/* Bar Chart */}
                             <div>
-                                <ResponsiveContainer width="100%" height={350}>
-                                    <BarChart
-                                        data={chartData}
-                                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                <div className="w-full h-[350px]">
+                                    <ResponsiveContainer
+                                        width="100%"
+                                        height="100%"
                                     >
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            stroke="#e2e8f0"
-                                            vertical={false}
-                                        />
-                                        <XAxis
-                                            dataKey="day"
-                                            tick={{ fill: "#64748b", fontSize: 12 }}
-                                            axisLine={{ stroke: "#cbd5e1" }}
-                                        />
-                                        <YAxis
-                                            tick={{ fill: "#64748b", fontSize: 12 }}
-                                            axisLine={{ stroke: "#cbd5e1" }}
-                                            tickFormatter={(value) =>
-                                                `${(value / 1000).toFixed(0)}k`
-                                            }
-                                        />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Bar
-                                            dataKey="sales"
-                                            fill="url(#colorGradient)"
-                                            radius={[8, 8, 0, 0]}
-                                            animationDuration={800}
-                                        />
-                                        <defs>
-                                            <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                                                <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.8} />
-                                            </linearGradient>
-                                        </defs>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                        <BarChart
+                                            data={chartSeries}
+                                            margin={{
+                                                top: 10,
+                                                right: 10,
+                                                left: 0,
+                                                bottom: 0,
+                                            }}
+                                        >
+                                            <defs>
+                                                <linearGradient
+                                                    id="colorGradient"
+                                                    x1="0"
+                                                    y1="0"
+                                                    x2="0"
+                                                    y2="1"
+                                                >
+                                                    <stop
+                                                        offset="0%"
+                                                        stopColor="#3b82f6"
+                                                        stopOpacity={1}
+                                                    />
+                                                    <stop
+                                                        offset="100%"
+                                                        stopColor="#60a5fa"
+                                                        stopOpacity={0.8}
+                                                    />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid
+                                                strokeDasharray="3 3"
+                                                stroke="#e2e8f0"
+                                                vertical={false}
+                                            />
+                                            <XAxis
+                                                dataKey="day"
+                                                tick={{
+                                                    fill: "#64748b",
+                                                    fontSize: 12,
+                                                }}
+                                                axisLine={{ stroke: "#cbd5e1" }}
+                                            />
+                                            <YAxis
+                                                tick={{
+                                                    fill: "#64748b",
+                                                    fontSize: 12,
+                                                }}
+                                                axisLine={{ stroke: "#cbd5e1" }}
+                                                tickFormatter={(value) =>
+                                                    `${(
+                                                        Number(value) / 1000
+                                                    ).toFixed(0)}k`
+                                                }
+                                            />
+                                            <Tooltip
+                                                content={<CustomTooltip />}
+                                            />
+                                            <Bar
+                                                dataKey="sales"
+                                                fill="url(#colorGradient)"
+                                                radius={[8, 8, 0, 0]}
+                                                animationDuration={800}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                {!hasData && (
+                                    <p className="text-xs text-slate-500 text-center">
+                                        Belum ada data penjualan untuk
+                                        ditampilkan.
+                                    </p>
+                                )}
                             </div>
 
                             {/* Stats Summary */}
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t">
                                 <div className="text-center">
-                                    <p className="text-xs text-slate-500">Rata-rata Harian</p>
+                                    <p className="text-xs text-slate-500">
+                                        Rata-rata Harian
+                                    </p>
                                     <p className="text-lg font-semibold text-slate-800">
-                                        Rp {avgDailySales.toLocaleString("id-ID", {
-                                            maximumFractionDigits: 0
+                                        Rp{" "}
+                                        {avgDailySales.toLocaleString("id-ID", {
+                                            maximumFractionDigits: 0,
                                         })}
                                     </p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-xs text-slate-500">Hari Terbaik</p>
+                                    <p className="text-xs text-slate-500">
+                                        Hari Terbaik
+                                    </p>
                                     <p className="text-lg font-semibold text-green-600">
                                         {chartData?.length > 0
                                             ? chartData.reduce((max, item) =>
-                                                item.sales > max.sales ? item : max
+                                                  item.sales > max.sales
+                                                      ? item
+                                                      : max
                                               ).day
                                             : "-"}
                                     </p>
                                 </div>
                                 <div className="text-center col-span-2 sm:col-span-1">
-                                    <p className="text-xs text-slate-500">Total Transaksi</p>
+                                    <p className="text-xs text-slate-500">
+                                        Total Transaksi
+                                    </p>
                                     <p className="text-lg font-semibold text-blue-600">
                                         {chartData?.length || 0} hari
                                     </p>
@@ -258,11 +337,21 @@ export default function AdminDashboard({
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="font-semibold">ID</TableHead>
-                                        <TableHead className="font-semibold">User</TableHead>
-                                        <TableHead className="font-semibold">Event</TableHead>
-                                        <TableHead className="font-semibold text-right">Jumlah</TableHead>
-                                        <TableHead className="font-semibold text-center">Status</TableHead>
+                                        <TableHead className="font-semibold">
+                                            ID
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            User
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Event
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-right">
+                                            Jumlah
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-center">
+                                            Status
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -280,21 +369,26 @@ export default function AdminDashboard({
                                                     {tx.event}
                                                 </TableCell>
                                                 <TableCell className="text-right font-semibold">
-                                                    Rp {tx.amount.toLocaleString("id-ID")}
+                                                    Rp{" "}
+                                                    {tx.amount.toLocaleString(
+                                                        "id-ID"
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     <span
                                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                             tx.status === "paid"
                                                                 ? "bg-green-100 text-green-800"
-                                                                : tx.status === "pending"
+                                                                : tx.status ===
+                                                                  "pending"
                                                                 ? "bg-yellow-100 text-yellow-800"
                                                                 : "bg-red-100 text-red-800"
                                                         }`}
                                                     >
                                                         {tx.status === "paid"
                                                             ? "Lunas"
-                                                            : tx.status === "pending"
+                                                            : tx.status ===
+                                                              "pending"
                                                             ? "Pending"
                                                             : "Dibatalkan"}
                                                     </span>

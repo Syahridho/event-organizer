@@ -750,7 +750,6 @@ export default function ShowEvent() {
 
                 {allPaidTicketsSoldOut && !freeTicket && (
                     <Alert className="my-4 border-yellow-600">
-                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
                         <AlertDescription className="text-yellow-600">
                             Semua tiket untuk event ini sudah habis
                         </AlertDescription>

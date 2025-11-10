@@ -403,10 +403,10 @@ class HomeController extends Controller
 
     public function search(Request $request)
     {
-        $keyword = $request->query('keyword');
+        $keyword = trim($request->query('keyword', ''));
         $type = $request->query('type');
 
-        if (empty($keyword)) {
+        if ($keyword === '') {
             return Inertia::render('Search/Index', [
                 'products' => [],
                 'keyword' => '',
@@ -414,8 +414,7 @@ class HomeController extends Controller
             ]);
         }
 
-
-        $results = [];
+        $results = collect();
 
         if ($type === 'event') {
             $results = Event::when($keyword, fn($q) =>
@@ -425,6 +424,8 @@ class HomeController extends Controller
                 'name' => $item->name,
                 'price' => $item->price ?? null,
                 'type' => 'event',
+                'thumbnail' => $item->thumbnail ? $item->thumbnail : null,
+                'location' => $item->location ?? null,
             ]);
         } elseif ($type === 'building') {
             $results = Building::when($keyword, fn($q) =>
@@ -434,6 +435,8 @@ class HomeController extends Controller
                 'name' => $item->name,
                 'price' => $item->price ?? null,
                 'type' => 'building',
+                'thumbnail' => $item->thumbnail ? '/thumbnails/'.$item->thumbnail : null,
+                'location' => $item->location ?? null,
             ]);
         } elseif ($type === 'service') {
             $results = Service::when($keyword, fn($q) =>
@@ -443,6 +446,8 @@ class HomeController extends Controller
                 'name' => $item->name,
                 'price' => $item->price ?? null,
                 'type' => 'service',
+                'thumbnail' => $item->thumbnail ? '/thumbnails/'.$item->thumbnail : null,
+                'location' => $item->location ?? null,
             ]);
         } elseif ($type === 'property') {
             $results = RentProperty::when($keyword, fn($q) =>
@@ -452,34 +457,80 @@ class HomeController extends Controller
                 'name' => $item->name,
                 'price' => $item->price ?? null,
                 'type' => 'property',
+                'thumbnail' => $item->thumbnail ? '/thumbnails/'.$item->thumbnail : null,
+                'location' => $item->location ?? null,
             ]);
+        } elseif ($type === 'mitra') {
+            $results = \App\Models\User::query()
+                ->where('role', 'mitra')
+                ->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%")
+                      ->orWhere('username', 'like', "%{$keyword}%");
+                })
+                ->when(auth()->check(), function ($q) {
+                    $q->where('id', '<>', auth()->id());
+                })
+                ->get()
+                ->map(fn($u) => [
+                    'id' => $u->id,
+                    'uuid' => $u->uuid,
+                    'name' => $u->name,
+                    'type' => 'mitra',
+                    'thumbnail' => $u->profile_photo ?? null,
+                ]);
         } else {
-            // Kalau user pilih "semua kategori"
+            // Semua kategori (event, building, service, property, user, mitra)
             $results = collect()
                 ->merge(Event::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
                     'id' => $i->id,
                     'name' => $i->name,
                     'price' => $i->price ?? null,
                     'type' => 'event',
+                    'thumbnail' => $i->thumbnail ? $i->thumbnail : null,
+                    'location' => $i->location ?? null,
                 ]))
                 ->merge(Building::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
                     'id' => $i->id,
                     'name' => $i->name,
                     'price' => $i->price ?? null,
                     'type' => 'building',
+                    'thumbnail' => $i->thumbnail ? '/thumbnails/'.$i->thumbnail : null,
+                    'location' => $i->location ?? null,
                 ]))
                 ->merge(Service::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
                     'id' => $i->id,
                     'name' => $i->name,
                     'price' => $i->price ?? null,
                     'type' => 'service',
+                    'thumbnail' => $i->thumbnail ? '/thumbnails/'.$i->thumbnail : null,
+                    'location' => $i->location ?? null,
                 ]))
                 ->merge(RentProperty::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
                     'id' => $i->id,
                     'name' => $i->name,
                     'price' => $i->price ?? null,
                     'type' => 'property',
-                ]));
+                    'thumbnail' => $i->thumbnail ? '/thumbnails/'.$i->thumbnail : null,
+                    'location' => $i->location ?? null,
+                ]))
+                ->merge(\App\Models\User::query()
+                    ->where('role', 'mitra')
+                    ->where(function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%")
+                          ->orWhere('username', 'like', "%{$keyword}%");
+                    })
+                    ->when(auth()->check(), function ($q) {
+                        $q->where('id', '<>', auth()->id());
+                    })
+                    ->get()
+                    ->map(fn($u) => [
+                        'id' => $u->id,
+                        'uuid' => $u->uuid,
+                        'name' => $u->name,
+                        'type' => 'mitra',
+                        'thumbnail' => $u->profile_photo ?? null,
+                    ])
+                );
         }
 
         return Inertia::render('Search/Index', [

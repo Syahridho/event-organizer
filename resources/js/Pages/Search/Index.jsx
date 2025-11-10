@@ -56,30 +56,45 @@ export default function SearchPage({ products, keyword, type }) {
 
     const baseUrl = ziggy.url;
     const getImageUrl = (thumbnail) => {
-        if (!thumbnail) return `${baseUrl}/storage/randoms/3.webp`;
+        // Kembalikan null jika tidak ada thumbnail, agar kita bisa render avatar huruf
+        if (!thumbnail || thumbnail === null) return null;
         return thumbnail.startsWith("http")
             ? thumbnail
             : `${baseUrl}/storage${thumbnail}`;
     };
 
+    // Palet warna tetap (agar Tailwind tidak purging class)
+    const COLOR_PALETTE = [
+        "bg-blue-500",
+        "bg-emerald-500",
+        "bg-purple-500",
+        "bg-rose-500",
+        "bg-amber-500",
+        "bg-indigo-500",
+        "bg-teal-500",
+        "bg-fuchsia-500",
+    ];
+
+    // Pilih warna deterministik berdasarkan nama/type
+    const pickColorClass = (seed = "") => {
+        let hash = 0;
+        const s = String(seed);
+        for (let i = 0; i < s.length; i++) {
+            hash = (hash * 31 + s.charCodeAt(i)) | 0;
+        }
+        const idx = Math.abs(hash) % COLOR_PALETTE.length;
+        return COLOR_PALETTE[idx];
+    };
+
+    // Ambil inisial huruf pertama (kapital)
+    const getInitial = (name = "") => {
+        const trimmed = String(name).trim();
+        return trimmed.length ? trimmed[0].toUpperCase() : "?";
+    };
+
     const formatPrice = (price) => {
         return new Intl.NumberFormat("id-ID").format(price);
     };
-
-    const getBadgeVariant = useCallback((productType) => {
-        switch (productType) {
-            case "event":
-                return "default";
-            case "service":
-                return "secondary";
-            case "building":
-                return "outline";
-            case "property":
-                return "destructive";
-            default:
-                return "default";
-        }
-    }, []);
 
     const getBadgeLabel = (productType) => {
         const labels = {
@@ -87,8 +102,23 @@ export default function SearchPage({ products, keyword, type }) {
             service: "Layanan",
             building: "Gedung",
             property: "Properti",
+            user: "Pengguna",
+            mitra: "Mitra",
         };
         return labels[productType] || productType;
+    };
+
+    // Helper: tipe user
+    const isUserType = (t) => t === "user" || t === "mitra";
+
+    // Helper: tentukan URL sesuai tipe
+    const getHrefForProduct = (product) => {
+        const t = product.type;
+        if (isUserType(t)) {
+            const uuid = product.uuid || product.id;
+            return `/chat/${uuid}`;
+        }
+        return `/${t + "s"}/${product.id}`;
     };
 
     const filters = [
@@ -97,6 +127,7 @@ export default function SearchPage({ products, keyword, type }) {
         { value: "building", label: "Gedung" },
         { value: "service", label: "Layanan" },
         { value: "property", label: "Properti" },
+        { value: "mitra", label: "Mitra" },
     ];
 
     const handleFilterChange = (filterValue) => {
@@ -168,18 +199,32 @@ export default function SearchPage({ products, keyword, type }) {
                     {products.map((product) => (
                         <Link
                             key={`${product.type}-${product.id}`}
-                            href={`/${product.type + "s"}/${product.id}`}
+                            href={getHrefForProduct(product)}
                         >
                             <div className="border rounded-lg hover:shadow-lg transition-all duration-300 overflow-hidden group bg-white">
                                 <div className="relative aspect-[4/3] overflow-hidden">
-                                    <LazyImage
-                                        src={getImageUrl(product.thumbnail)}
-                                        alt={product.name}
-                                        className="w-full h-full"
-                                    />
+                                    {getImageUrl(product.thumbnail) ? (
+                                        <LazyImage
+                                            src={getImageUrl(product.thumbnail)}
+                                            alt={product.name}
+                                            className="w-full h-full"
+                                        />
+                                    ) : (
+                                        <div
+                                            className={`w-full h-full ${pickColorClass(
+                                                product.name || product.type
+                                            )} flex items-center justify-center rounded`}
+                                        >
+                                            <span className="text-white font-semibold text-3xl sm:text-4xl">
+                                                {getInitial(
+                                                    product.name || product.type
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                     <Badge
-                                        variant={getBadgeVariant(product.type)}
+                                        variant={"default"}
                                         className="absolute top-3 right-3 font-medium shadow-sm"
                                     >
                                         {getBadgeLabel(product.type)}
@@ -191,14 +236,17 @@ export default function SearchPage({ products, keyword, type }) {
                                     </h3>
 
                                     <div className="space-y-1.5">
-                                        {product.price && (
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-bold text-lg text-green-600">
-                                                    Rp{" "}
-                                                    {formatPrice(product.price)}
-                                                </span>
-                                            </div>
-                                        )}
+                                        {product.price &&
+                                            !isUserType(product.type) && (
+                                                <div className="flex items-center gap-1">
+                                                    <span className="font-bold text-lg text-green-600">
+                                                        Rp{" "}
+                                                        {formatPrice(
+                                                            product.price
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            )}
 
                                         {product.location && (
                                             <div className="flex items-center gap-2 text-gray-600">

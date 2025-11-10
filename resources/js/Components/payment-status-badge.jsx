@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 
 /**
  * OPTIMIZED: Payment Status Badge with O(1) lookup
  * - Uses constant object for instant status mapping
- * - No conditional rendering logic needed
+ * - Auto-detects expired transactions in real-time
  * - Consistent styling with shadcn/ui Badge component
  */
 
@@ -40,6 +40,11 @@ const STATUS_CONFIG = {
     },
     expire: {
         label: "Kedaluwarsa",
+        className:
+            "bg-gray-200 text-gray-700 border-gray-300 hover:bg-gray-300",
+    },
+    expired: {
+        label: "Waktu Habis",
         className:
             "bg-gray-200 text-gray-700 border-gray-300 hover:bg-gray-300",
     },
@@ -79,11 +84,52 @@ const DEFAULT_CONFIG = {
     className: "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200",
 };
 
-export default function PaymentStatusBadge({ status }) {
+export default function PaymentStatusBadge({ status, expired_at }) {
+    // FIXED: Use state to track expired status that updates in real-time
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        // Only check expiration for pending transactions
+        if (!expired_at || status !== "pending") {
+            setIsExpired(false);
+            return;
+        }
+
+        // Function to check if expired
+        const checkExpired = () => {
+            try {
+                const expiredDate = new Date(expired_at.replace(" ", "T"));
+                const expired = expiredDate.getTime() <= Date.now();
+                setIsExpired(expired);
+                return expired;
+            } catch (e) {
+                return false;
+            }
+        };
+
+        // Check immediately
+        const expired = checkExpired();
+
+        // If not expired yet, set up interval to check every second
+        if (!expired) {
+            const interval = setInterval(() => {
+                const nowExpired = checkExpired();
+                // Stop interval once expired
+                if (nowExpired) {
+                    clearInterval(interval);
+                }
+            }, 1000); // Check every 1 second
+
+            return () => clearInterval(interval);
+        }
+    }, [expired_at, status]);
+
+    // FIXED: Override status to "expired" if transaction time has passed
+    const finalStatus = isExpired ? "expired" : status;
+
     // O(1) lookup for status configuration
-    console.log(status);
-    const config = status
-        ? STATUS_CONFIG[status] || DEFAULT_CONFIG
+    const config = finalStatus
+        ? STATUS_CONFIG[finalStatus] || DEFAULT_CONFIG
         : DEFAULT_CONFIG;
 
     return (
