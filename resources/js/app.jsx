@@ -24,7 +24,7 @@ function AppWrapper({ App, props }) {
     );
 }
 
-const appName = import.meta.env.VITE_APP_NAME || "Eventplan";
+const appName = import.meta.env.VITE_APP_NAME || "Eventplanasdasdas";
 
 let root = null;
 

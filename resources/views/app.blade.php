@@ -4,7 +4,14 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Event Plan') }}</title>
+        @php($adminSetting = \App\Models\AdminSetting::first())
+        @if($adminSetting && $adminSetting->logo)
+                    <link rel="icon" type="image/png" href="{{ asset('storage/seo/' . $adminSetting->logo) }}">
+        @else
+                    <link rel="icon" href="{{ asset('favicon.ico') }}">
+        @endif
+
+        <title inertia>{{ $adminSetting->seo_title }}</title>
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -13,7 +20,7 @@
         <!-- Scripts -->
         @routes
         @viteReactRefresh
-        @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+            @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
         @inertiaHead
     </head>
     <body class="font-sans antialiased">

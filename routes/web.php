@@ -202,7 +202,11 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings.index');
         Route::post('/admin/settings', [AdminSettingController::class, 'store'])->name('admin.settings.store');
 
+        Route::post('/settings/hero-update', [AdminSettingController::class, 'updateHero'])->name('admin.settings.hero.update');
+
         Route::post('/admin/settings/tax', [AdminSettingController::class, 'updateTax'])->name('admin.settings.tax.update');
+        
+        Route::post('/admin/settings/maintenance', [AdminSettingController::class, 'updateMaintenance'])->name('admin.settings.updateMaintenance.update');
 
         Route::get('/admin/dashboard/events', [AdminEventController::class, 'index'])->name('admin.events.dashboard');
         Route::put('/admin/events/{id}/banned', [AdminEventController::class, 'banned'])->name('admin.events.banned');

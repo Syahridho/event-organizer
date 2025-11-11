@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use App\Models\Leave;
 use App\Models\Event;
 use App\Models\Building;
+use App\Models\AdminSetting;
 use App\Models\Service;
 use App\Models\Testimonial;
 use App\Models\ItemPhoto;
@@ -42,11 +43,13 @@ class HomeController extends Controller
 
         $testimonials = Testimonial::orderBy('created_at', 'desc')->get();
 
+        $setting = AdminSetting::firstOrCreate([]);
 
         return  Inertia::render('Welcome', [
             'events' => $events,
             'services' => $services,
             'buildings' => $buildings,
+            'hero' => $setting->seo_image,
             'propertys' => $propertys,
             'testimonials' => $testimonials,
         ]);

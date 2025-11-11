@@ -31,7 +31,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Rating from "react-rating";
 import { IoTicket } from "react-icons/io5";
-import { FaBuilding, FaStar, FaRegStar } from "react-icons/fa";
+import { FaBuilding } from "react-icons/fa";
 import { GiMicrophone } from "react-icons/gi";
 import { GrFanOption } from "react-icons/gr";
 import {
@@ -45,16 +45,8 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import Footer from "@/components/footer";
 import { formatRupiah } from "@/Utils/formatRupiah";
 import MainLayout from "@/Layouts/Main";
-
-const navLinks = [
-    { label: "Home", href: "#home" },
-    { label: "About", href: "#about" },
-    { label: "Mitra", href: "#partner" },
-];
 
 const mobileMenuItems = [
     {
@@ -83,34 +75,6 @@ const mobileMenuItems = [
     },
 ];
 
-const testimonials = [
-    {
-        name: "Syahridho Arjuna Syahputra",
-        role: "Programmer",
-        image: "https://picsum.photos/300/300?random=1",
-        rating: 4,
-        message:
-            "Pesan tiket konser di Eventnusa sangat mudah dan cepat. Tidak perlu antre panjang, tinggal klik langsung dapat e-tiket. Mantap!",
-    },
-    {
-        name: "Sheila Putri",
-        role: "Content Creator",
-        image: "https://picsum.photos/300/300?random=2",
-        rating: 5,
-        message:
-            "Gedung yang saya sewa bersih dan nyaman. Proses booking juga cepat banget!",
-    },
-    {
-        name: "Adit Rahman",
-        role: "Wedding Organizer",
-        image: "https://picsum.photos/300/300?random=3",
-        rating: 5,
-        message:
-            "Layanan vendor sangat profesional. Properti pesta lengkap dan harga transparan!",
-    },
-];
-
-// Komponen LazyImage yang telah diperbaiki
 const LazyImage = ({ src, alt, className, onLoad, onError, ...props }) => {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
@@ -144,7 +108,6 @@ const LazyImage = ({ src, alt, className, onLoad, onError, ...props }) => {
     );
 };
 
-// Komponen ItemCard yang diperbaiki dengan shadcn Card
 const ItemCard = ({ item, type, baseUrl }) => {
     const getImageUrl = useCallback(() => {
         if (type === "events") {
@@ -293,7 +256,6 @@ const CategorySection = ({ title, items, type, baseUrl, id }) => {
     );
 };
 
-// Komponen TestimonialSection yang menggunakan props
 function TestimonialSection({ testimonials: propTestimonials }) {
     const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -493,6 +455,7 @@ export default function Welcome() {
         services,
         propertys,
         testimonials,
+        hero,
     } = usePage().props;
     const sheetCloseRef = useRef();
     const [searchQuery, setSearchQuery] = useState("");
@@ -647,11 +610,12 @@ export default function Welcome() {
     return (
         <div className="bg-background min-h-screen">
             <Head title="Eventnusa - Solusi Digital untuk Event Organizer" />
-            {/* Hero Section */}
             <section
                 id="home"
                 className="relative min-h-screen bg-cover bg-center flex items-center"
-                style={{ backgroundImage: `url('${ziggy.url}/hero.jpg')` }}
+                style={{
+                    backgroundImage: `url('${ziggy.url}/storage/seo/${hero}')`,
+                }}
             >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-secondary/90" />
 

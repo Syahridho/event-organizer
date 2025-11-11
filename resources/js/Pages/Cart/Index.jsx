@@ -1326,7 +1326,7 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                                     Total Pembayaran
                                                 </span>
                                                 <div className="text-right">
-                                                    <p className="text-2xl font-black text-primary">
+                                                    <p className="text-xl font-black text-primary">
                                                         Rp{" "}
                                                         {formatRupiah(
                                                             totalWithTax

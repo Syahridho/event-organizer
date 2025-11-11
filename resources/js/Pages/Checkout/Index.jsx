@@ -10,6 +10,17 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +49,8 @@ export default function CheckoutPage() {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [showAddressModal, setShowAddressModal] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [addressToDelete, setAddressToDelete] = useState(null);
     const [editingAddress, setEditingAddress] = useState(null);
     const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
     const [addressForm, setAddressForm] = useState({
@@ -656,9 +669,9 @@ export default function CheckoutPage() {
                 <h1 className="text-2xl font-bold">Checkout</h1>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
                 {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-4 space-y-6">
                     {/* Shipping Address Section */}
                     {isAddressRequired && (
                         <div className="bg-white rounded-lg border p-6">
@@ -788,23 +801,74 @@ export default function CheckoutPage() {
                                                     >
                                                         <FaEdit className="w-4 h-4" />
                                                     </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (
-                                                                confirm(
-                                                                    "Apakah Anda yakin ingin menghapus alamat ini?"
-                                                                )
-                                                            ) {
-                                                                deleteAddress(
-                                                                    address.id
-                                                                );
-                                                            }
-                                                        }}
-                                                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                                    <AlertDialog
+                                                        open={showDeleteDialog}
+                                                        onOpenChange={
+                                                            setShowDeleteDialog
+                                                        }
                                                     >
-                                                        <FaTrash className="w-4 h-4" />
-                                                    </button>
+                                                        <AlertDialogTrigger
+                                                            asChild
+                                                        >
+                                                            <button
+                                                                onClick={(
+                                                                    e
+                                                                ) => {
+                                                                    e.stopPropagation();
+                                                                    setAddressToDelete(
+                                                                        address.id
+                                                                    );
+                                                                    setShowDeleteDialog(
+                                                                        true
+                                                                    );
+                                                                }}
+                                                                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                                            >
+                                                                <FaTrash className="w-4 h-4" />
+                                                            </button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>
+                                                                    Hapus Alamat
+                                                                </AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Apakah Anda
+                                                                    yakin ingin
+                                                                    menghapus
+                                                                    alamat ini?
+                                                                    Tindakan ini
+                                                                    tidak dapat
+                                                                    dibatalkan.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>
+                                                                    Batal
+                                                                </AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => {
+                                                                        if (
+                                                                            addressToDelete
+                                                                        ) {
+                                                                            deleteAddress(
+                                                                                addressToDelete
+                                                                            );
+                                                                        }
+                                                                        setShowDeleteDialog(
+                                                                            false
+                                                                        );
+                                                                        setAddressToDelete(
+                                                                            null
+                                                                        );
+                                                                    }}
+                                                                    className="bg-red-600 hover:bg-red-700"
+                                                                >
+                                                                    Hapus
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                             </div>
                                         </div>
@@ -954,14 +1018,14 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Order Summary */}
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-2">
                     <div className="bg-white rounded-lg border p-6 sticky top-4 shadow-sm">
                         <h2 className="text-lg font-semibold mb-4">
                             Ringkasan Pesanan
                         </h2>
 
                         <div className="space-y-3">
-                            <div className="flex justify-between text-gray-600">
+                            <div className="flex justify-between text-gray-600 text-sm">
                                 <span>
                                     Subtotal ({checkoutData.items?.length || 0}{" "}
                                     item)
@@ -970,14 +1034,14 @@ export default function CheckoutPage() {
                                     Rp {formatRupiah(subtotal)}
                                 </span>
                             </div>
-                            <div className="flex justify-between text-gray-600">
+                            <div className="flex justify-between text-gray-600 text-sm">
                                 <span>{taxInfo?.label || "Pajak"}</span>
                                 <span className="font-medium">
                                     Rp {formatRupiah(taxAmount)}
                                 </span>
                             </div>
                             <hr className="my-3" />
-                            <div className="flex justify-between font-bold text-lg">
+                            <div className="flex flex-col justify-between font-bold text-lg">
                                 <span>Total Pembayaran</span>
                                 <span className="text-blue-600">
                                     Rp {formatRupiah(totalWithTax)}

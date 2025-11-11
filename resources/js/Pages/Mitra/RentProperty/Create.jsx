@@ -297,7 +297,7 @@ export default function RentProperyCreate() {
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold leading-none">
+                        <h3 className="font-semibold leading-none">
                             Opsi Pengambilan/Pengantaran
                         </h3>
 

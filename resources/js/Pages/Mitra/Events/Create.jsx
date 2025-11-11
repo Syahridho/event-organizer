@@ -888,10 +888,11 @@ export default function CreateEvent() {
                                                                             >
                                                                                 Jumlah
                                                                                 Tiket
+                                                                                asd
                                                                             </Label>
                                                                             <Input
                                                                                 id={`quota-${ticketName}`}
-                                                                                type="text"
+                                                                                type="number"
                                                                                 className="bg-background text-foreground appearance-none 
                                                                                                                             [&::-webkit-outer-spin-button]:appearance-none 
                                                                                                                             [&::-webkit-inner-spin-button]:appearance-none"
@@ -931,6 +932,11 @@ export default function CreateEvent() {
                                                                                         )
                                                                                     );
                                                                                 }}
+                                                                                onWheel={(
+                                                                                    e
+                                                                                ) =>
+                                                                                    e.target.blur()
+                                                                                }
                                                                                 required
                                                                             />
                                                                         </div>

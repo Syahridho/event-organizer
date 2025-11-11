@@ -1,9 +1,9 @@
 "use client";
 import * as React from "react";
-import { Head, router, useForm } from "@inertiajs/react";
+import { Head, router, useForm, usePage } from "@inertiajs/react";
+import clsx from "clsx";
 import { cn } from "@/Lib/utils";
 import { PencilLine, Check, ChevronsUpDown } from "lucide-react";
-
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
+    CardFooter,
 } from "@/components/ui/card";
 import {
     Select,
@@ -35,6 +36,7 @@ import {
 import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/admin/dashboard" },
@@ -42,6 +44,9 @@ const breadcrumbs = [
 ];
 
 export default function AdminSettingDashboard({ auth, setting }) {
+    const { ziggy } = usePage().props;
+
+    // State Pajak
     const [pajakType, setPajakType] = React.useState(
         setting?.tax_type || "percent"
     );
@@ -49,6 +54,10 @@ export default function AdminSettingDashboard({ auth, setting }) {
         String(setting?.tax_value || 0)
     );
 
+    // State SEO
+    const [seoSiteName, setSeoSiteName] = React.useState(
+        setting?.site_name || ""
+    );
     const [seoTitle, setSeoTitle] = React.useState(setting?.seo_title || "");
     const [seoDescription, setSeoDescription] = React.useState(
         setting?.seo_description || ""
@@ -77,11 +86,32 @@ export default function AdminSettingDashboard({ auth, setting }) {
         setting?.maintenance_mode || false
     );
 
+    // State Logo (logo website kecil)
+    const [logo, setLogo] = React.useState(setting?.logo || "");
+    const [newLogoFile, setNewLogoFile] = React.useState(null);
+    const [newLogoPreview, setNewLogoPreview] = React.useState(null);
+
+    // State Hero Image (dari seo_image - gambar besar hero)
+    const [heroImage, setHeroImage] = React.useState(setting?.seo_image || "");
+    const [newHeroFile, setNewHeroFile] = React.useState(null);
+    const [newHeroPreview, setNewHeroPreview] = React.useState(null);
+
     const [isModal, setIsModal] = React.useState({
         tax: false,
         seo: false,
+        hero: false,
     });
     const [isLoading, setIsLoading] = React.useState(false);
+
+    // Sync logo dan hero image (seo_image) dengan prop setting
+    React.useEffect(() => {
+        if (setting?.logo) {
+            setLogo(setting.logo);
+        }
+        if (setting?.seo_image) {
+            setHeroImage(setting.seo_image);
+        }
+    }, [setting?.logo, setting?.seo_image]);
 
     const handleSave = async () => {
         try {
@@ -96,6 +126,7 @@ export default function AdminSettingDashboard({ auth, setting }) {
                 {
                     onSuccess: () => {
                         setIsModal((prev) => ({ ...prev, tax: false }));
+                        toast.success("Berhasil Memperbarui Pajak");
                     },
                     onError: (errors) => {
                         console.error("Error update pajak:", errors);
@@ -111,6 +142,30 @@ export default function AdminSettingDashboard({ auth, setting }) {
         }
     };
 
+    const handleSaveHero = async () => {
+        setIsLoading(true);
+        router.post(
+            route("admin.settings.hero.update"),
+            {
+                hero_image: newHeroFile,
+            },
+            {
+                onSuccess: () => {
+                    setIsModal((prev) => ({ ...prev, hero: false }));
+                    setNewHeroFile(null);
+                    setNewHeroPreview(null);
+                    toast.success("Berhasil Memperbarui Hero");
+                },
+                onError: (errors) => {
+                    console.error("Error update hero:", errors);
+                },
+                onFinish: () => {
+                    setIsLoading(false);
+                },
+            }
+        );
+    };
+
     const handleSaveSeo = async () => {
         try {
             setIsLoading(true);
@@ -119,19 +174,19 @@ export default function AdminSettingDashboard({ auth, setting }) {
                 route("admin.settings.store"),
                 {
                     seo_title: seoTitle,
+                    site_name: seoSiteName,
                     seo_description: seoDescription,
                     seo_keywords: seoKeywords,
-                    seo_image: seoImage,
-                    seo_twitter_card: seoTwitterCard,
-                    seo_og_type: seoOgType,
-                    seo_canonical_url: seoCanonicalUrl,
-                    seo_robots: seoRobots,
                     seo_author: seoAuthor,
                     seo_publisher: seoPublisher,
+                    newlogo: newLogoFile ?? logo,
                 },
                 {
                     onSuccess: () => {
                         setIsModal((prev) => ({ ...prev, seo: false }));
+                        setNewLogoFile(null);
+                        setNewLogoPreview(null);
+                        toast.success("Berhasil Memperbarui SEO");
                     },
                     onError: (errors) => {
                         console.error("Error update SEO:", errors);
@@ -152,17 +207,17 @@ export default function AdminSettingDashboard({ auth, setting }) {
             setIsLoading(true);
 
             router.post(
-                route("admin.settings.store"),
+                route("admin.settings.updateMaintenance.update"),
                 {
                     maintenance_mode: checked,
                 },
                 {
                     onSuccess: () => {
                         setMaintenanceMode(checked);
+                        toast.success("Mode Maintenance Perbarui");
                     },
                     onError: (errors) => {
                         console.error("Error toggle maintenance:", errors);
-                        // Revert the switch if there's an error
                         setMaintenanceMode(!checked);
                     },
                     onFinish: () => {
@@ -173,7 +228,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
         } catch (error) {
             console.error("Terjadi kesalahan:", error);
             setIsLoading(false);
-            // Revert the switch if there's an error
             setMaintenanceMode(!checked);
         }
     };
@@ -182,7 +236,8 @@ export default function AdminSettingDashboard({ auth, setting }) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
             <div className="flex flex-1 flex-col gap-4 p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                <div className="grid auto-rows-min gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {/* CARD PAJAK */}
                     <div className="aspect-video rounded-xl bg-muted/50 ">
                         <Card className="h-full">
                             <CardHeader>
@@ -308,7 +363,7 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                 </DialogClose>
                                                 <Button
                                                     onClick={handleSave}
-                                                    disabed={isLoading}
+                                                    disabled={isLoading}
                                                 >
                                                     {isLoading
                                                         ? "Menyimpan..."
@@ -318,8 +373,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                         </DialogContent>
                                     </Dialog>
                                 </CardTitle>
-
-                                {/* Tampilkan Pajak */}
                                 <CardDescription>
                                     {setting?.tax_type === "percent"
                                         ? `${setting?.tax_value}%`
@@ -330,6 +383,8 @@ export default function AdminSettingDashboard({ auth, setting }) {
                             </CardHeader>
                         </Card>
                     </div>
+
+                    {/* CARD SEO - FIXED */}
                     <div className="aspect-video rounded-xl bg-muted/50 ">
                         <Card className="h-full">
                             <CardHeader>
@@ -362,6 +417,97 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                             </DialogHeader>
                                             <div className="grid gap-4">
                                                 <div className="grid gap-2">
+                                                    <Label htmlFor="seo_site_name">
+                                                        Site Nama
+                                                    </Label>
+                                                    <Input
+                                                        id="seo_site_name"
+                                                        value={seoSiteName}
+                                                        onChange={(e) =>
+                                                            setSeoSiteName(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+
+                                                {/* LOGO WEBSITE - FIXED */}
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="logo_upload">
+                                                        Logo Website
+                                                    </Label>
+                                                    <Label
+                                                        htmlFor="logo_upload"
+                                                        className={clsx(
+                                                            "mx-auto w-20 h-20 rounded-lg shadow-sm border-2 flex justify-center items-center cursor-pointer hover:bg-muted transition-colors",
+                                                            !newLogoPreview &&
+                                                                !logo &&
+                                                                "border-dashed"
+                                                        )}
+                                                    >
+                                                        {newLogoPreview ? (
+                                                            <img
+                                                                src={
+                                                                    newLogoPreview
+                                                                }
+                                                                alt="Preview Logo"
+                                                                className="w-full h-full object-cover rounded-lg"
+                                                            />
+                                                        ) : logo ? (
+                                                            <img
+                                                                src={`${ziggy.url}/storage/seo/${logo}`}
+                                                                alt="Logo Website"
+                                                                className="w-full h-full object-cover rounded-lg"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-2xl text-muted-foreground">
+                                                                +
+                                                            </span>
+                                                        )}
+                                                    </Label>
+                                                    <Input
+                                                        id="logo_upload"
+                                                        type="file"
+                                                        accept="image/png,image/jpeg,image/jpg,image/webp"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file =
+                                                                e.target
+                                                                    .files?.[0];
+                                                            if (!file) return;
+
+                                                            if (
+                                                                file.type !==
+                                                                "image/png"
+                                                            ) {
+                                                                toast.warning(
+                                                                    "Gunakan format PNG 32x32. File non-PNG akan dikonversi ke PNG otomatis saat disimpan."
+                                                                );
+                                                            }
+
+                                                            setNewLogoFile(
+                                                                file
+                                                            );
+                                                            setNewLogoPreview(
+                                                                URL.createObjectURL(
+                                                                    file
+                                                                )
+                                                            );
+                                                        }}
+                                                    />
+                                                    <p className="text-xs text-center text-muted-foreground">
+                                                        Klik untuk mengganti •
+                                                        Max 2MB
+                                                    </p>
+                                                    <p className="text-xs text-center text-red-600">
+                                                        Disarankan PNG 32x32.
+                                                        File non-PNG akan
+                                                        otomatis dikonversi ke
+                                                        PNG saat disimpan.
+                                                    </p>
+                                                </div>
+
+                                                <div className="grid gap-2">
                                                     <Label htmlFor="seo_title">
                                                         SEO Title
                                                     </Label>
@@ -373,12 +519,11 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                                 e.target.value
                                                             )
                                                         }
-                                                        placeholder="Enter SEO title"
                                                         maxLength={60}
                                                     />
                                                     <span className="text-xs text-muted-foreground">
                                                         {seoTitle.length}/60
-                                                        characters
+                                                        Kata
                                                     </span>
                                                 </div>
                                                 <div className="grid gap-2">
@@ -393,7 +538,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                                 e.target.value
                                                             )
                                                         }
-                                                        placeholder="Enter SEO description"
                                                         maxLength={160}
                                                     />
                                                     <span className="text-xs text-muted-foreground">
@@ -413,118 +557,9 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                                 e.target.value
                                                             )
                                                         }
-                                                        placeholder="Enter SEO keywords (comma separated)"
                                                     />
                                                 </div>
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="seo_image">
-                                                        SEO Image URL
-                                                    </Label>
-                                                    <Input
-                                                        id="seo_image"
-                                                        value={seoImage}
-                                                        onChange={(e) =>
-                                                            setSeoImage(
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        placeholder="Enter SEO image URL"
-                                                        type="url"
-                                                    />
-                                                </div>
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="seo_twitter_card">
-                                                        Twitter Card Type
-                                                    </Label>
-                                                    <Select
-                                                        value={seoTwitterCard}
-                                                        onValueChange={
-                                                            setSeoTwitterCard
-                                                        }
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="summary">
-                                                                Summary
-                                                            </SelectItem>
-                                                            <SelectItem value="summary_large_image">
-                                                                Summary Large
-                                                                Image
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="seo_og_type">
-                                                        Open Graph Type
-                                                    </Label>
-                                                    <Select
-                                                        value={seoOgType}
-                                                        onValueChange={
-                                                            setSeoOgType
-                                                        }
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="website">
-                                                                Website
-                                                            </SelectItem>
-                                                            <SelectItem value="article">
-                                                                Article
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="seo_canonical_url">
-                                                        Canonical URL
-                                                    </Label>
-                                                    <Input
-                                                        id="seo_canonical_url"
-                                                        value={seoCanonicalUrl}
-                                                        onChange={(e) =>
-                                                            setSeoCanonicalUrl(
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        placeholder="Enter canonical URL"
-                                                        type="url"
-                                                    />
-                                                </div>
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="seo_robots">
-                                                        Robots Meta
-                                                    </Label>
-                                                    <Select
-                                                        value={seoRobots}
-                                                        onValueChange={
-                                                            setSeoRobots
-                                                        }
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="index">
-                                                                Index, Follow
-                                                            </SelectItem>
-                                                            <SelectItem value="follow">
-                                                                Index, No Follow
-                                                            </SelectItem>
-                                                            <SelectItem value="noindex">
-                                                                No Index, Follow
-                                                            </SelectItem>
-                                                            <SelectItem value="nofollow">
-                                                                No Index, No
-                                                                Follow
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="seo_author">
                                                         Author
@@ -537,7 +572,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                                 e.target.value
                                                             )
                                                         }
-                                                        placeholder="Enter author name"
                                                     />
                                                 </div>
                                                 <div className="grid gap-2">
@@ -552,7 +586,6 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                                 e.target.value
                                                             )
                                                         }
-                                                        placeholder="Enter publisher name"
                                                     />
                                                 </div>
                                             </div>
@@ -575,47 +608,167 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                     </Dialog>
                                 </CardTitle>
                                 <CardDescription>
-                                    {setting?.seo_title ||
-                                        "SEO belum dikonfigurasi"}
+                                    <h1 className="truncate">
+                                        {setting?.seo_title ||
+                                            "SEO belum dikonfigurasi"}
+                                    </h1>
+                                    <h1 className="truncate">
+                                        {setting?.seo_description ||
+                                            "SEO belum dikonfigurasi"}
+                                    </h1>
                                 </CardDescription>
                             </CardHeader>
                         </Card>
                     </div>
-                    <div className="aspect-video rounded-xl bg-muted/50 ">
-                        <Card className="h-full">
-                            <CardHeader>
-                                <CardTitle className="mb-2">
-                                    Mode Pemeliharaan
-                                </CardTitle>
-                                <CardDescription>
-                                    Aktifkan mode pemeliharaan untuk menampilkan
-                                    halaman pemeliharaan kepada pengguna
-                                </CardDescription>
-                                <div className="flex items-center space-x-2 pt-4">
-                                    <Switch
-                                        id="maintenance-mode"
-                                        checked={maintenanceMode}
-                                        onCheckedChange={
-                                            handleToggleMaintenance
-                                        }
-                                        disabled={isLoading}
-                                    />
-                                    <Label htmlFor="maintenance-mode">
-                                        {maintenanceMode ? "Aktif" : "Nonaktif"}
-                                    </Label>
+
+                    {/* CARD MAINTENANCE MODE */}
+                    <Card className="h-full flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="mb-2">
+                                Mode Pemeliharaan
+                            </CardTitle>
+                            <CardDescription>
+                                Aktifkan mode pemeliharaan untuk menampilkan
+                                halaman pemeliharaan kepada pengguna
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow pt-0">
+                            {maintenanceMode && (
+                                <div className="bg-orange-50 p-3 rounded-lg mt-3">
+                                    <p className="text-sm text-orange-800">
+                                        ⚠ Mode pemeliharaan aktif. Semua
+                                        pengguna akan melihat halaman
+                                        pemeliharaan kecuali admin.
+                                    </p>
                                 </div>
-                                {maintenanceMode && (
-                                    <div className="bg-orange-50 p-3 rounded-lg mt-3">
-                                        <p className="text-sm text-orange-800">
-                                            ⚠ Mode pemeliharaan aktif. Semua
-                                            pengguna akan melihat halaman
-                                            pemeliharaan kecuali admin.
-                                        </p>
+                            )}
+                        </CardContent>
+                        <CardFooter>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="maintenance-mode"
+                                    checked={maintenanceMode}
+                                    onCheckedChange={handleToggleMaintenance}
+                                    disabled={isLoading}
+                                />
+                                <Label htmlFor="maintenance-mode">
+                                    {maintenanceMode ? "Aktif" : "Nonaktif"}
+                                </Label>
+                            </div>
+                        </CardFooter>
+                    </Card>
+
+                    {/* CARD HERO IMAGE */}
+                    <Card className="w-full">
+                        <CardHeader className="mb-2 flex flex-row items-center justify-between gap-2">
+                            <CardTitle>Tampilan hero web</CardTitle>
+                            <Dialog
+                                open={isModal.hero}
+                                onOpenChange={(value) =>
+                                    setIsModal((prev) => ({
+                                        ...prev,
+                                        hero: value,
+                                    }))
+                                }
+                            >
+                                <DialogTrigger>
+                                    <PencilLine
+                                        size={18}
+                                        className="text-muted-foreground"
+                                    />
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Hero</DialogTitle>
+                                        <DialogDescription>
+                                            Klik gambar untuk mengganti,{" "}
+                                            <span className="text-red-500">
+                                                Max 2MB*
+                                            </span>
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-4">
+                                        <div className="grid w-full items-center gap-3">
+                                            <Label
+                                                htmlFor="hero-image-upload"
+                                                className={clsx(
+                                                    "mx-auto w-full h-74 rounded shadow border flex justify-center items-center rounded cursor-pointer hover:bg-muted ",
+                                                    !newHeroPreview &&
+                                                        !heroImage &&
+                                                        "border-dashed"
+                                                )}
+                                            >
+                                                {newHeroPreview ? (
+                                                    <img
+                                                        src={newHeroPreview}
+                                                        alt="Preview Hero Baru"
+                                                        className="h-full w-full border object-cover shadow"
+                                                    />
+                                                ) : heroImage ? (
+                                                    <img
+                                                        src={`${ziggy.url}/storage/seo/${heroImage}`}
+                                                        alt="Hero Image"
+                                                        className="h-full w-full border object-cover shadow"
+                                                    />
+                                                ) : (
+                                                    "+"
+                                                )}
+                                            </Label>
+                                            <Input
+                                                id="hero-image-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file =
+                                                        e.target.files?.[0];
+                                                    if (file) {
+                                                        setNewHeroFile(file);
+                                                        setNewHeroPreview(
+                                                            URL.createObjectURL(
+                                                                file
+                                                            )
+                                                        );
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="outline">
+                                                Batal
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            onClick={handleSaveHero}
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading
+                                                ? "Menyimpan..."
+                                                : "Simpan"}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </CardHeader>
+
+                        <CardContent>
+                            <div className="aspect-video rounded-md overflow-hidden bg-muted/50">
+                                {heroImage ? (
+                                    <img
+                                        src={`${ziggy.url}/storage/seo/${heroImage}`}
+                                        alt="image hero"
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                                        (Hero image belum diatur)
                                     </div>
                                 )}
-                            </CardHeader>
-                        </Card>
-                    </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </AppLayout>
