@@ -56,7 +56,7 @@ export const addItemsToCart = async ({
                         success: false,
                         message:
                             error.response.data?.message ||
-                            "Tanggal ini sudah ada di keranjang",
+                            "Tanggal ini sudah ada di keranjang atau pembelian pending",
                     };
                 case 422:
                     return {

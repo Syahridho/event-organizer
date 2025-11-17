@@ -27,16 +27,11 @@ class MitraProfileController extends Controller
                     return null;
                 }
                
-                // 1. Hapus slash di awal string jika ada (misal: /randoms/1.webp -> randoms/1.webp)
                 $cleanFilename = Str::startsWith($filename, '/') ? Str::after($filename, '/') : $filename;
                
-                // 2. Logika Kondisional: Jika mengandung 'randoms' (atau sudah path lengkap)
-                if (Str::contains($cleanFilename, 'randoms')) {
-                    // Hasil: http://127.0.0.1:8000/storage/randoms/4.webp
+                if (Str::contains($cleanFilename, 'default-event-images')) {
                     return asset('storage/' . $cleanFilename);
                 } else {
-                    // 3. Logika Default (untuk file yang diunggah)
-                    // Hasil: http://127.0.0.1:8000/storage/thumbnails/filename.png
                     return asset('storage/thumbnails/' . $cleanFilename);
                 }
             };

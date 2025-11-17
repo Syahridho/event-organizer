@@ -27,6 +27,9 @@ class User extends Authenticatable
         'last_seen_at',
         'role',
         'profile_photo',
+        'is_banned',
+        'banned_at',
+        'banned_reason',
     ];
 
     /**
@@ -48,6 +51,8 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'last_seen_at' => 'datetime',
+        'banned_at' => 'datetime',
+        'is_banned' => 'boolean',
     ];
 
     public function searchableAs(): string

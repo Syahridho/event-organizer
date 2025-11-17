@@ -1,6 +1,12 @@
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState, useCallback } from "react";
-import { ChevronRight, MapPin, Filter, Grid3x3, LayoutList } from "lucide-react";
+import {
+    ChevronRight,
+    MapPin,
+    Filter,
+    Grid3x3,
+    LayoutList,
+} from "lucide-react";
 import {
     Card,
     CardContent,
@@ -37,9 +43,7 @@ const LazyImage = ({ src, alt, className, ...props }) => {
 
     return (
         <div className="relative overflow-hidden rounded-t-lg w-full h-full">
-            {!loaded && (
-                <Skeleton className="absolute inset-0 w-full h-full" />
-            )}
+            {!loaded && <Skeleton className="absolute inset-0 w-full h-full" />}
             <img
                 src={error ? "/placeholder.jpg" : src}
                 alt={alt}
@@ -59,7 +63,7 @@ const LazyImage = ({ src, alt, className, ...props }) => {
 const ItemCard = ({ item, baseUrl, viewMode }) => {
     const getImageUrl = useCallback(() => {
         if (item.type === "event") {
-            return item.thumbnail?.includes("randoms")
+            return item.thumbnail?.includes("default-event-images")
                 ? `${baseUrl}/storage${item.thumbnail}`
                 : `${baseUrl}/storage/thumbnails/${item.thumbnail}`;
         }
@@ -70,7 +74,9 @@ const ItemCard = ({ item, baseUrl, viewMode }) => {
         switch (item.type) {
             case "event":
                 // Events tidak punya kolom price, tampilkan label khusus
-                return item.price ? `Rp ${formatRupiah(item.price)}` : "Lihat Harga";
+                return item.price
+                    ? `Rp ${formatRupiah(item.price)}`
+                    : "Lihat Harga";
             case "service":
                 return `Rp ${formatRupiah(item.price)}`;
             case "building":

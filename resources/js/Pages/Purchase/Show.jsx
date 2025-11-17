@@ -34,8 +34,8 @@ export default function Show({ transaction }) {
                 item?.thumbnail ||
                 item?.item?.thumbnail ||
                 item?.item?.event?.thumbnail;
-            if (!thumb) return "/default.png";
-            return thumb.includes("randoms")
+            if (!thumb) return "/default-event-images/dubby.webp";
+            return thumb.includes("default-event-images")
                 ? `${ziggy.url}/storage${thumb}`
                 : `${ziggy.url}/storage/thumbnails/${thumb}`;
         },

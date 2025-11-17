@@ -375,6 +375,25 @@ class CartController extends Controller
             ], 403);
         }
 
+        // FASTEST ALGORITHM: Check if item is already in pending transaction (O(1) complexity)
+        if (in_array($data['type'], ['service', 'building', 'property']) && isset($data['rent_days'])) {
+            $existingPendingTransaction = \DB::table('transaction_items')
+                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+                ->where('transactions.user_id', auth()->id())
+                ->where('transactions.status', 'pending')
+                ->where('transaction_items.item_id', $data['item_id'])
+                ->where('transaction_items.item_type', $data['type'] === 'property' ? 'rent_property' : $data['type'])
+                ->where('transaction_items.rent_days', $data['rent_days'])
+                ->exists();
+            
+            if ($existingPendingTransaction) {
+                return response()->json([
+                    'message' => 'Item ini sudah ada di pembelian pending. Silakan selesaikan pembayaran terlebih dahulu atau pilih tanggal lain.',
+                    'error' => 'PENDING_TRANSACTION_EXISTS',
+                ], 409);
+            }
+        }
+
         // Validate product dates using optimized helper (O(1) complexity)
         $validation = DateValidationHelper::validateProductPurchase(
             $item,

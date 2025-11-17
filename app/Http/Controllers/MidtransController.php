@@ -62,7 +62,7 @@ class MidtransController extends Controller
             'items.*.quantity' => 'required|integer|min:1|max:999',
             'items.*.rent_days' => 'nullable|string',
             'items.*.note' => 'nullable|string|max:255',
-            'items.*.delivery_type' => 'nullable', // Remove the in:delivery,pickup validation since it's now an object
+            'items.*.delivery_type' => 'nullable', 
             'amount' => 'required|numeric|min:1000',
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -76,6 +76,7 @@ class MidtransController extends Controller
             'shipping_address.note' => 'nullable|string|max:500',
         ]);
 
+        // dd($validatedData);
 
         // Mulai transaksi database
         DB::beginTransaction();
@@ -83,11 +84,10 @@ class MidtransController extends Controller
             $orderId = 'ORD-' . now()->format('YmdHis') . '-' . Str::random(6);
             $userId = Auth::id();
 
-            
-            
+            // dd($validatedData);
+
             // 🔎 Validasi & siapkan item
             $validatedItems = $this->validateAndPrepareItems($validatedData['items']);
-            
 
             // Extract clean base items for tax calculation
             $baseItems = MidtransTaxService::extractBaseItems($validatedItems);
@@ -371,7 +371,7 @@ class MidtransController extends Controller
                     'item' => $item,
                     'quantity' => $itemData['quantity'],
                     'delivery_type' => $deliveryType,
-                    'note' => $itemData['note'] ?? null,
+                    'note' => $itemData['note'],
                     'price' => $finalPrice,
                     'rent_days' => $rentDays,
                 ];

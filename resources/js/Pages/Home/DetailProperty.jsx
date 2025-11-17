@@ -64,8 +64,17 @@ import ReviewSection from "@/Components/ReviewSection";
 import { createPaymentPayload } from "@/Utils/PaymentHelper";
 
 const DetailProperty = () => {
-    const { property, ziggy, transaction, user, leaves, photos, tax_info } =
-        usePage().props;
+    const {
+        property,
+        ziggy,
+        transaction,
+        user,
+        leaves,
+        photos,
+        tax_info,
+        cartDates,
+        pendingDates,
+    } = usePage().props;
 
     console.log(transaction, user);
 
@@ -462,13 +471,13 @@ const DetailProperty = () => {
                                             )}
                                         </div>
                                     </div>
-                                    {property.rating && (
+                                    {/* {property.rating && (
                                         <Rating
                                             value={property.rating}
                                             size={20}
                                             showValue={true}
                                         />
-                                    )}
+                                    )} */}
                                 </div>
 
                                 <div className="space-y-6">
@@ -548,6 +557,10 @@ const DetailProperty = () => {
                                         }
                                         disabledLeaves={disabledLeaves}
                                         currentUserId={user?.id}
+                                        cartDates={cartDates}
+                                        pendingDates={pendingDates}
+                                        itemId={property.id}
+                                        itemType="property"
                                     />
                                 </div>
                                 <div className="text-center my-6">
@@ -620,6 +633,10 @@ const DetailProperty = () => {
                                 bookedDatesWithUser={bookedDatesWithUser}
                                 disabledLeaves={disabledLeaves}
                                 currentUserId={user?.id}
+                                cartDates={cartDates}
+                                pendingDates={pendingDates}
+                                itemId={property.id}
+                                itemType="property"
                             />
                         </div>
 

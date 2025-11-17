@@ -13,7 +13,11 @@ import {
     Plus,
     Trash2,
 } from "lucide-react";
-import { getNextImage } from "@/features/randomImage";
+import {
+    getNextImage,
+    getImageUrl,
+    handleImageError,
+} from "@/features/randomImage";
 import { Textarea } from "@/components/ui/textarea";
 import CalendarWithTime from "@/components/CalenderWithTime";
 import {
@@ -57,7 +61,7 @@ const breadcrumbs = [
 ];
 
 export default function CreateEvent() {
-    const { ziggy } = usePage().props;
+    const { ziggy, adminSettings } = usePage().props;
     const formRef = useRef(null);
 
     const startDateRef = useRef(null);
@@ -82,7 +86,7 @@ export default function CreateEvent() {
     const { data, setData, post, processing } = useForm({
         name: "",
         description: "",
-        thumbnail: "/randoms/1.webp",
+        thumbnail: null,
         pin: [0.5071, 101.4478],
         location: "",
         speakers: [],
@@ -164,7 +168,21 @@ export default function CreateEvent() {
         const formSubmit = new FormData();
 
         Object.entries(data).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
+            if (key === "thumbnail") {
+                if (value instanceof File) {
+                    formSubmit.append(key, value);
+                } else if (
+                    typeof value === "string" &&
+                    value.startsWith("/default-event-images")
+                ) {
+                    formSubmit.append(key, value);
+                } else if (typeof value === "string") {
+                    formSubmit.append(
+                        key,
+                        value.replace(/^\/storage\/thumbnails\//, "")
+                    );
+                }
+            } else if (Array.isArray(value)) {
                 value.forEach((item, idx) => {
                     if (typeof item === "object" && item !== null) {
                         Object.entries(item).forEach(([k, v]) => {
@@ -205,6 +223,16 @@ export default function CreateEvent() {
         }
     }, [debounce]);
 
+    // Initialize with a default image on component mount
+    useEffect(() => {
+        if (!data.thumbnail) {
+            const randomImage = getNextImage(adminSettings);
+            if (randomImage) {
+                setData("thumbnail", `/default-event-images/${randomImage}`);
+            }
+        }
+    }, []); // Empty dependency array means this runs only once on mount
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard Event" />
@@ -227,18 +255,40 @@ export default function CreateEvent() {
                                 htmlFor="thumbnail"
                                 className="text-muted-foreground hover:bg-muted mx-auto aspect-square h-auto w-52 cursor-pointer overflow-hidden rounded border shadow hover:shadow-xl xl:h-80 xl:w-full"
                             >
-                                {data.thumbnail && (
-                                    <img
-                                        src={
-                                            typeof data.thumbnail === "string"
-                                                ? `${ziggy.url}/storage${data.thumbnail}`
-                                                : URL.createObjectURL(
-                                                      data.thumbnail
-                                                  )
-                                        }
-                                        alt="Thumbnail Acara"
-                                        className="h-full w-full border object-cover shadow"
-                                    />
+                                {data.thumbnail ? (
+                                    typeof data.thumbnail === "string" ? (
+                                        <img
+                                            src={
+                                                data.thumbnail.startsWith(
+                                                    "/default-event-images"
+                                                )
+                                                    ? `${
+                                                          ziggy.url
+                                                      }/storage/default-event-images/${data.thumbnail.replace(
+                                                          "/default-event-images/",
+                                                          ""
+                                                      )}`
+                                                    : `${ziggy.url}/storage${data.thumbnail}`
+                                            }
+                                            alt="Thumbnail Acara"
+                                            className="h-full w-full border object-cover shadow"
+                                            onError={handleImageError}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={URL.createObjectURL(
+                                                data.thumbnail
+                                            )}
+                                            alt="Thumbnail Acara"
+                                            className="h-full w-full border object-cover shadow"
+                                        />
+                                    )
+                                ) : (
+                                    <div className="flex items-center justify-center h-full w-full bg-gray-200 text-gray-500">
+                                        <span className="text-sm">
+                                            Gambar tidak tersedia
+                                        </span>
+                                    </div>
                                 )}
                             </Label>
                             <Input
@@ -258,11 +308,14 @@ export default function CreateEvent() {
                                 className="mx-auto inline-block w-fit"
                                 variant="secondary"
                                 onClick={() => {
-                                    const randomImage = getNextImage();
-                                    setData(
-                                        "thumbnail",
-                                        `/randoms/${randomImage}`
-                                    );
+                                    const randomImage =
+                                        getNextImage(adminSettings);
+                                    if (randomImage) {
+                                        setData(
+                                            "thumbnail",
+                                            `/default-event-images/${randomImage}`
+                                        );
+                                    }
                                 }}
                             >
                                 <Shuffle />

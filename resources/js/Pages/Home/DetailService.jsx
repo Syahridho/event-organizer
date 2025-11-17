@@ -47,8 +47,17 @@ import ReviewSection from "@/components/ReviewSection";
 import { createPaymentPayload } from "@/Utils/PaymentHelper";
 
 const DetailService = () => {
-    const { service, ziggy, transaction, user, leaves, photos, tax_info } =
-        usePage().props;
+    const {
+        service,
+        ziggy,
+        transaction,
+        user,
+        leaves,
+        photos,
+        tax_info,
+        cartDates,
+        pendingDates,
+    } = usePage().props;
     console.log(leaves);
 
     const dispatch = useDispatch();
@@ -390,11 +399,11 @@ const DetailService = () => {
                                             <span>{service.location}</span>
                                         </div>
                                     </div>
-                                    <Rating
+                                    {/* <Rating
                                         value={service.rating}
                                         size={20}
                                         showValue={true}
-                                    />
+                                    /> */}
                                 </div>
 
                                 <div className="space-y-6">
@@ -437,6 +446,10 @@ const DetailService = () => {
                                         }
                                         disabledLeaves={disabledLeaves}
                                         currentUserId={user?.id}
+                                        cartDates={cartDates}
+                                        pendingDates={pendingDates}
+                                        itemId={service.id}
+                                        itemType="service"
                                     />
                                 </div>
                                 <div className="text-center my-6">
@@ -505,6 +518,10 @@ const DetailService = () => {
                                 bookedDatesWithUser={bookedDatesWithUser}
                                 disabledLeaves={disabledLeaves}
                                 currentUserId={user?.id}
+                                cartDates={cartDates}
+                                pendingDates={pendingDates}
+                                itemId={service.id}
+                                itemType="service"
                             />
                         </div>
 

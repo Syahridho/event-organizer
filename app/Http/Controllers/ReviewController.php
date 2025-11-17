@@ -328,15 +328,21 @@ class ReviewController extends Controller
                 $review = Review::updateOrCreate(
                     [
                         'user_id' => $userId,
-                        'transaction_item_id' => $transactionItemId, 
+                        'transaction_item_id' => $transactionItemId,
                     ],
                     [
                         'rating' => $validated['rating'],
                         'comment' => $validated['comment'] ?? null,
-                        'item_id' => $transactionItem->item_id, 
+                        'item_id' => $transactionItem->item_id,
                         'item_type' => $transactionItem->item_type,
                     ]
                 );
+                
+                // Update the transaction_item with the note from the review
+                if ($review && $transactionItemId) {
+                    $transactionItem->note = $validated['comment'] ?? null;
+                    $transactionItem->save();
+                }
 
                 $transactionItem->reviews_id = $review->id;
 

@@ -53,14 +53,33 @@ const LazyImage = ({ src, alt, className }) => {
 export default function SearchPage({ products, keyword, type }) {
     const { ziggy } = usePage().props;
     const [activeFilter, setActiveFilter] = useState(type || "all");
+    console.log(type);
+    console.log(products);
 
     const baseUrl = ziggy.url;
-    const getImageUrl = (thumbnail) => {
+    const getImageUrl = (thumbnail, type) => {
+        console.log(thumbnail);
         // Kembalikan null jika tidak ada thumbnail, agar kita bisa render avatar huruf
-        if (!thumbnail || thumbnail === null) return null;
+        if (!thumbnail || thumbnail === null) {
+            // For mitra type, return null to trigger avatar fallback
+            if (type === "mitra") {
+                return null;
+            }
+            // For other types, return default image
+            return `${baseUrl}/storage/default-event-images/dubby.webp`;
+        }
+
+        if (type === "mitra") {
+            return `${baseUrl}/storage/${thumbnail}`;
+        }
+
+        if (thumbnail.includes("default-event-images"))
+            return `${baseUrl}/storage/${thumbnail}`;
+        if (thumbnail.includes("thumbnails"))
+            return `${baseUrl}/storage/${thumbnail}`;
         return thumbnail.startsWith("http")
             ? thumbnail
-            : `${baseUrl}/storage${thumbnail}`;
+            : `${baseUrl}/storage/thumbnails/${thumbnail}`;
     };
 
     // Palet warna tetap (agar Tailwind tidak purging class)
@@ -205,7 +224,10 @@ export default function SearchPage({ products, keyword, type }) {
                                 <div className="relative aspect-[4/3] overflow-hidden">
                                     {getImageUrl(product.thumbnail) ? (
                                         <LazyImage
-                                            src={getImageUrl(product.thumbnail)}
+                                            src={getImageUrl(
+                                                product.thumbnail,
+                                                product.type
+                                            )}
                                             alt={product.name}
                                             className="w-full h-full"
                                         />

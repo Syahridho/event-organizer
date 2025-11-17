@@ -129,4 +129,78 @@ class AdminSettingController extends Controller
     
         return redirect()->back()->with('success', 'Mode Pemeliharaan Diperbarui');
     }
+
+    public function updateDefaultEventImage(Request $request)
+    {
+        $request->validate([
+            'default_event_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048', // Max 2MB
+        ]);
+
+        $setting = AdminSetting::firstOrCreate([]);
+        
+        // Get existing images or initialize empty array
+        $existingImages = $setting->default_image_event ?? [];
+        
+        // Generate unique filename
+        $filename = uniqid() . '.' . $request->file('default_event_image')->getClientOriginalExtension();
+        
+        // Store file in random directory
+        $path = $request->file('default_event_image')->store('default-event-images', 'public');
+        
+        // Add new image to array
+        $newImage = [
+            'id' => uniqid(),
+            'filename' => basename($path),
+            'path' => $path,
+            'created_at' => now()->toISOString()
+        ];
+        
+        $existingImages[] = $newImage;
+        
+        // Update setting with JSON array
+        $setting->update([
+            'default_image_event' => $existingImages,
+        ]);
+
+        return redirect()->back()->with('success', 'Gambar default event berhasil ditambahkan.');
+    }
+
+    public function deleteDefaultEventImage(Request $request)
+    {
+        $request->validate([
+            'image_id' => 'required|string',
+        ]);
+
+        $setting = AdminSetting::first();
+        
+        if (!$setting || !$setting->default_image_event) {
+            return response()->json(['error' => 'No default event images found'], 404);
+        }
+        
+        $images = $setting->default_image_event;
+        $imageToDelete = null;
+        
+        // Find image to delete
+        foreach ($images as $index => $image) {
+            if ($image['id'] === $request->image_id) {
+                $imageToDelete = $image;
+                unset($images[$index]);
+                break;
+            }
+        }
+        
+        if ($imageToDelete) {
+            // Delete file from storage
+            Storage::disk('public')->delete($imageToDelete['path']);
+            
+            // Update setting with remaining images
+            $setting->update([
+                'default_image_event' => array_values($images), // Re-index array
+            ]);
+            
+            return redirect()->back()->with(['success' => 'Gambar berhasil dihapus']);
+        }
+        
+        return redirect()->back()->with(['error' => 'Image not found'], 404);
+    }
 }

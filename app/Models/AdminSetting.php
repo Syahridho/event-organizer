@@ -24,6 +24,7 @@ class AdminSetting extends Model
         'seo_description',
         'seo_keywords',
         'seo_image',
+        'default_image_event',
         'seo_twitter_card',
         'seo_og_type',
         'seo_canonical_url',
@@ -40,6 +41,7 @@ class AdminSetting extends Model
         'payment_time' => 'integer',
         'tax_value' => 'decimal:2',
         'tax_type' => 'string',
+        'default_image_event' => 'array',
     ];
 
     /**

@@ -20,7 +20,7 @@ class ServiceSeeder extends Seeder
             Service::create([
                 'user_id' => $user->id,
                 'name' => "Service $i",
-                'thumbnail' => "/randoms/" . rand(1, 5) . ".webp",
+                'thumbnail' => "/default-event-images/" . rand(1, 5) . ".webp",
                 'description' => "Deskripsi layanan ke-$i yang dibuat untuk contoh seeder.",
                 'location' => "Lokasi $i",
                 'price' => rand(50000, 500000),

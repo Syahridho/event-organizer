@@ -2,9 +2,35 @@ import { FaWhatsapp } from "react-icons/fa";
 import { MdOutlineEmail } from "react-icons/md";
 import { FaPhone } from "react-icons/fa6";
 
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 
 export default function Footer() {
+    const { adminSettings } = usePage().props;
+
+    // Function to format phone number with spaces for better readability
+    const formatPhoneNumber = (phone) => {
+        // Remove all non-digit characters first
+        const cleaned = phone.replace(/\D/g, "");
+
+        // Format Indonesian phone numbers
+        if (cleaned.startsWith("62")) {
+            // Convert +62xxx to +628 xx xxxx xxxx format
+            if (cleaned.length >= 12) {
+                return `+62 ${cleaned.substring(2, 4)} ${cleaned.substring(
+                    4,
+                    8
+                )} ${cleaned.substring(8, 12)}`;
+            } else if (cleaned.length >= 10) {
+                return `+62 ${cleaned.substring(2, 4)} ${cleaned.substring(
+                    4,
+                    8
+                )} ${cleaned.substring(8)}`;
+            }
+        }
+
+        // If it doesn't match the expected format, return as is with basic formatting
+        return phone;
+    };
     return (
         <footer className="bg-white dark:bg-gray-900 border border-t">
             <div className="mx-auto w-full max-w-5xl ">
@@ -16,7 +42,10 @@ export default function Footer() {
                         <ul className="text-gray-500 dark:text-gray-400 font-medium">
                             <li className="mb-4">
                                 <a
-                                    href="https://wa.me/6289512220026"
+                                    href={`https://wa.me/${(
+                                        adminSettings?.contact_phone ||
+                                        "+6289512220026"
+                                    ).replace(/\D/g, "")}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:underline flex items-center gap-2"
@@ -26,7 +55,10 @@ export default function Footer() {
                             </li>
                             <li className="mb-4">
                                 <a
-                                    href="mailto:eventplannusantara@gmail.com"
+                                    href={`mailto:${
+                                        adminSettings?.contact_email ||
+                                        "eventplannusantara@gmail.com"
+                                    }`}
                                     className="hover:underline flex items-center gap-2"
                                 >
                                     <MdOutlineEmail />
@@ -34,15 +66,18 @@ export default function Footer() {
                                 </a>
                             </li>
                             <li className="mb-4">
-                                <Link href="#" className="hover:underline">
+                                <div className="hover:underline">
                                     <div className="flex items-center gap-2">
                                         <FaPhone className="text-sm shrink-0" />
                                         Pusat Panggilan
                                     </div>
                                     <span className="ms-5">
-                                        +628 95 1222 0026
+                                        {formatPhoneNumber(
+                                            adminSettings?.contact_phone ||
+                                                "+6289512220026"
+                                        )}
                                     </span>
-                                </Link>
+                                </div>
                             </li>
                         </ul>
                     </div>

@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use App\Models\Leave;
 use App\Models\Event;
 use App\Models\Building;
+use App\Models\User;
 use App\Models\AdminSetting;
 use App\Models\Service;
 use App\Models\Testimonial;
@@ -50,6 +51,8 @@ class HomeController extends Controller
             'services' => $services,
             'buildings' => $buildings,
             'hero' => $setting->seo_image,
+            'phone' => $setting->contact_phone,
+            'email' => $setting->contact_email,
             'propertys' => $propertys,
             'testimonials' => $testimonials,
         ]);
@@ -241,6 +244,33 @@ class HomeController extends Controller
         ];
 
     
+        // Get user's cart items for this service
+        $cartItems = [];
+        if (Auth::check()) {
+            $cartItems = DB::table('carts')
+                ->where('user_id', Auth::id())
+                ->where('item_id', $id)
+                ->where('item_type', 'App\Models\Service')
+                ->where('type', 'service')
+                ->pluck('rent_days')
+                ->filter()
+                ->toArray();
+        }
+        
+        // Get user's pending transactions for this service
+        $pendingTransactions = [];
+        if (Auth::check()) {
+            $pendingTransactions = DB::table('transaction_items')
+                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+                ->where('transactions.user_id', Auth::id())
+                ->where('transactions.status', 'pending')
+                ->where('transaction_items.item_id', $id)
+                ->where('transaction_items.item_type', 'service')
+                ->pluck('rent_days')
+                ->filter()
+                ->toArray();
+        }
+        
         return Inertia::render('Home/DetailService', [
             'id' => $id,
             'service' => $serviceData,
@@ -249,6 +279,8 @@ class HomeController extends Controller
             'leaves' => $leaves,
             'photos' => $photos,
             'tax_info' => $taxInfo,
+            'cartDates' => $cartItems,
+            'pendingDates' => $pendingTransactions,
         ]);
     }
 
@@ -312,6 +344,33 @@ class HomeController extends Controller
             'updated_at' => $building->updated_at,
         ];
 
+        // Get user's cart items for this building
+        $cartItems = [];
+        if (Auth::check()) {
+            $cartItems = DB::table('carts')
+                ->where('user_id', Auth::id())
+                ->where('item_id', $id)
+                ->where('item_type', 'App\Models\Building')
+                ->where('type', 'building')
+                ->pluck('rent_days')
+                ->filter()
+                ->toArray();
+        }
+        
+        // Get user's pending transactions for this building
+        $pendingTransactions = [];
+        if (Auth::check()) {
+            $pendingTransactions = DB::table('transaction_items')
+                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+                ->where('transactions.user_id', Auth::id())
+                ->where('transactions.status', 'pending')
+                ->where('transaction_items.item_id', $id)
+                ->where('transaction_items.item_type', 'building')
+                ->pluck('rent_days')
+                ->filter()
+                ->toArray();
+        }
+        
         return Inertia::render('Home/DetailBuilding', [
             'id' => $id,
             'building' => $buildingData,
@@ -320,6 +379,8 @@ class HomeController extends Controller
             'leaves' => $leaves,
             'photos' => $photos,
             'tax_info' => $taxInfo,
+            'cartDates' => $cartItems,
+            'pendingDates' => $pendingTransactions,
         ]);
     }
 
@@ -386,7 +447,32 @@ class HomeController extends Controller
             'updated_at' => $property->updated_at,
         ];
 
-
+        // Get user's cart items for this property
+        $cartItems = [];
+        if (Auth::check()) {
+            $cartItems = DB::table('carts')
+                ->where('user_id', Auth::id())
+                ->where('item_id', $id)
+                ->where('item_type', 'App\Models\RentProperty')
+                ->where('type', 'rent_property')
+                ->pluck('rent_days')
+                ->filter()
+                ->toArray();
+        }
+        
+        // Get user's pending transactions for this property
+        $pendingTransactions = [];
+        if (Auth::check()) {
+            $pendingTransactions = DB::table('transaction_items')
+                ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+                ->where('transactions.user_id', Auth::id())
+                ->where('transactions.status', 'pending')
+                ->where('transaction_items.item_id', $id)
+                ->where('transaction_items.item_type', 'rent_property')
+                ->pluck('rent_days')
+                ->filter()
+                ->toArray();
+        }
 
         return Inertia::render('Home/DetailProperty', [
             'id' => $id,
@@ -396,6 +482,8 @@ class HomeController extends Controller
             'leaves' => $leaves,
             'photos' => $photos,
             'tax_info' => $taxInfo,
+            'cartDates' => $cartItems,
+            'pendingDates' => $pendingTransactions,
         ]);
     }
 
@@ -464,7 +552,7 @@ class HomeController extends Controller
                 'location' => $item->location ?? null,
             ]);
         } elseif ($type === 'mitra') {
-            $results = \App\Models\User::query()
+            $results = User::query()
                 ->where('role', 'mitra')
                 ->where(function ($q) use ($keyword) {
                     $q->where('name', 'like', "%{$keyword}%")
@@ -516,7 +604,7 @@ class HomeController extends Controller
                     'thumbnail' => $i->thumbnail ? '/thumbnails/'.$i->thumbnail : null,
                     'location' => $i->location ?? null,
                 ]))
-                ->merge(\App\Models\User::query()
+                ->merge(User::query()
                     ->where('role', 'mitra')
                     ->where(function ($q) use ($keyword) {
                         $q->where('name', 'like', "%{$keyword}%")

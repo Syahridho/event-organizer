@@ -222,6 +222,35 @@ export const selectCartItemById = (state, cartId) =>
     state.cart.itemsById[cartId];
 
 /**
+ * Select cart dates for a specific item type and ID
+ * Returns an array of rent_days for cart items matching the criteria
+ * Usage: useSelector(state => selectCartDatesByItem(state, itemId, itemType))
+ */
+export const selectCartDatesByItem = (state, itemId, itemType) => {
+    const items = state.cart.itemIds.map((id) => state.cart.itemsById[id]);
+    return items
+        .filter(
+            (item) =>
+                item.item_id === itemId &&
+                item.type === itemType &&
+                item.rent_days
+        )
+        .map((item) => item.rent_days);
+};
+
+/**
+ * Select all cart dates for a specific item type
+ * Returns an array of rent_days for all cart items of the type
+ * Usage: useSelector(state => selectCartDatesByType(state, itemType))
+ */
+export const selectCartDatesByType = (state, itemType) => {
+    const items = state.cart.itemIds.map((id) => state.cart.itemsById[id]);
+    return items
+        .filter((item) => item.type === itemType && item.rent_days)
+        .map((item) => item.rent_days);
+};
+
+/**
  * PERFORMANCE METRICS:
  *
  * | Operation          | Before (Array) | After (Map) | Improvement |

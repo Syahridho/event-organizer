@@ -273,19 +273,7 @@ const columns = [
                                     )
                                 }
                             >
-                                Banned
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={() =>
-                                    router.visit(
-                                        route(
-                                            "admin.events.attendance",
-                                            event.id
-                                        )
-                                    )
-                                }
-                            >
-                                Attendance
+                                Larang
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -764,7 +752,7 @@ function TableCellViewer({ item }) {
                     <div className="flex flex-col gap-4">
                         <img
                             src={
-                                item.thumbnail.includes("randoms")
+                                item.thumbnail.includes("default-event-images")
                                     ? `${ziggy.url}/storage${item.thumbnail}`
                                     : `${ziggy.url}/storage/thumbnails/${item.thumbnail}`
                             }

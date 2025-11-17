@@ -913,7 +913,7 @@ function TableCellViewer({ item }) {
                     <div className="flex flex-col gap-4">
                         <img
                             src={
-                                item.thumbnail.includes("randoms")
+                                item.thumbnail.includes("default-event-images")
                                     ? `${ziggy.url}/storage${item.thumbnail}`
                                     : `${ziggy.url}/storage/thumbnails/${item.thumbnail}`
                             }

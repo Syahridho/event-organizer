@@ -43,7 +43,7 @@ import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 
 export default function CheckoutPage() {
     const { checkoutData, ziggy, user, taxInfo } = usePage().props;
-    console.log(checkoutData);
+    console.log("CheckoutData from server:", checkoutData);
 
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [addresses, setAddresses] = useState([]);
@@ -66,28 +66,23 @@ export default function CheckoutPage() {
         is_default: false,
     });
 
-    const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
+    // Item note modal state
+    const [showItemNoteModal, setShowItemNoteModal] = useState(false);
+    const [editingItemNote, setEditingItemNote] = useState(null);
+    const [itemNotes, setItemNotes] = useState({});
+    const [tempNoteValue, setTempNoteValue] = useState("");
 
-    // CRITICAL: Get CSRF token helper
-    const getCsrfToken = () => {
-        return (
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute("content") ||
-            document.querySelector('input[name="_token"]')?.value
-        );
-    };
+    const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
 
     // Check if address is required based on item types
     const isAddressRequired = useMemo(() => {
         if (!checkoutData?.items) return false;
-        // Address required for service, building, and rent_property (formerly "property")
         return checkoutData.items.some(
             (item) =>
                 item.type === "service" ||
                 item.type === "building" ||
                 item.type === "rent_property" ||
-                item.type === "property" // backward compatibility
+                item.type === "property"
         );
     }, [checkoutData]);
 
@@ -159,39 +154,35 @@ export default function CheckoutPage() {
             service: "services",
             building: "buildings",
             property: "property",
-            rent_property: "property", // support normalized type
+            rent_property: "property",
         };
         const path = typeMap[item.type] || "events";
         return `/${path}/${item.id}`;
     };
 
-    // Get thumbnail URL using cart item data (fix: use thumbnail from cart)
+    // Get thumbnail URL using cart item data
     const getCartItemThumbnailUrl = (cartItem) => {
         const baseUrl = ziggy.url;
-        console.log(cartItem);
-        // Tickets: thumbnail comes from nested event on cart item
+
         if (cartItem.type === "ticket") {
             const thumb = cartItem?.thumbnail;
-            if (!thumb) return "/randoms/1.webp";
+            if (!thumb) return "/default-event-images/dubby.webp";
 
-            if (String(thumb).includes("randoms")) {
-                // randoms are stored under /storage/randoms/...
+            if (String(thumb).includes("default-event-images")) {
                 return `${baseUrl}/storage${
                     String(thumb).startsWith("/") ? thumb : `/${thumb}`
                 }`;
             }
-            // regular thumbnails are stored under /storage/thumbnails/...
             return `${baseUrl}/storage/thumbnails/${String(thumb).replace(
                 /^\/+/,
                 ""
             )}`;
         }
 
-        // Non-tickets: thumbnail is directly on the nested item
         const thumb = cartItem?.thumbnail;
         if (!thumb) return "/images/fallback-thumbnail.jpg";
 
-        if (String(thumb).includes("randoms")) {
+        if (String(thumb).includes("default-event-images")) {
             return `${baseUrl}/storage${
                 String(thumb).startsWith("/") ? thumb : `/${thumb}`
             }`;
@@ -352,12 +343,15 @@ export default function CheckoutPage() {
         router.visit("/cart");
     }, []);
 
-    // Handle payment - supports free checkout and fixes CSRF/type mapping
+    // Handle payment - FIXED: Added itemNotes to dependency array
     const handlePayment = useCallback(
         async (e) => {
             if (e) e.preventDefault();
 
-            // Validate address requirement (both flows)
+            console.log("=== PAYMENT HANDLER START ===");
+            console.log("Current itemNotes:", itemNotes);
+
+            // Validate address requirement
             if (isAddressRequired && !selectedAddressId) {
                 toast.error(
                     "Silakan pilih alamat pengiriman untuk item layanan/gedung/properti"
@@ -374,22 +368,35 @@ export default function CheckoutPage() {
                         ticket: "ticket",
                         service: "service",
                         building: "building",
-                        property: "rent_property", // normalize legacy type
+                        property: "rent_property",
                         rent_property: "rent_property",
                     };
                     return typeMapping[frontendType] || "ticket";
                 };
 
-                // Build common payload base
-                const baseItems = checkoutData.items.map((item) => ({
-                    id: parseInt(item.id),
-                    type: mapItemType(item.type),
-                    quantity: parseInt(item.quantity),
-                    price: parseInt(item.price),
-                    delivery_type: item.delivery_type || null,
-                    rent_days: item.rent_days,
-                    name: `${item.name} (${item.type})`,
-                }));
+                // Build common payload base with notes
+                const baseItems = checkoutData.items.map((item) => {
+                    const itemNote = itemNotes[item.cart_id] || null;
+                    console.log(`Building item ${item.cart_id}:`, {
+                        id: item.id,
+                        cart_id: item.cart_id,
+                        note: itemNote,
+                        noteExists: !!itemNote,
+                    });
+
+                    return {
+                        id: parseInt(item.id),
+                        type: mapItemType(item.type),
+                        quantity: parseInt(item.quantity),
+                        price: parseInt(item.price),
+                        delivery_type: item.delivery_type || null,
+                        rent_days: item.rent_days,
+                        name: `${item.name} (${item.type})`,
+                        note: itemNote,
+                    };
+                });
+
+                console.log("Final baseItems with notes:", baseItems);
 
                 const paymentData = {
                     items: baseItems,
@@ -410,22 +417,29 @@ export default function CheckoutPage() {
                     };
                 }
 
-                // CSRF token
-                const csrfToken = getCsrfToken();
+                console.log(
+                    "Payment data being sent:",
+                    JSON.stringify(paymentData, null, 2)
+                );
 
-                // FREE FLOW: when subtotal is 0, route to /event/free (no Midtrans)
+                // FREE FLOW
                 if (parseInt(subtotal) <= 0) {
                     try {
                         const freePayload = {
-                            items: baseItems.map(({ id, type, quantity }) => ({
-                                id,
-                                type,
-                                quantity,
-                            })),
+                            items: baseItems.map(
+                                ({ id, type, quantity, note }) => ({
+                                    id,
+                                    type,
+                                    quantity,
+                                    note,
+                                })
+                            ),
                             amount: 0,
                             name: user.name,
                             email: user.email,
                         };
+
+                        console.log("Free payload:", freePayload);
 
                         const freeResponse = await axios.post(
                             "/event/free",
@@ -434,18 +448,14 @@ export default function CheckoutPage() {
                                 timeout: 30000,
                                 headers: {
                                     "Content-Type": "application/json",
-                                    "X-Requested-With": "XMLHttpRequest",
-                                    "X-CSRF-TOKEN": csrfToken,
                                 },
                             }
                         );
 
-                        // Clear cart after successful free registration
                         await axios.delete("/cart/clear-after-checkout", {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": getCsrfToken(),
                             },
                         });
 
@@ -476,7 +486,7 @@ export default function CheckoutPage() {
                     }
                 }
 
-                // PAID FLOW: require min amount and Midtrans readiness
+                // PAID FLOW
                 if (checkoutData.total < 1000) {
                     setIsProcessingPayment(false);
                     toast.error("Minimum pembayaran adalah Rp. 1.000");
@@ -498,8 +508,6 @@ export default function CheckoutPage() {
                         timeout: 30000,
                         headers: {
                             "Content-Type": "application/json",
-                            "X-Requested-With": "XMLHttpRequest",
-                            "X-CSRF-TOKEN": csrfToken,
                         },
                     }
                 );
@@ -519,7 +527,6 @@ export default function CheckoutPage() {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": getCsrfToken(),
                             },
                         });
 
@@ -536,7 +543,6 @@ export default function CheckoutPage() {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": getCsrfToken(),
                             },
                         });
 
@@ -561,7 +567,6 @@ export default function CheckoutPage() {
                             data: { cart_ids: checkoutData.cart_ids },
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": getCsrfToken(),
                             },
                         });
                         router.visit("/purchase", {
@@ -607,7 +612,8 @@ export default function CheckoutPage() {
             snapLoaded,
             isAddressRequired,
             selectedAddressId,
-            totalWithTax,
+            subtotal,
+            itemNotes, // FIXED: Added itemNotes here
         ]
     );
 
@@ -616,7 +622,7 @@ export default function CheckoutPage() {
         service: "Jasa",
         building: "Gedung",
         property: "Properti",
-        rent_property: "Properti", // normalized label
+        rent_property: "Properti",
     };
 
     const getTypeLabel = (type) => TYPE_LABELS[type] || type;
@@ -637,6 +643,11 @@ export default function CheckoutPage() {
             router.visit("/cart");
         }
     }, [checkoutData]);
+
+    // Debug log for itemNotes changes
+    useEffect(() => {
+        console.log("ItemNotes state updated:", itemNotes);
+    }, [itemNotes]);
 
     if (!checkoutData) {
         return (
@@ -917,7 +928,7 @@ export default function CheckoutPage() {
                                                 >
                                                     {item?.name}
                                                     {item?.ticket_name !==
-                                                        null ??
+                                                        null &&
                                                         ` - ${item?.ticket_name}`}
                                                     <FaExternalLinkAlt className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                                                 </Link>
@@ -938,6 +949,26 @@ export default function CheckoutPage() {
                                                                 }
                                                             </span>
                                                         )}
+
+                                                    {/* Item Note Display */}
+                                                    {itemNotes[
+                                                        item.cart_id
+                                                    ] && (
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">
+                                                            <svg
+                                                                className="w-2.5 h-2.5"
+                                                                fill="currentColor"
+                                                                viewBox="0 0 20 20"
+                                                            >
+                                                                <path
+                                                                    fillRule="evenodd"
+                                                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                                    clipRule="evenodd"
+                                                                />
+                                                            </svg>
+                                                            Catatan
+                                                        </span>
+                                                    )}
                                                 </div>
 
                                                 {item.type === "ticket" &&
@@ -955,7 +986,7 @@ export default function CheckoutPage() {
                                                     "rent_property" && (
                                                     <div className="text-xs text-gray-600">
                                                         {item.delivery_type ===
-                                                        null // <-- Pengecekan DALAM
+                                                        null
                                                             ? null
                                                             : item.delivery_type ===
                                                               "delivery"
@@ -1000,7 +1031,7 @@ export default function CheckoutPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="text-right">
+                                            <div className="text-right space-y-2">
                                                 <div className="font-bold text-sm text-blue-600">
                                                     Rp{" "}
                                                     {formatRupiah(
@@ -1008,6 +1039,60 @@ export default function CheckoutPage() {
                                                             item.quantity
                                                     )}
                                                 </div>
+
+                                                {/* Add Note Button */}
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        console.log(
+                                                            "Opening note modal for cart_id:",
+                                                            item.cart_id
+                                                        );
+                                                        console.log(
+                                                            "Current note:",
+                                                            itemNotes[
+                                                                item.cart_id
+                                                            ]
+                                                        );
+                                                        setTempNoteValue(
+                                                            itemNotes[
+                                                                item.cart_id
+                                                            ] || ""
+                                                        );
+                                                        setEditingItemNote({
+                                                            cart_id:
+                                                                item.cart_id,
+                                                            name: item.name,
+                                                            note:
+                                                                itemNotes[
+                                                                    item.cart_id
+                                                                ] || "",
+                                                        });
+                                                        setShowItemNoteModal(
+                                                            true
+                                                        );
+                                                    }}
+                                                    className="text-xs"
+                                                >
+                                                    <svg
+                                                        className="w-3 h-3 mr-1"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 0L15 5.586V7a2 2 0 012-2h6a2 2 0 012 2v1.586l-3.414 3.414a2 2 0 11-2.828 0L11 5.586z"
+                                                        />
+                                                    </svg>
+                                                    {itemNotes[item.cart_id]
+                                                        ? "Edit Catatan"
+                                                        : "Tambah Catatan"}
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -1321,6 +1406,87 @@ export default function CheckoutPage() {
                         </Button>
                         <Button type="button" onClick={saveAddress}>
                             Simpan Alamat
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Item Note Modal - FIXED */}
+            <Dialog
+                open={showItemNoteModal}
+                onOpenChange={setShowItemNoteModal}
+            >
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            Catatan untuk {editingItemNote?.name}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="item_note">Catatan Item</Label>
+                            <Textarea
+                                id="item_note"
+                                value={tempNoteValue}
+                                onChange={(e) => {
+                                    setTempNoteValue(e.target.value);
+                                }}
+                                placeholder="Tambahkan catatan khusus untuk item ini (opsional)"
+                                rows={4}
+                                maxLength={500}
+                            />
+                            <p className="text-xs text-gray-500">
+                                {tempNoteValue.length}/500 karakter
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setShowItemNoteModal(false);
+                                setEditingItemNote(null);
+                                setTempNoteValue("");
+                            }}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                if (editingItemNote) {
+                                    const trimmedNote = tempNoteValue.trim();
+                                    console.log(
+                                        `Saving note for cart_id ${editingItemNote.cart_id}:`,
+                                        trimmedNote
+                                    );
+
+                                    setItemNotes((prev) => {
+                                        const updated = {
+                                            ...prev,
+                                            [editingItemNote.cart_id]:
+                                                trimmedNote || null,
+                                        };
+                                        console.log(
+                                            "Updated itemNotes state:",
+                                            updated
+                                        );
+                                        return updated;
+                                    });
+
+                                    setShowItemNoteModal(false);
+                                    setEditingItemNote(null);
+                                    setTempNoteValue("");
+                                    toast.success(
+                                        "Catatan item berhasil disimpan"
+                                    );
+                                }
+                            }}
+                        >
+                            Simpan Catatan
                         </Button>
                     </DialogFooter>
                 </DialogContent>

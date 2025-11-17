@@ -14,7 +14,11 @@ import {
     Shuffle,
 } from "lucide-react";
 
-import { getNextImage } from "@/features/randomImage";
+import {
+    getNextImage,
+    getImageUrl,
+    handleImageError,
+} from "@/features/randomImage";
 import { Textarea } from "@/components/ui/textarea";
 import CalendarWithTime from "@/components/CalenderWithTime";
 import LocationPickerMap from "@/components/location-picker-map";
@@ -44,7 +48,7 @@ import { formatRupiahInput } from "@/Utils/formatRupiah";
 import ReactQuill from "react-quill";
 
 export default function UpdateEvent() {
-    const { ziggy, event, flash } = usePage().props;
+    const { ziggy, event, flash, adminSettings } = usePage().props;
 
     const breadcrumbs = [
         { title: "Dashboard", href: "/dashboard" },
@@ -79,10 +83,16 @@ export default function UpdateEvent() {
         isLoadingSearch: false,
     });
 
+    // Determine if the original thumbnail is a user-uploaded image
+    const isOriginalThumbnailUserUpload =
+        event?.thumbnail && !event.thumbnail.includes("default-event-images");
+
     const { data, setData, processing, post } = useForm({
         name: event?.name ?? "",
         description: event?.description ?? "",
-        thumbnail: event?.thumbnail ?? "/randoms/1.webp",
+        thumbnail: event?.thumbnail ?? null,
+        originalThumbnail: event?.thumbnail ?? null, // Track original thumbnail
+        isUserUploadedImage: isOriginalThumbnailUserUpload, // Track if original was user upload
         pin: event.pin ? event.pin.split(",").map(Number) : [0.5071, 101.4478],
         location: event?.location ?? "",
         speakers: event?.speakers ?? [],
@@ -175,17 +185,32 @@ export default function UpdateEvent() {
             if (key === "thumbnail") {
                 if (value instanceof File) {
                     formSubmit.append(key, value);
+                    // Mark that we're uploading a new file
+                    formSubmit.append("thumbnail_changed", "true");
                 } else if (
                     typeof value === "string" &&
-                    value.startsWith("/randoms")
+                    value.startsWith("/default-event-images")
                 ) {
                     formSubmit.append(key, value);
+                    // Check if we're switching from user upload to default
+                    if (
+                        data.isUserUploadedImage &&
+                        value !== data.originalThumbnail
+                    ) {
+                        formSubmit.append("delete_old_thumbnail", "true");
+                    }
                 } else if (typeof value === "string") {
                     formSubmit.append(
                         key,
                         value.replace(/^\/storage\/thumbnails\//, "")
                     );
                 }
+            } else if (
+                key === "originalThumbnail" ||
+                key === "isUserUploadedImage"
+            ) {
+                // Skip these fields, they're for client-side tracking only
+                return;
             } else if (Array.isArray(value)) {
                 value.forEach((item, idx) => {
                     if (typeof item === "object" && item !== null) {
@@ -273,26 +298,42 @@ export default function UpdateEvent() {
                                 htmlFor="thumbnail"
                                 className="text-muted-foreground hover:bg-muted mx-auto aspect-square h-auto w-52 cursor-pointer overflow-hidden rounded border shadow hover:shadow-xl xl:h-80 xl:w-full"
                             >
-                                {typeof data.thumbnail === "string" ? (
-                                    <img
-                                        src={
-                                            data.thumbnail.includes("randoms")
-                                                ? `${ziggy.url}/storage${data.thumbnail}`
-                                                : `${ziggy.url}/storage/thumbnails/${data.thumbnail}`
-                                        }
-                                        alt="thumbnail Acara"
-                                        className="h-full w-full border object-cover shadow"
-                                    />
-                                ) : (
-                                    data.thumbnail instanceof File && (
+                                {data.thumbnail ? (
+                                    typeof data.thumbnail === "string" ? (
                                         <img
-                                            src={URL.createObjectURL(
-                                                data.thumbnail
-                                            )}
+                                            src={
+                                                data.thumbnail.includes(
+                                                    "default-event-images"
+                                                )
+                                                    ? `${
+                                                          ziggy.url
+                                                      }/storage/default-event-images/${data.thumbnail.replace(
+                                                          "/default-event-images/",
+                                                          ""
+                                                      )}`
+                                                    : `${ziggy.url}/storage/thumbnails/${data.thumbnail}`
+                                            }
                                             alt="thumbnail Acara"
                                             className="h-full w-full border object-cover shadow"
+                                            onError={handleImageError}
                                         />
+                                    ) : (
+                                        data.thumbnail instanceof File && (
+                                            <img
+                                                src={URL.createObjectURL(
+                                                    data.thumbnail
+                                                )}
+                                                alt="thumbnail Acara"
+                                                className="h-full w-full border object-cover shadow"
+                                            />
+                                        )
                                     )
+                                ) : (
+                                    <div className="flex items-center justify-center h-full w-full bg-gray-200 text-gray-500">
+                                        <span className="text-sm">
+                                            Gambar tidak tersedia
+                                        </span>
+                                    </div>
                                 )}
                             </Label>
                             <Input
@@ -312,11 +353,14 @@ export default function UpdateEvent() {
                                 className="mx-auto inline-block w-fit"
                                 variant="secondary"
                                 onClick={() => {
-                                    const randomImage = getNextImage();
-                                    setData(
-                                        "thumbnail",
-                                        `/randoms/${randomImage}`
-                                    );
+                                    const randomImage =
+                                        getNextImage(adminSettings);
+                                    if (randomImage) {
+                                        setData(
+                                            "thumbnail",
+                                            `/default-event-images/${randomImage}`
+                                        );
+                                    }
                                 }}
                             >
                                 <Shuffle />

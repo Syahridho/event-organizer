@@ -39,6 +39,8 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\CheckMaintenanceMode::class,
+            \App\Http\Middleware\ShareAdminSettings::class,
+            \App\Http\Middleware\CheckBannedStatus::class,
         ],
 
         'api' => [
@@ -70,5 +72,6 @@ class Kernel extends HttpKernel
         'user.last.seen.at' => \App\Http\Middleware\UserLastSeenAtMiddleware::class,
         'role' => \App\Http\Middleware\HandleRole::class,
         'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
+        'banned.check' => \App\Http\Middleware\CheckBannedStatus::class,
     ];
 }

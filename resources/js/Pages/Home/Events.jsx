@@ -174,7 +174,10 @@ export default function HomeEvent() {
     };
 
     const getImageUrl = (thumbnail) => {
-        if (!thumbnail) return `${baseUrl}/storage/randoms/3.webp`;
+        if (!thumbnail)
+            return `${baseUrl}/storage/default-event-images/dubby.webp`;
+        if (thumbnail.includes("default-event-images"))
+            return `${baseUrl}/storage${thumbnail}`;
         return thumbnail.startsWith("http")
             ? thumbnail
             : `${baseUrl}/storage/thumbnails/${thumbnail}`;

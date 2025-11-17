@@ -59,6 +59,11 @@ const admin = [
         icon: TbUserUp,
     },
     {
+        title: "Management User",
+        url: "/admin/user",
+        icon: Users,
+    },
+    {
         title: "Penarikan Mitra",
         url: "/admin/withdraw",
         icon: FaMoneyBillTransfer,

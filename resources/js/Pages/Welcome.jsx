@@ -111,7 +111,7 @@ const LazyImage = ({ src, alt, className, onLoad, onError, ...props }) => {
 const ItemCard = ({ item, type, baseUrl }) => {
     const getImageUrl = useCallback(() => {
         if (type === "events") {
-            return item.thumbnail.includes("randoms")
+            return item.thumbnail.includes("default-event-images")
                 ? `${baseUrl}/storage${item.thumbnail}`
                 : `${baseUrl}/storage/thumbnails/${item.thumbnail}`;
         }

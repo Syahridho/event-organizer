@@ -1,0 +1,127 @@
+@startuml
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #2C3E50
+  FontColor black
+  RoundedCorner 25
+  ArrowColor #1A5276
+  ArrowFontColor black
+}
+
+start
+
+:User Mendaftar & Login ke Sistem;
+note right: Role: User, Mitra, Admin
+
+:Mitra (EO) Membuat Event;
+note right: Upload thumbnail, deskripsi, tanggal, lokasi
+
+:Mitra Membuat Tiket untuk Event;
+note right: Set harga, kuota, jenis tiket
+
+:Mitra Membuat Jasa (Service);
+note right: Upload foto, deskripsi, harga, lokasi
+
+:Mitra Membuka Gedung untuk Disewa;
+note right: Upload foto, kapasitas, harga, lokasi
+
+:Mitra Menyewakan Properti;
+note right: Upload foto, deskripsi, harga, lokasi
+
+:Admin Melakukan Validasi & Approval Mitra;
+note right: Review dokumen, approve/reject
+
+:User Menjelajahi Halaman Utama;
+note right: Browse events, services, buildings, properties
+
+:User Mencari Item Spesifik;
+note right: Filter berdasarkan kategori, lokasi, tanggal
+
+:User Melihat Detail Item;
+note right: Lihat foto, deskripsi, harga, jadwal
+
+:User Menambahkan Item ke Keranjang;
+note right: Cart dengan validasi real-time
+
+if (Item Type?) then (Ticket)
+  :Sistem Cek Kuota Tersedia;
+  :Sistem Cek Status Event (Banned/Active);
+elseif (Service/Building/Property)
+  :Sistem Cek Ketersediaan Tanggal;
+  :Sistem Cek Jadwal Cuti Mitra;
+  :Sistem Cegah Double Booking;
+endif
+
+:User Melakukan Checkout;
+note right: Input data pengiriman, alamat
+
+:Sistem Validasi Semua Item di Keranjang;
+note right: Cek ketersediaan, banned status, double booking
+
+:Sistem Hitung Total & Pajak;
+note right: TaxHelper menghitung pajak otomatis
+
+:Sistem Membuat Transaksi;
+note right: Generate order_id unique
+
+:Sistem Generate Midtrans Snap Token;
+note right: Kirim item details, customer info
+
+:User Memilih Metode Pembayaran;
+note right: VA, E-wallet, Credit Card
+
+:User Melakukan Pembayaran;
+note right: Redirect ke Midtrans payment page
+
+:Midtrans Payment Gateway Memproses;
+note right: Validasi pembayaran
+
+if (Payment Status?) then (Success/Settlement)
+  :Midtrans Kirim Callback Success;
+  :Sistem Update Status Transaksi = Settlement;
+  :Sistem Kurangi Kuota Tiket;
+  :Sistem Kirim Notifikasi ke User;
+  :Sistem Kirim Notifikasi ke Mitra;
+  :Sistem Batalkan Transaksi Pending Lain;
+elseif (Pending)
+  :Midtrans Kirim Callback Pending;
+  :Sistem Update Status = Pending;
+  :Sistem Kirim Info Pembayaran ke User;
+elseif (Failed/Expired)
+  :Midtrans Kirim Callback Failed;
+  :Sistem Update Status = Failed/Expired;
+  :Sistem Kirim Notifikasi Gagal;
+endif
+
+:Mitra Melihat Dashboard Pesanan;
+note right: Monitor transaksi masuk
+
+:Mitra Konfirmasi Pesanan;
+note right: Status: Confirm → Process → Complete
+
+if (Delivery Type?) then (Delivery)
+  :Mitra Input Biaya Antar;
+  :Sistem Buat Transaksi Biaya Antar;
+  :User Bayar Biaya Antar;
+  :Mitra Proses Pengiriman;
+elseif (Pickup)
+  :User Datang Ambil Item;
+endif
+
+:User Menerima Item/Jasa;
+note right: Ticket masuk, service selesai, property digunakan
+
+:User Memberikan Review & Rating;
+note right: Rate 1-5 bintang, tulis komentar
+
+:Admin Monitoring Semua Transaksi;
+note right: Lihat laporan, validasi penarikan dana
+
+:Admin Proses Penarikan Dana Mitra;
+note right: Approve/Reject withdrawal requests
+
+:Sistem Generate Laporan;
+note right: Laporan penjualan, komisi, statistik
+
+stop
+@enduml

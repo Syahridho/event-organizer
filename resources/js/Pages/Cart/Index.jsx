@@ -698,7 +698,9 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                     rent_days: item.rent_days || null,
                     delivery_type: item?.delivery_type || null,
                     is_unavailable: item.is_unavailable || false,
-                    thumbnail: item?.item?.event?.thumbnail?.includes("randoms")
+                    thumbnail: item?.item?.event?.thumbnail?.includes(
+                        "default-event-images"
+                    )
                         ? item?.item?.event?.thumbnail?.replace(/^\/+/, "")
                         : item?.type === "ticket"
                         ? item?.item?.event?.thumbnail?.replace(/^\/+/, "")
@@ -796,7 +798,10 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
 
                 // Logika untuk menangani path yang mungkin sudah lengkap atau perlu penambahan
                 const path = thumbnailPath.replace(/^\/+/, "");
-                if (path.includes("randoms") || path.includes("storage")) {
+                if (
+                    path.includes("default-event-images") ||
+                    path.includes("storage")
+                ) {
                     return `${ziggy.url}/storage/${path}`;
                 }
                 return `${ziggy.url}/storage/thumbnails/${path}`;

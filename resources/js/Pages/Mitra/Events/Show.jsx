@@ -64,7 +64,7 @@
 //                     )}
 //                     <img
 //                         src={
-//                             event.thumbnail.includes("randoms")
+//                             event.thumbnail.includes("default-event-images")
 //                                 ? `${ziggy.url}/storage${event.thumbnail}`
 //                                 : `${ziggy.url}/storage/thumbnails/${event.thumbnail}`
 //                         }

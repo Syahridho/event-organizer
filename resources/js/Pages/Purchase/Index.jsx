@@ -147,7 +147,7 @@ const TransactionItem = React.memo(
                     item?.item?.thumbnail ||
                     item?.item?.event?.thumbnail;
                 if (!thumb) return "/default.png";
-                return thumb.includes("randoms")
+                return thumb.includes("default-event-images")
                     ? `${ziggy.url}/storage${thumb}`
                     : `${ziggy.url}/storage/thumbnails/${thumb}`;
             },
@@ -761,7 +761,7 @@ export default function PurchaseIndex() {
                 item?.item?.thumbnail ||
                 item?.item?.event?.thumbnail;
             if (!thumb) return "/default.png";
-            return thumb.includes("randoms")
+            return thumb.includes("default-event-images")
                 ? `${ziggy.url}/storage${thumb}`
                 : `${ziggy.url}/storage/thumbnails/${thumb}`;
         },

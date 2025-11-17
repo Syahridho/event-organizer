@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\WithdrawController as AdminWithdrawController;
 use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\TestimonialController;
+use App\Http\Controllers\Admin\UserManagementController;
 
 use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\Mitra\MitraTransactionController;
@@ -207,6 +208,9 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::post('/admin/settings/tax', [AdminSettingController::class, 'updateTax'])->name('admin.settings.tax.update');
         
         Route::post('/admin/settings/maintenance', [AdminSettingController::class, 'updateMaintenance'])->name('admin.settings.updateMaintenance.update');
+        
+        Route::post('/admin/settings/default-event-image', [AdminSettingController::class, 'updateDefaultEventImage'])->name('admin.settings.default-event-image.update');
+        Route::delete('/admin/settings/default-event-image', [AdminSettingController::class, 'deleteDefaultEventImage'])->name('admin.settings.default-event-image.delete');
 
         Route::get('/admin/dashboard/events', [AdminEventController::class, 'index'])->name('admin.events.dashboard');
         Route::put('/admin/events/{id}/banned', [AdminEventController::class, 'banned'])->name('admin.events.banned');
@@ -246,6 +250,11 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
             'update' => 'admin.testimonials.update',
             'destroy' => 'admin.testimonials.destroy',
         ]);
+
+        // User Management routes
+        Route::get('/admin/user', [UserManagementController::class, 'index'])->name('admin.users.index');
+        Route::post('/admin/users/{id}/ban', [UserManagementController::class, 'ban'])->name('admin.users.ban');
+        Route::post('/admin/users/{id}/unban', [UserManagementController::class, 'unban'])->name('admin.users.unban');
 
         // Admin dashboard chat routes (alternative paths)
         Route::get('/admin/dashboard/{uuid}', [ChatController::class, 'adminShow'])->name('admin.dashboard.chat.show');

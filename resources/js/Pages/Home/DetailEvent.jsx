@@ -375,7 +375,7 @@ export default function ShowEvent() {
 
     const thumbnailUrl = useMemo(() => {
         const baseUrl = ziggy.url;
-        return event.thumbnail.includes("randoms")
+        return event.thumbnail.includes("default-event-images")
             ? `${baseUrl}/storage${event.thumbnail}`
             : `${baseUrl}/storage/thumbnails/${event.thumbnail}`;
     }, [event.thumbnail, ziggy.url]);

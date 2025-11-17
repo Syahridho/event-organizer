@@ -201,7 +201,8 @@ export default function HomeService() {
     };
 
     const getImageUrl = (thumbnail) => {
-        if (!thumbnail) return `${baseUrl}/storage/randoms/3.webp`;
+        if (!thumbnail)
+            return `${baseUrl}/storage/default-event-images/dubby.webp`;
         return thumbnail.startsWith("http")
             ? thumbnail
             : `${baseUrl}/storage/thumbnails/${thumbnail}`;

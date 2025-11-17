@@ -33,7 +33,7 @@ class EventFactory extends Factory
             'location' => $this->faker->address(),
             'pin' => $this->faker->postcode(),
             'link_meeting' => $this->faker->url(),
-            'thumbnail' => '/randoms/1.webp', // atau pakai faker image generator
+            'thumbnail' => '/default-event-images/dubby.webp', // atau pakai faker image generator
 
             'event_date_start' => $eventStart,
             'event_date_end' => $eventEnd,

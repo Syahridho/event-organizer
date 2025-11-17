@@ -138,6 +138,7 @@ class EventController extends Controller
     public function update(EventUpdateRequest $request, Event $event)
     {
         try {
+            // dd($request, $event);
             // === VALIDASI BARU ===
             // Cek otorisasi
             if ($event->user_id !== Auth::id()) {
@@ -180,20 +181,56 @@ class EventController extends Controller
                 ];
             }
     
+            
             // Handle thumbnail
             $thumbnail = $data['thumbnail'] ?? null;
+
+            // dd($thumbnail); 
+                        
             if ($thumbnail) {
                 if (!is_string($thumbnail)) {
-                    if ($event->thumbnail && !str_contains($event->thumbnail, 'randoms')) {
+                    // New file uploaded - delete old thumbnail if it's user-uploaded
+                    if ($event->thumbnail && !str_contains($event->thumbnail, 'default-event-images')) {
                         Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
                     }
                     $path = $thumbnail->store('thumbnails', 'public');
                     $data['thumbnail'] = str_replace('thumbnails/', '', $path);
+                } elseif (str_contains($thumbnail, 'default-event-images')) {
+                    // Switching to default/random image: DELETE the old user-uploaded thumbnail
+                    
+                    // Cek apakah thumbnail lama adalah user-uploaded, jika ya, hapus.
+                    if (
+                        $event->thumbnail && 
+                        !str_contains($event->thumbnail, 'default-event-images')
+                    ) {
+                        // **INI BLOK YANG AKAN MENGHAPUS FILE LAMA**
+                        Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
+                    }
+                    
+                    // Store the default/random image path as-is
+                    // Hati-hati dengan str_replace, pastikan Anda hanya menyimpan nama filenya saja (tanpa path storage)
+                    $data['thumbnail'] = str_replace(['/default-event-images/'], '', $thumbnail);
+                    
+                } else {
+                    // Regular thumbnail path (from storage) - artinya pengguna tidak upload/tidak ganti
+                    // Di sini kita asumsikan thumbnail yang dikirim adalah nama filenya
+                    // Jika Anda mengirimnya dengan path penuh (misal: /storage/thumbnails/...)
+                    $data['thumbnail'] = str_replace('/storage/thumbnails/', '', $thumbnail);
                 }
             } else {
+                // Jika $thumbnail adalah null (tidak ada input file baru atau string path), 
+                // JANGAN unset. Pertahankan nilai thumbnail yang sudah ada ($event->thumbnail) 
+                // jika Anda ingin memastikan gambarnya tidak terhapus.
+                // Namun, karena Anda menggunakan $event->update($data), jika $data['thumbnail'] tidak ada,
+                // maka kolom thumbnail di DB tidak akan di-update (ini asumsi default Laravel/Eloquent).
+                
+                // Dalam kasus Anda: karena data request tidak memiliki 'thumbnail', dan Anda meng-unset-nya.
+                // Jika Anda TIDAK mengirim input field 'thumbnail' di form (walaupun hidden),
+                // maka tidak ada data 'thumbnail' di $data, dan Eloquent akan membiarkannya.
+                // Karena Anda tidak mengirimkan nilai di Request, biarkan kode Anda:
                 unset($data['thumbnail']);
             }
-    
+                
             $event->update($data);
     
             // Process speakers
@@ -393,7 +430,10 @@ class EventController extends Controller
                 abort(403, $message);
             }
             // === AKHIR VALIDASI ===
-            if ($event->thumbnail && Storage::disk('public')->exists('thumbnails/' . $event->thumbnail)) {
+            // Only delete user-uploaded thumbnails, not default images
+            if ($event->thumbnail &&
+                !str_contains($event->thumbnail, 'default-event-images') &&
+                Storage::disk('public')->exists('thumbnails/' . $event->thumbnail)) {
                 Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
             }
 
@@ -492,6 +532,7 @@ class EventController extends Controller
                 'items.*.id' => 'required|integer',
                 'items.*.type' => 'required|string|in:ticket,service,building,rent_property',
                 'items.*.quantity' => 'required|integer|max:999',
+                'items.*.note' => 'nullable|string|max:255',
                 'amount' => 'required|numeric|max:0',
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|max:255'
@@ -510,6 +551,7 @@ class EventController extends Controller
 
 
             $itemType = $validatedItems[0]['type'];
+            $itemNote = $validatedItems[0]['note'] ?? null;
             $userId = Auth::id();
 
             // ✅ CEK APAKAH USER SUDAH PERNAH DAFTAR TRANSAKSI GRATIS
@@ -550,6 +592,7 @@ class EventController extends Controller
                 'type' => "Free",
                 'qty' => 1,
                 'price' => 0,
+                'note' => $itemNote,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

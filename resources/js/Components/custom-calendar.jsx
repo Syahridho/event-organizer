@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { selectCartDatesByItem } from "@/Store/cartSlice";
 
 const CustomCalendar = ({
     selected,
@@ -7,8 +9,21 @@ const CustomCalendar = ({
     bookedDatesWithUser = [],
     disabledLeaves = [],
     currentUserId,
+    cartDates = [],
+    pendingDates = [],
+    itemId, // New prop: ID of the current item
+    itemType, // New prop: Type of the current item (building, service, property)
 }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+
+    // Get cart dates from Redux store for this specific item
+    const reduxCartDates = useSelector((state) =>
+        itemId && itemType ? selectCartDatesByItem(state, itemId, itemType) : []
+    );
+
+    // Combine server-provided cartDates with Redux cartDates
+    // This ensures backward compatibility and real-time updates
+    const allCartDates = [...new Set([...cartDates, ...reduxCartDates])];
 
     const monthNames = [
         "Januari",
@@ -75,6 +90,26 @@ const CustomCalendar = ({
         };
     };
 
+    // Check if date is in cart
+    const isInCart = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateStr = `${year}-${month}-${day}`;
+
+        return allCartDates.includes(dateStr);
+    };
+
+    // Check if date is in pending transactions
+    const isInPending = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateStr = `${year}-${month}-${day}`;
+
+        return pendingDates.includes(dateStr);
+    };
+
     // ✅ FIX: Cek apakah tanggal kena cuti
     const isLeave = (date, disabledLeaves) => {
         const dayNameMap = [
@@ -122,6 +157,8 @@ const CustomCalendar = ({
 
         const bookingStatus = getDateBookingStatus(date, bookedDatesWithUser);
         const leaveStatus = isLeave(date, disabledLeaves);
+        const inCart = isInCart(date);
+        const inPending = isInPending(date);
 
         const isDisabled =
             disabled(date) || bookingStatus.isBooked || leaveStatus;
@@ -147,6 +184,11 @@ const CustomCalendar = ({
                 dayClasses +=
                     "bg-red-100 text-red-500 line-through cursor-not-allowed ";
             }
+        } else if (inCart) {
+            dayClasses +=
+                "bg-blue-100 text-blue-700 border-2 border-blue-300 cursor-not-allowed ";
+        } else if (inPending) {
+            dayClasses += "bg-amber-700 text-amber-100 cursor-not-allowed ";
         } else if (leaveStatus) {
             dayClasses += "bg-yellow-100 text-yellow-700 cursor-not-allowed ";
         } else if (!isDisabled) {
@@ -160,6 +202,10 @@ const CustomCalendar = ({
             tooltipText = bookingStatus.isCurrentUser
                 ? "Anda sudah booking tanggal ini"
                 : "Sudah dibooking oleh user lain";
+        } else if (inCart) {
+            tooltipText = "Item ini ada di keranjang";
+        } else if (inPending) {
+            tooltipText = "Item ini ada di pembelian pending";
         } else if (leaveStatus) {
             tooltipText = "Tanggal cuti mitra";
         }
@@ -181,6 +227,12 @@ const CustomCalendar = ({
                                 : "bg-red-500"
                         }`}
                     ></div>
+                )}
+                {inCart && (
+                    <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-blue-500"></div>
+                )}
+                {inPending && (
+                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-800"></div>
                 )}
                 {leaveStatus && (
                     <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-500"></div>
@@ -231,6 +283,14 @@ const CustomCalendar = ({
                 <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
                     <span>Sudah dibooking orang lain</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-blue-100 border-2 border-blue-300 rounded"></div>
+                    <span>Di Keranjang</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-amber-700 rounded"></div>
+                    <span>Belum Bayar</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
