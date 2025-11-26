@@ -206,6 +206,7 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // Admin routes
     Route::middleware(['role:admin'])->group(function () {
         Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.index');
+        Route::get('/admin/transactions', [App\Http\Controllers\Admin\AdminTransactionController::class, 'index'])->name('admin.transactions.index');
 
         Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings.index');
         Route::post('/admin/settings', [AdminSettingController::class, 'store'])->name('admin.settings.store');
@@ -257,6 +258,7 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
             'update' => 'admin.testimonials.update',
             'destroy' => 'admin.testimonials.destroy',
         ]);
+        Route::patch('/admin/testimonials/{testimonial}/toggle-featured', [TestimonialController::class, 'toggleFeatured'])->name('admin.testimonials.toggle-featured');
 
         // User Management routes
         Route::get('/admin/user', [UserManagementController::class, 'index'])->name('admin.users.index');

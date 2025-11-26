@@ -27,6 +27,11 @@ const admin = [
         exact: true,
     },
     {
+        title: "Transaksi",
+        url: "/admin/transactions",
+        icon: PiMoneyWavyLight,
+    },
+    {
         title: "Pesan",
         icon: TiMessages,
         url: "/admin/dashboard/chat",

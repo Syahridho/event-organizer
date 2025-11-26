@@ -42,7 +42,10 @@ class HomeController extends Controller
             ->limit(10)
             ->get();
 
-        $testimonials = Testimonial::orderBy('created_at', 'desc')->get();
+        $testimonials = Testimonial::where('is_featured', true)
+            ->orderBy('created_at', 'desc')
+            ->take(3)
+            ->get();
 
         $setting = AdminSetting::firstOrCreate([]);
 

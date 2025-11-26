@@ -26,6 +26,7 @@ import { Plus, Edit, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import TestimonialForm from "./TestimonialForm";
+import { Switch } from "@/components/ui/switch";
 
 const breadcrumbs = [
     {
@@ -69,6 +70,18 @@ export default function Index() {
         setEditingTestimonial(null);
     };
 
+    const handleToggleFeatured = (testimonial) => {
+        router.patch(route("admin.testimonials.toggle-featured", testimonial.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success("Status featured berhasil diperbarui");
+            },
+            onError: (errors) => {
+                toast.error(errors.error || "Gagal memperbarui status");
+            },
+        });
+    };
+
     const renderStars = (rating) => {
         return Array.from({ length: 5 }, (_, i) => (
             <Star
@@ -109,6 +122,7 @@ export default function Index() {
                                         <TableHead>Author</TableHead>
                                         <TableHead>Quote</TableHead>
                                         <TableHead>Rating</TableHead>
+                                        <TableHead className="text-center">Featured</TableHead>
                                         <TableHead>Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -152,6 +166,12 @@ export default function Index() {
                                                         testimonial.star_rating
                                                     )}
                                                 </div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Switch
+                                                    checked={testimonial.is_featured}
+                                                    onCheckedChange={() => handleToggleFeatured(testimonial)}
+                                                />
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex space-x-2">

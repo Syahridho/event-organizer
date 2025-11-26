@@ -110,7 +110,8 @@ class MitraController extends Controller
             })
             ->with(['item', 'transaction'])
             ->latest()
-            ->get();
+            ->paginate(5)
+            ->withQueryString();
 
 
         // $tes = TransactionItem::where('user_id', $user->id)->get();
@@ -119,6 +120,93 @@ class MitraController extends Controller
 
         
 
+        // ---- Data for Chart (Dynamic Filter) ----
+        $chartFilter = $request->input('chart_filter', 'week');
+        $dates = collect();
+        $salesData = collect();
+
+        // Base Query
+        $query = TransactionItem::query()
+            ->where(function ($q) use ($serviceIds, $buildingIds, $rentPropertyIds) {
+                 $q->where(function ($qq) use ($serviceIds) {
+                    $qq->where('item_type', 'service')->whereIn('item_id', $serviceIds);
+                })->orWhere(function ($qq) use ($buildingIds) {
+                    $qq->where('item_type', 'building')->whereIn('item_id', $buildingIds);
+                })->orWhere(function ($qq) use ($rentPropertyIds) {
+                    $qq->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
+                       ->whereIn('item_id', $rentPropertyIds);
+                });
+            })
+            ->whereHas('transaction', function($q) {
+                $q->whereIn('status', ['settlement', 'capture', 'completed']);
+            });
+
+        if ($chartFilter === 'year') {
+             // Last 12 months
+             for ($i = 11; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $dates->push([
+                    'key' => $date->format('Y-m'),
+                    'day' => $date->translatedFormat('M Y'),
+                    'sales' => 0
+                ]);
+            }
+            $salesData = $query->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
+                ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as date, SUM(price * qty + COALESCE(delivery_fee, 0)) as total')
+                ->groupBy('date')
+                ->pluck('total', 'date');
+
+        } elseif ($chartFilter === '3_months') {
+             // Last 3 months (Daily)
+             for ($i = 89; $i >= 0; $i--) {
+                $date = now()->subDays($i);
+                $dates->push([
+                    'key' => $date->format('Y-m-d'),
+                    'day' => $date->translatedFormat('d M'),
+                    'sales' => 0
+                ]);
+            }
+             $salesData = $query->where('created_at', '>=', now()->subDays(89)->startOfDay())
+                ->selectRaw('DATE(created_at) as date, SUM(price * qty + COALESCE(delivery_fee, 0)) as total')
+                ->groupBy('date')
+                ->pluck('total', 'date');
+
+        } elseif ($chartFilter === 'month') {
+             // Last 30 days
+             for ($i = 29; $i >= 0; $i--) {
+                $date = now()->subDays($i);
+                $dates->push([
+                    'key' => $date->format('Y-m-d'),
+                    'day' => $date->translatedFormat('d M'),
+                    'sales' => 0
+                ]);
+            }
+             $salesData = $query->where('created_at', '>=', now()->subDays(29)->startOfDay())
+                ->selectRaw('DATE(created_at) as date, SUM(price * qty + COALESCE(delivery_fee, 0)) as total')
+                ->groupBy('date')
+                ->pluck('total', 'date');
+        } else {
+            // Default: week (7 days)
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i);
+                $dates->push([
+                    'key' => $date->format('Y-m-d'),
+                    'day' => $date->translatedFormat('D'),
+                    'sales' => 0
+                ]);
+            }
+             $salesData = $query->where('created_at', '>=', now()->subDays(6)->startOfDay())
+                ->selectRaw('DATE(created_at) as date, SUM(price * qty + COALESCE(delivery_fee, 0)) as total')
+                ->groupBy('date')
+                ->pluck('total', 'date');
+        }
+
+        // Merge
+        $chartData = $dates->map(function ($item) use ($salesData) {
+            $item['sales'] = $salesData->get($item['key'], 0);
+            unset($item['key']);
+            return $item;
+        });
         return Inertia::render('Mitra/Dashboard', [
             'totalRevenue' => $totalRevenue,
             'percentageChange' => round($percentageChange, 2),
@@ -127,6 +215,8 @@ class MitraController extends Controller
             'totalItems' => $totalItems,
             'itemCounts' => $itemCounts,
             'transactionItems' => $transactionItems,
+            'chartData' => $chartData,
+            'currentChartFilter' => $chartFilter,
         ]);
     }
 

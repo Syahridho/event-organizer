@@ -15,9 +15,11 @@ class Testimonial extends Model
         'quote',
         'star_rating',
         'author_image_url',
+        'is_featured',
     ];
 
     protected $casts = [
         'star_rating' => 'integer',
+        'is_featured' => 'boolean',
     ];
 }

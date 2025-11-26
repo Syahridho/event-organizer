@@ -280,7 +280,7 @@ function TestimonialSection({ testimonials: propTestimonials }) {
         <section className="py-20 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
             <div className="container mx-auto max-w-7xl px-4 md:px-6">
                 <Tabs defaultValue="testimoni" className="w-full">
-                    <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 h-12">
+                    <TabsList className="grid w-full max-w-sm mx-auto grid-cols-2 h-12">
                         <TabsTrigger
                             value="testimoni"
                             className="text-sm font-medium"
@@ -293,12 +293,7 @@ function TestimonialSection({ testimonials: propTestimonials }) {
                         >
                             Tentang
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="gabung"
-                            className="text-sm font-medium"
-                        >
-                            Bergabung
-                        </TabsTrigger>
+                  
                     </TabsList>
 
                     <TabsContent value="testimoni" className="mt-12">
@@ -426,26 +421,6 @@ function TestimonialSection({ testimonials: propTestimonials }) {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="gabung" className="mt-12">
-                        <Card className="max-w-4xl mx-auto text-center">
-                            <CardHeader className="space-y-4">
-                                <h3 className="text-3xl font-bold text-card-foreground">
-                                    Bergabung dengan Kami
-                                </h3>
-                                <p className="text-lg text-muted-foreground leading-relaxed">
-                                    Jadilah bagian dari ekosistem event terbesar
-                                    di Indonesia. Tingkatkan bisnis Anda dengan
-                                    bergabung sebagai mitra Eventnusa dan
-                                    jangkau lebih banyak customer.
-                                </p>
-                            </CardHeader>
-                            <CardFooter className="justify-center">
-                                <Button size="lg" className="px-8 py-3">
-                                    Daftar Sebagai Mitra
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    </TabsContent>
                 </Tabs>
             </div>
         </section>

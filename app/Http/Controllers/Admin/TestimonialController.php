@@ -78,4 +78,18 @@ class TestimonialController extends Controller
 
         return redirect()->route('admin.testimonials.index')->with('success', 'Testimonial deleted successfully');
     }
+
+    public function toggleFeatured(Testimonial $testimonial)
+    {
+        // Optional: Enforce limit of 3 featured testimonials
+        if (!$testimonial->is_featured && Testimonial::where('is_featured', true)->count() >= 3) {
+             return redirect()->back()->with('error', 'Maksimal hanya 3 testimoni yang dapat ditampilkan di halaman utama.');
+        }
+
+        $testimonial->update([
+            'is_featured' => !$testimonial->is_featured
+        ]);
+
+        return redirect()->back()->with('success', 'Status testimoni berhasil diperbarui.');
+    }
 }

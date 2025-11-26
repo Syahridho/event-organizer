@@ -1,4 +1,4 @@
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, router, Link } from "@inertiajs/react";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import {
     Card,
@@ -45,6 +45,36 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
+import React, { useMemo } from "react";
+
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3">
+                <p className="text-sm font-semibold text-slate-700 mb-1">
+                    {label}
+                </p>
+                <p className="text-sm text-slate-600">
+                    Pendapatan:{" "}
+                    <span className="font-bold text-primary">
+                        Rp {payload[0].value.toLocaleString("id-ID")}
+                    </span>
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
 
 const breadcrumbs = [
     {
@@ -126,7 +156,33 @@ export default function UserDashboard({
     totalItems,
     itemCounts,
     transactionItems,
+    chartData,
+    currentChartFilter = "week",
 }) {
+    const handleChartFilterChange = (value) => {
+        router.get(
+            route("mitra.dashboard"),
+            { chart_filter: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ["chartData", "currentChartFilter"],
+            }
+        );
+    };
+
+    const getChartTitle = () => {
+        switch (currentChartFilter) {
+            case "month":
+                return "Pendapatan 30 Hari Terakhir";
+            case "3_months":
+                return "Pendapatan 3 Bulan Terakhir";
+            case "year":
+                return "Pendapatan Tahun Ini";
+            default:
+                return "Pendapatan 7 Hari Terakhir";
+        }
+    };
     const { data, setData, post, processing, errors, reset } = useForm({
         amount: "",
         method: "",
@@ -488,151 +544,110 @@ export default function UserDashboard({
                     </Card>
                 </div>
                 {/* Chart Pendapatan 7 Hari (shadcn Card + simple bars) */}
-                <div className="rounded-xl border bg-card text-card-foreground shadow">
+                {/* Chart Pendapatan (Recharts) */}
+                <Card className="shadow-lg">
                     <CardHeader>
-                        <CardTitle>Chart Pendapatan 7 Hari</CardTitle>
-                        <CardDescription>
-                            Ringkasan pendapatan harian terakhir
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-xl sm:text-2xl font-bold">
+                                    {getChartTitle()}
+                                </CardTitle>
+                                <CardDescription className="mt-1">
+                                    Trend pendapatan Anda
+                                </CardDescription>
+                            </div>
+                            <div className="w-[180px]">
+                                <Select
+                                    value={currentChartFilter}
+                                    onValueChange={handleChartFilterChange}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih Periode" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="week">7 Hari Terakhir</SelectItem>
+                                        <SelectItem value="month">30 Hari Terakhir</SelectItem>
+                                        <SelectItem value="3_months">3 Bulan Terakhir</SelectItem>
+                                        <SelectItem value="year">Tahun Ini</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        {(() => {
-                            // Susun tanggal 7 hari terakhir
-                            const days = Array.from({ length: 7 }, (_, i) => {
-                                const d = new Date();
-                                d.setHours(0, 0, 0, 0);
-                                d.setDate(d.getDate() - (6 - i));
-                                return d;
-                            });
-                            const dayKey = (d) => format(d, "yyyy-MM-dd");
-
-                            // Inisialisasi map tanggal -> jumlah
-                            const sums = Object.fromEntries(
-                                days.map((d) => [dayKey(d), 0])
-                            );
-
-                            // Akumulasi pendapatan dari item yang sudah dibayar/selesai
-                            const paidStatuses = [
-                                "settlement",
-                                "completed",
-                                "capture",
-                            ];
-                            let hasPaid = false;
-                            (transactionItems || []).forEach((it) => {
-                                try {
-                                    const status = it?.transaction?.status;
-                                    if (!paidStatuses.includes(status)) return;
-                                    hasPaid = true;
-
-                                    const k = format(
-                                        new Date(it.created_at),
-                                        "yyyy-MM-dd"
-                                    );
-                                    if (sums[k] !== undefined) {
-                                        const price = Number(it.price || 0);
-                                        const deliveryFee = Number(
-                                            it.delivery_fee || 0
-                                        );
-                                        const qty = Number(it.qty || 1);
-                                        sums[k] += price * qty + deliveryFee;
-                                    }
-                                } catch (_e) {
-                                    // abaikan parsing error
-                                }
-                            });
-
-                            // Fallback: jika tidak ada item berstatus dibayar, gunakan semua item
-                            if (!hasPaid) {
-                                (transactionItems || []).forEach((it) => {
-                                    try {
-                                        const k = format(
-                                            new Date(it.created_at),
-                                            "yyyy-MM-dd"
-                                        );
-                                        if (sums[k] !== undefined) {
-                                            const price = Number(it.price || 0);
-                                            const deliveryFee = Number(
-                                                it.delivery_fee || 0
-                                            );
-                                            const qty = Number(it.qty || 1);
-                                            sums[k] +=
-                                                price * qty + deliveryFee;
+                        <div className="w-full h-[350px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={chartData}
+                                    margin={{
+                                        top: 10,
+                                        right: 10,
+                                        left: 0,
+                                        bottom: 0,
+                                    }}
+                                >
+                                    <defs>
+                                        <linearGradient
+                                            id="colorGradient"
+                                            x1="0"
+                                            y1="0"
+                                            x2="0"
+                                            y2="1"
+                                        >
+                                            <stop
+                                                offset="0%"
+                                                stopColor="#3b82f6"
+                                                stopOpacity={1}
+                                            />
+                                            <stop
+                                                offset="100%"
+                                                stopColor="#60a5fa"
+                                                stopOpacity={0.8}
+                                            />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke="#e2e8f0"
+                                        vertical={false}
+                                    />
+                                    <XAxis
+                                        dataKey="day"
+                                        tick={{
+                                            fill: "#64748b",
+                                            fontSize: 12,
+                                        }}
+                                        axisLine={{ stroke: "#cbd5e1" }}
+                                    />
+                                    <YAxis
+                                        tick={{
+                                            fill: "#64748b",
+                                            fontSize: 12,
+                                        }}
+                                        axisLine={{ stroke: "#cbd5e1" }}
+                                        tickFormatter={(value) =>
+                                            `${(Number(value) / 1000).toFixed(
+                                                0
+                                            )}k`
                                         }
-                                    } catch (_e) {}
-                                });
-                            }
-
-                            const labels = days.map((d) =>
-                                format(d, "dd MMM", { locale: id })
-                            );
-                            const values = days.map(
-                                (d) => sums[dayKey(d)] || 0
-                            );
-                            const max = Math.max(1, ...values);
-                            const total = values.reduce((a, b) => a + b, 0);
-                            return (
-                                <div>
-                                    <div className="h-40 grid grid-cols-7 gap-3 items-end">
-                                        {values.map((v, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="group flex flex-col items-center gap-1"
-                                            >
-                                                <Badge
-                                                    variant="outline"
-                                                    className="px-1.5 py-0 text-[10px] bg-primary/10 text-primary border border-primary/30"
-                                                >
-                                                    Rp {formatRupiah(v)}
-                                                </Badge>
-                                                <div className="w-full h-full bg-muted rounded-md overflow-hidden relative">
-                                                    <div
-                                                        className="absolute bottom-0 left-0 right-0 rounded-t-md bg-gradient-to-t from-primary to-primary/60 transition-all duration-300 group-hover:from-primary/90"
-                                                        style={{
-                                                            height: `${
-                                                                (v / max) * 100
-                                                            }%`,
-                                                            minHeight:
-                                                                v > 0
-                                                                    ? "3px"
-                                                                    : 0,
-                                                        }}
-                                                        title={`Rp ${formatRupiah(
-                                                            v
-                                                        )}`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-2 grid grid-cols-7 gap-3 text-xs text-muted-foreground">
-                                        {labels.map((lbl, idx) => {
-                                            const isToday =
-                                                idx === labels.length - 1;
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    className={`text-center ${
-                                                        isToday
-                                                            ? "text-primary font-semibold"
-                                                            : ""
-                                                    }`}
-                                                >
-                                                    {lbl}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <div className="mt-3 text-xs text-muted-foreground">
-                                        Total 7 hari:{" "}
-                                        <span className="font-medium">
-                                            Rp {formatRupiah(total)}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                                    />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Bar
+                                        dataKey="sales"
+                                        fill="url(#colorGradient)"
+                                        radius={[8, 8, 0, 0]}
+                                        animationDuration={800}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                        {(!chartData || chartData.length === 0 || !chartData.some(d => d.sales > 0)) && (
+                             <p className="text-xs text-slate-500 text-center mt-4">
+                                Belum ada data pendapatan untuk ditampilkan.
+                            </p>
+                        )}
                     </CardContent>
-                </div>
+                </Card>
 
                 <div className="rounded-xl border bg-card text-card-foreground shadow">
                     <CardHeader>
@@ -654,9 +669,8 @@ export default function UserDashboard({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {console.log(transactionItems)}
-                                {transactionItems.length > 0 ? (
-                                    transactionItems.map((item) => {
+                                {transactionItems.data.length > 0 ? (
+                                    transactionItems.data.map((item) => {
                                         const serviceInfo =
                                             serviceTypes[
                                                 item.item_type.toLowerCase()
@@ -720,6 +734,29 @@ export default function UserDashboard({
                                 )}
                             </TableBody>
                         </Table>
+                         {/* Pagination Controls */}
+                         <div className="mt-4 flex items-center justify-between">
+                            <div className="text-sm text-muted-foreground">
+                                Menampilkan {transactionItems.from} sampai {transactionItems.to} dari {transactionItems.total} hasil
+                            </div>
+                            <div className="flex gap-2">
+                                {transactionItems.links.map((link, i) => (
+                                    <Button
+                                        key={i}
+                                        variant={link.active ? "default" : "outline"}
+                                        size="sm"
+                                        asChild
+                                        disabled={!link.url}
+                                    >
+                                        {link.url ? (
+                                            <Link href={link.url} dangerouslySetInnerHTML={{ __html: link.label }} />
+                                        ) : (
+                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                        )}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
                     </CardContent>
                 </div>
             </div>

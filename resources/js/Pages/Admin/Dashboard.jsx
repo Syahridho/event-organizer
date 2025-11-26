@@ -1,5 +1,6 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import { Head, router } from "@inertiajs/react";
+import { Head, router, Link } from "@inertiajs/react";
+import { Button } from "@/components/ui/button";
 import {
     Select,
     SelectContent,
@@ -68,7 +69,6 @@ export default function AdminDashboard({
     auth,
     stats,
     chartData,
-    recentTransactions,
     taxIncome,
     currentTaxFilter,
 }) {
@@ -381,94 +381,7 @@ export default function AdminDashboard({
                     </CardContent>
                 </Card>
 
-                {/* Transaksi Terbaru */}
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-xl sm:text-2xl font-bold">
-                            Transaksi Terbaru
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                            5 transaksi terakhir dari semua event
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="font-semibold">
-                                            ID
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            User
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Event
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-right">
-                                            Jumlah
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-center">
-                                            Status
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recentTransactions?.length > 0 ? (
-                                        recentTransactions.map((tx) => (
-                                            <TableRow
-                                                key={tx.id}
-                                                className="hover:bg-slate-50 transition-colors"
-                                            >
-                                                <TableCell className="font-medium">
-                                                    #{tx.id}
-                                                </TableCell>
-                                                <TableCell>{tx.user}</TableCell>
-                                                <TableCell className="max-w-xs truncate">
-                                                    {tx.event}
-                                                </TableCell>
-                                                <TableCell className="text-right font-semibold">
-                                                    Rp{" "}
-                                                    {tx.amount.toLocaleString(
-                                                        "id-ID"
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                            tx.status === "paid"
-                                                                ? "bg-green-100 text-green-800"
-                                                                : tx.status ===
-                                                                  "pending"
-                                                                ? "bg-yellow-100 text-yellow-800"
-                                                                : "bg-red-100 text-red-800"
-                                                        }`}
-                                                    >
-                                                        {tx.status === "paid"
-                                                            ? "Lunas"
-                                                            : tx.status ===
-                                                              "pending"
-                                                            ? "Pending"
-                                                            : "Dibatalkan"}
-                                                    </span>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={5}
-                                                className="text-center py-8 text-slate-500"
-                                            >
-                                                Belum ada transaksi
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
+
             </div>
         </AppLayout>
     );
