@@ -58,7 +58,7 @@ const DetailService = () => {
         cartDates,
         pendingDates,
     } = usePage().props;
-    console.log(leaves);
+    console.log(service);
 
     const dispatch = useDispatch();
 
@@ -397,6 +397,9 @@ const DetailService = () => {
                                         <div className="flex items-center gap-2 text-slate-600">
                                             <MapPin className="h-4 w-4" />
                                             <span>{service.location}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-slate-600">
+                                            <span className="text-sm font-medium">Oleh: {service.user_name}</span>
                                         </div>
                                     </div>
                                     {/* <Rating

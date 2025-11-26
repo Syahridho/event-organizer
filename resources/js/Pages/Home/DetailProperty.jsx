@@ -442,6 +442,9 @@ const DetailProperty = () => {
                                             <MapPin className="h-4 w-4" />
                                             <span>{property.location}</span>
                                         </div>
+                                        <div className="flex items-center gap-2 text-slate-600">
+                                            <span className="text-sm font-medium">Oleh: {property.user_name}</span>
+                                        </div>
                                         <div className="flex items-center gap-4 text-slate-600">
                                             {property.bedrooms && (
                                                 <div className="flex items-center gap-1">

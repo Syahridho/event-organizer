@@ -374,6 +374,9 @@ const DetailBuilding = () => {
                                             <span>{building.location}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-slate-600">
+                                            <span className="text-sm font-medium">Oleh: {building.user_name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-slate-600">
                                             <Users className="h-4 w-4" />
                                             <span>
                                                 Kapasitas: {building.capacity}{" "}

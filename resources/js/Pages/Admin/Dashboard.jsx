@@ -1,5 +1,12 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import { Head } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Card,
     CardContent,
@@ -62,7 +69,21 @@ export default function AdminDashboard({
     stats,
     chartData,
     recentTransactions,
+    taxIncome,
+    currentTaxFilter,
 }) {
+    const handleTaxFilterChange = (value) => {
+        router.get(
+            route("admin.index"),
+            { tax_filter: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ["taxIncome", "currentTaxFilter"],
+            }
+        );
+    };
+
     // Sanitize and prepare chart series
     const chartSeries = useMemo(() => {
         const safe = Array.isArray(chartData) ? chartData : [];
@@ -173,6 +194,44 @@ export default function AdminDashboard({
                                     month: "long",
                                 })}
                             </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-slate-600">
+                                    Laba Bersih (Tax)
+                                </CardTitle>
+                                <DollarSign className="h-4 w-4 text-purple-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">
+                                Rp {(taxIncome || 0).toLocaleString("id-ID")}
+                            </p>
+                            <Select
+                                value={currentTaxFilter}
+                                onValueChange={handleTaxFilterChange}
+                            >
+                                <SelectTrigger className="h-8 text-xs w-full">
+                                    <SelectValue placeholder="Pilih Periode" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="day">Hari Ini</SelectItem>
+                                    <SelectItem value="week">Minggu Ini</SelectItem>
+                                    <SelectItem value="month">Bulan Ini</SelectItem>
+                                    <SelectItem value="3_months">
+                                        3 Bulan Terakhir
+                                    </SelectItem>
+                                    <SelectItem value="6_months">
+                                        6 Bulan Terakhir
+                                    </SelectItem>
+                                    <SelectItem value="year">
+                                        Tahun Ini
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </CardContent>
                     </Card>
                 </div>

@@ -147,12 +147,38 @@ class BuildingController extends Controller
         }
     }
 
+    /**
+     * Helper function to check if a building has settled or pending transactions.
+     */
+    private function hasSettledTransactions(Building $building)
+    {
+        return $building->transactionItems()
+            ->whereHas('transaction', function ($query) {
+                $query->whereIn('status', ['settlement', 'pending']);
+            })
+            ->exists();
+    }
+
     public function destroy($id)
     {
         try {
             $building = Building::with('itemPhotos')->findOrFail($id);
 
-            Storage::disk('public')->delete('thumbnails/' . $building->thumbnail);
+            // === VALIDASI BARU ===
+            // Cek otorisasi
+            if ($building->user_id !== Auth::id()) {
+                abort(403);
+            }
+
+            $message = 'Gedung ini tidak dapat dihapus karena sudah memiliki transaksi (settlement/pending). Harap hubungi administrator jika Anda perlu melakukan perubahan.';
+            if ($this->hasSettledTransactions($building)) {
+                abort(403, $message);
+            }
+            // === AKHIR VALIDASI ===
+
+            if ($building->thumbnail && Storage::disk('public')->exists('thumbnails/' . $building->thumbnail)) {
+                Storage::disk('public')->delete('thumbnails/' . $building->thumbnail);
+            }
 
             foreach ($building->itemPhotos as $photo) {
                 Storage::disk('public')->delete('item-photos/' . $photo->photo);
@@ -172,7 +198,7 @@ class BuildingController extends Controller
      */
     public function show($id)
     {
-        $building = Building::with(['itemPhotos'])->findOrFail($id);
+        $building = Building::with(['itemPhotos', 'user'])->findOrFail($id);
 
         // Calculate tax-inclusive price
         $finalPrice = TaxHelper::calculateFinalPrice($building->price);
@@ -193,6 +219,7 @@ class BuildingController extends Controller
                 'capacity' => $building->capacity,
                 'thumbnail' => $building->thumbnail,
                 'item_photos' => $building->itemPhotos,
+                'user_name' => $building->user->name,
             ],
             'tax_info' => $taxInfo,
         ]);

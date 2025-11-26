@@ -150,12 +150,38 @@ class RentController extends Controller
         }
     }
 
+    /**
+     * Helper function to check if a rent property has settled or pending transactions.
+     */
+    private function hasSettledTransactions(RentProperty $rent)
+    {
+        return $rent->transactionItems()
+            ->whereHas('transaction', function ($query) {
+                $query->whereIn('status', ['settlement', 'pending']);
+            })
+            ->exists();
+    }
+
       public function destroy($id)
     {
         try {
             $rent = RentProperty::with('itemPhotos')->findOrFail($id);
 
-            Storage::disk('public')->delete('thumbnails/' . $rent->thumbnail);
+            // === VALIDASI BARU ===
+            // Cek otorisasi
+            if ($rent->user_id !== Auth::id()) {
+                abort(403);
+            }
+
+            $message = 'Properti ini tidak dapat dihapus karena sudah memiliki transaksi (settlement/pending). Harap hubungi administrator jika Anda perlu melakukan perubahan.';
+            if ($this->hasSettledTransactions($rent)) {
+                abort(403, $message);
+            }
+            // === AKHIR VALIDASI ===
+
+            if ($rent->thumbnail && Storage::disk('public')->exists('thumbnails/' . $rent->thumbnail)) {
+                Storage::disk('public')->delete('thumbnails/' . $rent->thumbnail);
+            }
 
             foreach ($rent->itemPhotos as $photo) {
                 Storage::disk('public')->delete('item-photos/' . $photo->photo);
@@ -175,7 +201,7 @@ class RentController extends Controller
      */
     public function show($id)
     {
-        $rent = RentProperty::with(['itemPhotos'])->findOrFail($id);
+        $rent = RentProperty::with(['itemPhotos', 'user'])->findOrFail($id);
 
         // Calculate tax-inclusive price
         $finalPrice = TaxHelper::calculateFinalPrice($rent->price);
@@ -194,7 +220,9 @@ class RentController extends Controller
                 'description' => $rent->description,
                 'location' => $rent->location,
                 'thumbnail' => $rent->thumbnail,
+                'thumbnail' => $rent->thumbnail,
                 'item_photos' => $rent->itemPhotos,
+                'user_name' => $rent->user->name,
             ],
             'tax_info' => $taxInfo,
         ]);

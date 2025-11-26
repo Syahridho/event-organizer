@@ -195,7 +195,7 @@ class HomeController extends Controller
             ->with('transaction.user')
             ->get();
             
-        $service = Service::findOrFail($id);
+        $service = Service::with('user')->findOrFail($id);
         $userId = auth()->id();
 
         $photos = ItemPhoto::where('item_id', $id)
@@ -239,6 +239,8 @@ class HomeController extends Controller
             'thumbnail' => $service->thumbnail,
             'status' => $service->status,
             'user_id' => $service->user_id,
+            'user_name' => $service->user->name,
+            'user_avatar' => $service->user->profile_photo,
             'created_at' => $service->created_at,
             'updated_at' => $service->updated_at,
         ];
@@ -294,7 +296,7 @@ class HomeController extends Controller
             ->with('transaction.user')
             ->get();
 
-        $building = Building::findOrFail($id);
+        $building = Building::with('user')->findOrFail($id);
 
         $photos = ItemPhoto::where('item_id', $id)
         ->where('item_type', 'App\Models\Building')
@@ -340,6 +342,8 @@ class HomeController extends Controller
             'pin' => $building->pin,
             'status' => $building->status,
             'user_id' => $building->user_id,
+            'user_name' => $building->user->name,
+            'user_avatar' => $building->user->profile_photo,
             'created_at' => $building->created_at,
             'updated_at' => $building->updated_at,
         ];
@@ -394,7 +398,7 @@ class HomeController extends Controller
             ->with('transaction.user')
             ->get();
 
-        $property = RentProperty::findOrFail($id);
+        $property = RentProperty::with('user')->findOrFail($id);
 
         $photos = ItemPhoto::where('item_id', $id)
         ->where('item_type', 'App\Models\RentProperty')
@@ -443,6 +447,8 @@ class HomeController extends Controller
             'pin' => $property->pin,
             'status' => $property->status,
             'user_id' => $property->user_id,
+            'user_name' => $property->user->name,
+            'user_avatar' => $property->user->profile_photo,
             'created_at' => $property->created_at,
             'updated_at' => $property->updated_at,
         ];

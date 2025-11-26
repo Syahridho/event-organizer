@@ -71,12 +71,38 @@ class ServiceController extends Controller
         }
     }
 
+    /**
+     * Helper function to check if a service has settled or pending transactions.
+     */
+    private function hasSettledTransactions(Service $service)
+    {
+        return $service->transactionItems()
+            ->whereHas('transaction', function ($query) {
+                $query->whereIn('status', ['settlement', 'pending']);
+            })
+            ->exists();
+    }
+
     public function destroy($id)
     {
         try {
             $service = Service::with('itemPhotos')->findOrFail($id);
 
-            Storage::disk('public')->delete('thumbnails/' . $service->thumbnail);
+            // === VALIDASI BARU ===
+            // Cek otorisasi
+            if ($service->user_id !== Auth::id()) {
+                abort(403);
+            }
+
+            $message = 'Jasa ini tidak dapat dihapus karena sudah memiliki transaksi (settlement/pending). Harap hubungi administrator jika Anda perlu melakukan perubahan.';
+            if ($this->hasSettledTransactions($service)) {
+                abort(403, $message);
+            }
+            // === AKHIR VALIDASI ===
+
+            if ($service->thumbnail && Storage::disk('public')->exists('thumbnails/' . $service->thumbnail)) {
+                Storage::disk('public')->delete('thumbnails/' . $service->thumbnail);
+            }
 
             foreach ($service->itemPhotos as $photo) {
                 Storage::disk('public')->delete('item-photos/' . $photo->photo);
@@ -172,7 +198,7 @@ class ServiceController extends Controller
      */
     public function show($id)
     {
-        $service = Service::with(['itemPhotos'])->findOrFail($id);
+        $service = Service::with(['itemPhotos', 'user'])->findOrFail($id);
 
         // Calculate tax-inclusive price
         $finalPrice = TaxHelper::calculateFinalPrice($service->price);
@@ -192,6 +218,7 @@ class ServiceController extends Controller
                 'location' => $service->location,
                 'thumbnail' => $service->thumbnail,
                 'item_photos' => $service->itemPhotos,
+                'user_name' => $service->user->name,
             ],
             'tax_info' => $taxInfo,
         ]);
