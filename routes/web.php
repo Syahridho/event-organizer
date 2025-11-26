@@ -63,9 +63,10 @@ Route::get('/', [HomeController::class, 'index'])->name('welcome');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 
 // Product listing pages
-Route::get('/{type}', [ListingController::class, 'show'])
-    ->whereIn('type', ['events', 'services', 'buildings', 'propertys'])
-    ->name('listings.show');
+Route::get('/events', [HomeController::class, 'eventsListing'])->name('listings.events');
+Route::get('/services', [HomeController::class, 'servicesListing'])->name('listings.services');
+Route::get('/buildings', [HomeController::class, 'buildingsListing'])->name('listings.buildings');
+Route::get('/propertys', [HomeController::class, 'propertysListing'])->name('listings.propertys');
 
 // Search functionality
 Route::get('/search', [HomeController::class, 'search'])->name('search');

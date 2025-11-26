@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Event;
 use App\Models\Service;
 use App\Models\Building;
 use App\Models\RentProperty;
@@ -14,8 +15,10 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
-        Service::factory()->count(10)->create();
-        Building::factory()->count(10)->create();
-        RentProperty::factory()->count(10)->create();
+        // Reduced dummy data - only 3 items each for demo purposes
+        Event::factory()->count(3)->create();
+        Service::factory()->count(3)->create();
+        Building::factory()->count(3)->create();
+        RentProperty::factory()->count(3)->create();
     }
 }

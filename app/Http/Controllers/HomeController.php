@@ -23,6 +23,7 @@ class HomeController extends Controller
     public function index()
     {
         $events = Event::where('status', 'active')
+            ->whereDate('event_date_end', '>=', now())
             ->inRandomOrder()
             ->limit(10)
             ->get();
@@ -64,6 +65,7 @@ class HomeController extends Controller
     public function home()
     {
         $events = Event::where('status', 'active')
+            ->whereDate('event_date_end', '>=', now())
             ->inRandomOrder()
             ->latest()
             ->get();
@@ -102,6 +104,52 @@ class HomeController extends Controller
 
         return Inertia::render('Home/Ticket', [
             'events' => $events
+        ]);
+    }
+
+    public function eventsListing()
+    {
+        $events = Event::where('status', 'active')
+            ->whereDate('event_date_end', '>=', now())
+            ->with('tickets')
+            ->latest()
+            ->get();
+
+        return Inertia::render('Listing/Events', [
+            'events' => $events
+        ]);
+    }
+
+    public function servicesListing()
+    {
+        $services = Service::where('status', 'active')
+            ->latest()
+            ->get();
+
+        return Inertia::render('Listing/Services', [
+            'services' => $services
+        ]);
+    }
+
+    public function buildingsListing()
+    {
+        $buildings = Building::where('status', 'active')
+            ->latest()
+            ->get();
+
+        return Inertia::render('Listing/Buildings', [
+            'buildings' => $buildings
+        ]);
+    }
+
+    public function propertysListing()
+    {
+        $propertys = RentProperty::where('status', 'active')
+            ->latest()
+            ->get();
+
+        return Inertia::render('Listing/Propertys', [
+            'propertys' => $propertys
         ]);
     }
 
@@ -517,16 +565,18 @@ class HomeController extends Controller
         $results = collect();
 
         if ($type === 'event') {
-            $results = Event::when($keyword, fn($q) =>
-                $q->where('name', 'like', "%{$keyword}%")
-            )->get()->map(fn($item) => [
-                'id' => $item->id,
-                'name' => $item->name,
-                'price' => $item->price ?? null,
-                'type' => 'event',
-                'thumbnail' => $item->thumbnail ? $item->thumbnail : null,
-                'location' => $item->location ?? null,
-            ]);
+            $results = Event::where('status', 'active')
+                ->whereDate('event_date_end', '>=', now())
+                ->when($keyword, fn($q) =>
+                    $q->where('name', 'like', "%{$keyword}%")
+                )->get()->map(fn($item) => [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'price' => $item->price ?? null,
+                    'type' => 'event',
+                    'thumbnail' => $item->thumbnail ? $item->thumbnail : null,
+                    'location' => $item->location ?? null,
+                ]);
         } elseif ($type === 'building') {
             $results = Building::when($keyword, fn($q) =>
                 $q->where('name', 'like', "%{$keyword}%")
@@ -581,14 +631,16 @@ class HomeController extends Controller
         } else {
             // Semua kategori (event, building, service, property, user, mitra)
             $results = collect()
-                ->merge(Event::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
-                    'id' => $i->id,
-                    'name' => $i->name,
-                    'price' => $i->price ?? null,
-                    'type' => 'event',
-                    'thumbnail' => $i->thumbnail ? $i->thumbnail : null,
-                    'location' => $i->location ?? null,
-                ]))
+                ->merge(Event::where('status', 'active')
+                    ->whereDate('event_date_end', '>=', now())
+                    ->where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
+                        'id' => $i->id,
+                        'name' => $i->name,
+                        'price' => $i->price ?? null,
+                        'type' => 'event',
+                        'thumbnail' => $i->thumbnail ? $i->thumbnail : null,
+                        'location' => $i->location ?? null,
+                    ]))
                 ->merge(Building::where('name', 'like', "%{$keyword}%")->get()->map(fn($i) => [
                     'id' => $i->id,
                     'name' => $i->name,

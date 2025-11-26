@@ -107,3 +107,87 @@ iframe#snap-midtrans {
         @apply bg-background text-foreground;
     }
 }
+
+/* Leaflet Map Styles - Proper containment without breaking layout */
+
+/* Main map container - Use relative positioning for proper Leaflet functionality */
+.leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+    position: relative !important;
+    display: block !important;
+    z-index: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Map container wrapper - Ensure proper containment */
+.map-wrapper,
+.map-container,
+[class*="map-container"] {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 300px !important;
+    margin: 10px 0 25px 0 !important;
+    z-index: 1 !important;
+    overflow: hidden !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0.5rem !important;
+}
+
+/* Leaflet internal panes need absolute positioning */
+.leaflet-map-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-marker-pane,
+.leaflet-popup-pane {
+    position: absolute !important;
+}
+
+/* Control elements */
+.leaflet-control-container,
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-left,
+.leaflet-right {
+    z-index: 1000 !important;
+    position: absolute !important;
+}
+
+/* Ensure map stays contained during animations */
+.leaflet-fade-anim .leaflet-tile,
+.leaflet-zoom-anim .leaflet-zoom-animated {
+    will-change: transform;
+}
+
+/* Ensure form elements below map are visible */
+.form-group,
+[class*="form-group"] {
+    position: relative !important;
+    z-index: auto !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Specific fix for location input container */
+.space-y-2 > .map-wrapper {
+    position: relative !important;
+    display: block !important;
+    clear: both !important;
+    width: 100% !important;
+}
+
+/* Force proper spacing after map */
+.map-wrapper + .form-group,
+.map-wrapper + div[class*="form"],
+.map-wrapper + div[class*="grid"] {
+    margin-top: 1.5rem !important;
+    clear: both !important;
+}
+
+/* Clearfix for map wrapper */
+.map-wrapper::after {
+    content: "" !important;
+    display: table !important;
+    clear: both !important;
+}

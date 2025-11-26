@@ -295,43 +295,53 @@ const columns = [
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => {
-            const status = row.original.status;
+            const eventStatus = row.original.event_status;
+            const adminStatus = row.original.status; // Keep admin status for reference
             let icon = null;
             let badgeColor = "";
             let text = "";
 
-            switch (status) {
-                case "active":
-                    icon = (
-                        <CheckCircle2Icon className="text-green-500 dark:text-green-400" />
-                    );
-                    badgeColor = "text-green-500";
-                    text = "Aktif";
-                    break;
-                case "inactive":
-                    icon = (
-                        <XCircleIcon className="text-red-500 dark:text-red-400" />
-                    );
-                    badgeColor = "text-red-500";
-                    text = "Tidak Aktif";
-                    break;
-                case "banned":
-                    icon = <Ban className="text-red-500 dark:text-red-400" />;
-                    badgeColor = "text-red-500";
-                    text = "Dilarang";
-                    break;
-                case "completed":
-                    icon = (
-                        <BookCheck className="text-blue-500 dark:text-blue-400" />
-                    );
-                    badgeColor = "text-blue-500";
-                    text = "Selesai";
-                    break;
-                default:
-                    icon = <LoaderIcon className="text-muted-foreground" />;
-                    badgeColor = "text-muted-foreground";
-                    text = "Tidak diketahui";
-                    break;
+            // Check admin status first - if banned or inactive, show that
+            if (adminStatus === "banned") {
+                icon = <Ban className="text-red-500 dark:text-red-400" />;
+                badgeColor = "text-red-500";
+                text = "Dilarang";
+            } else if (adminStatus === "inactive") {
+                icon = (
+                    <XCircleIcon className="text-red-500 dark:text-red-400" />
+                );
+                badgeColor = "text-red-500";
+                text = "Tidak Aktif";
+            } else {
+                // Show event status based on dates
+                switch (eventStatus) {
+                    case "upcoming":
+                        icon = (
+                            <TrendingUpIcon className="text-blue-500 dark:text-blue-400" />
+                        );
+                        badgeColor = "text-blue-500";
+                        text = "Akan Datang";
+                        break;
+                    case "ongoing":
+                        icon = (
+                            <CheckCircle2Icon className="text-green-500 dark:text-green-400" />
+                        );
+                        badgeColor = "text-green-500";
+                        text = "Sedang Berlangsung";
+                        break;
+                    case "completed":
+                        icon = (
+                            <BookCheck className="text-gray-500 dark:text-gray-400" />
+                        );
+                        badgeColor = "text-gray-500";
+                        text = "Selesai";
+                        break;
+                    default:
+                        icon = <LoaderIcon className="text-muted-foreground" />;
+                        badgeColor = "text-muted-foreground";
+                        text = "Tidak diketahui";
+                        break;
+                }
             }
 
             return (
@@ -462,6 +472,11 @@ export function DataTable({ data: initialData }) {
         if (statusFilter === "all") {
             return data;
         }
+        // Filter by event_status for upcoming, ongoing, completed
+        if (["upcoming", "ongoing", "completed"].includes(statusFilter)) {
+            return data.filter((item) => item.event_status === statusFilter);
+        }
+        // Filter by admin status for banned, inactive
         return data.filter((item) => item.status === statusFilter);
     }, [data, statusFilter]);
 
@@ -528,6 +543,11 @@ export function DataTable({ data: initialData }) {
 
     const getStatusCount = (status) => {
         if (status === "all") return data.length;
+        // Count by event_status for upcoming, ongoing, completed
+        if (["upcoming", "ongoing", "completed"].includes(status)) {
+            return data.filter((item) => item.event_status === status).length;
+        }
+        // Count by admin status for banned, inactive
         return data.filter((item) => item.status === status).length;
     };
 
@@ -612,20 +632,53 @@ export function DataTable({ data: initialData }) {
                                 <DropdownMenuSeparator />
 
                                 <DropdownMenuItem
-                                    onClick={() => setStatusFilter("active")}
+                                    onClick={() => setStatusFilter("upcoming")}
                                     className="justify-between"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <CheckCircle2Icon className="h-3 w-3 text-green-500" />
-                                        <span>Terima</span>
+                                        <TrendingUpIcon className="h-3 w-3 text-blue-500" />
+                                        <span>Akan Datang</span>
                                     </div>
                                     <Badge
                                         variant="outline"
                                         className="h-5 px-1"
                                     >
-                                        {getStatusCount("active")}
+                                        {getStatusCount("upcoming")}
                                     </Badge>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => setStatusFilter("ongoing")}
+                                    className="justify-between"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2Icon className="h-3 w-3 text-green-500" />
+                                        <span>Sedang Berlangsung</span>
+                                    </div>
+                                    <Badge
+                                        variant="outline"
+                                        className="h-5 px-1"
+                                    >
+                                        {getStatusCount("ongoing")}
+                                    </Badge>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => setStatusFilter("completed")}
+                                    className="justify-between"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <BookCheck className="h-3 w-3 text-gray-500" />
+                                        <span>Selesai</span>
+                                    </div>
+                                    <Badge
+                                        variant="outline"
+                                        className="h-5 px-1"
+                                    >
+                                        {getStatusCount("completed")}
+                                    </Badge>
+                                </DropdownMenuItem>
+                                
+                                <DropdownMenuSeparator />
+                                
                                 <DropdownMenuItem
                                     onClick={() => setStatusFilter("inactive")}
                                     className="justify-between"
@@ -639,21 +692,6 @@ export function DataTable({ data: initialData }) {
                                         className="h-5 px-1"
                                     >
                                         {getStatusCount("inactive")}
-                                    </Badge>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("completed")}
-                                    className="justify-between"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <BookCheck className="h-3 w-3 text-blue-500" />
-                                        <span>Selesai</span>
-                                    </div>
-                                    <Badge
-                                        variant="outline"
-                                        className="h-5 px-1"
-                                    >
-                                        {getStatusCount("completed")}
                                     </Badge>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -693,10 +731,11 @@ export function DataTable({ data: initialData }) {
                             Filter aktif:
                         </span>
                         <Badge variant="secondary" className="gap-1">
-                            {statusFilter === "Pending" && "Proses"}
-                            {statusFilter === "Confirmed" && "Terima"}
-                            {statusFilter === "Cancelled" && "Ditolak"}
-                            {statusFilter === "Completed" && "Selesai"}
+                            {statusFilter === "upcoming" && "Akan Datang"}
+                            {statusFilter === "ongoing" && "Sedang Berlangsung"}
+                            {statusFilter === "completed" && "Selesai"}
+                            {statusFilter === "inactive" && "Tidak Aktif"}
+                            {statusFilter === "banned" && "Dilarang"}
                             <button
                                 onClick={() => setStatusFilter("all")}
                                 className="ml-1 rounded-full hover:bg-muted-foreground/20"

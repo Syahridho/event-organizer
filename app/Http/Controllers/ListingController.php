@@ -85,7 +85,7 @@ class ListingController extends Controller
 
                 // property
                 ->unionAll(
-                    DB::table('rent_property')
+                    DB::table('rent_propertys')
                         ->select(
                             'id',
                             'name',

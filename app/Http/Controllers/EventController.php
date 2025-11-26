@@ -110,16 +110,34 @@ class EventController extends Controller
 
     public function index()
     {
+        $events = Event::with('speakers', 'tickets')
+            ->withCount(['transactionItems as settled_transactions_count' => function ($query) {
+                $query->whereHas('transaction', function ($subQuery) {
+                    $subQuery->where('status', 'settlement');
+                });
+            }])
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->get()
+            ->map(function ($event) {
+                $now = Carbon::now();
+                $eventStart = Carbon::parse($event->event_date_start);
+                $eventEnd = Carbon::parse($event->event_date_end);
+                
+                // Determine event status based on dates
+                if ($now->lt($eventStart)) {
+                    $event->event_status = 'upcoming';
+                } elseif ($now->between($eventStart, $eventEnd)) {
+                    $event->event_status = 'ongoing';
+                } else {
+                    $event->event_status = 'completed';
+                }
+                
+                return $event;
+            });
+
         return Inertia::render('Mitra/Events/Index', [
-            'events' => Event::with('speakers', 'tickets')
-                ->withCount(['transactionItems as settled_transactions_count' => function ($query) {
-                    $query->whereHas('transaction', function ($subQuery) {
-                        $subQuery->where('status', 'settlement');
-                    });
-                }])
-                ->where('user_id', Auth::id())
-                ->latest()
-                ->get(),
+            'events' => $events,
         ]);
     }
 

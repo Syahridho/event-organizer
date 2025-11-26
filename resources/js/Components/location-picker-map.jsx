@@ -8,6 +8,7 @@ import {
     useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
+import { loadLeafletCSS } from "@/Utils/loadCSS";
 
 // Fix untuk ikon Leaflet - gunakan CDN yang lebih stabil
 delete L.Icon.Default.prototype._getIconUrl;
@@ -61,17 +62,33 @@ export default function LocationPickerMap({ pin, onPinChange }) {
             ? pin
             : [0.5071, 101.4478]; // Default Pekanbaru
 
+    // Load Leaflet CSS dynamically
+    useEffect(() => {
+        loadLeafletCSS().catch((err) => {
+            console.error("Failed to load Leaflet CSS:", err);
+        });
+    }, []);
+
+    // Generate unique key for map instance to prevent conflicts
+    const mapKey = `map-${validPin[0]}-${validPin[1]}`;
+
     return (
         <div
+            className="leaflet-container"
             style={{
-                height: "100%",
+                height: "300px",
                 width: "100%",
-                zIndex: 1,
-                isolation: "isolate",
                 position: "relative",
+                display: "block",
+                margin: "0",
+                padding: "0",
+                overflow: "hidden",
+                borderRadius: "0.5rem",
+                border: "1px solid hsl(var(--border))",
             }}
         >
             <MapContainer
+                key={mapKey}
                 center={validPin}
                 zoom={13}
                 scrollWheelZoom={true}
@@ -79,6 +96,7 @@ export default function LocationPickerMap({ pin, onPinChange }) {
                 style={{
                     height: "100%",
                     width: "100%",
+                    position: "relative",
                     zIndex: 1,
                 }}
                 zoomControl={true}

@@ -1,17 +1,14 @@
 import { Head, Link, usePage, router } from "@inertiajs/react";
-import { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import {
     LogOut,
     AlignJustify,
-    Search,
     ChevronRight,
-    MapPin,
-    Calendar,
     Star,
 } from "lucide-react";
 
 // Use optimized Icon component instead of direct imports
-import Icon, {
+import {
     IoCart,
     IoPersonCircle,
     IoTicket,
@@ -36,231 +33,62 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Rating from "react-rating";
 import {
     Sheet,
     SheetClose,
     SheetContent,
-    SheetFooter,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { formatRupiah } from "@/Utils/formatRupiah";
 import MainLayout from "@/Layouts/Main";
+
+// Import new components
+import CategorySection from "@/Components/Welcome/CategorySection";
+import MobileMenu from "@/Components/Welcome/MobileMenu";
 
 const mobileMenuItems = [
     {
         label: "Tiket",
-        href: "#tickets",
+        href: "events",
         icon: IoTicket,
         description: "Event & Konser",
+        bgGradient: "from-blue-500 to-indigo-600",
+        iconColor: "text-white",
+        hoverBg: "hover:from-blue-600 hover:to-indigo-700",
     },
     {
         label: "Jasa",
-        href: "#services",
+        href: "services",
         icon: GiMicrophone,
         description: "Vendor Profesional",
+        bgGradient: "from-purple-500 to-pink-600",
+        iconColor: "text-white",
+        hoverBg: "hover:from-purple-600 hover:to-pink-700",
     },
     {
         label: "Gedung",
-        href: "#buildings",
+        href: "buildings",
         icon: FaBuilding,
         description: "Venue & Tempat",
+        bgGradient: "from-orange-500 to-red-600",
+        iconColor: "text-white",
+        hoverBg: "hover:from-orange-600 hover:to-red-700",
     },
     {
         label: "Property",
-        href: "#property",
+        href: "propertys",
         icon: GrFanOption,
         description: "Perlengkapan Acara",
+        bgGradient: "from-green-500 to-emerald-600",
+        iconColor: "text-white",
+        hoverBg: "hover:from-green-600 hover:to-emerald-700",
     },
 ];
-
-const LazyImage = ({ src, alt, className, onLoad, onError, ...props }) => {
-    const [loaded, setLoaded] = useState(false);
-    const [error, setError] = useState(false);
-
-    const handleLoad = useCallback(() => {
-        setLoaded(true);
-        onLoad?.();
-    }, [onLoad]);
-
-    const handleError = useCallback(() => {
-        setError(true);
-        setLoaded(true);
-        onError?.();
-    }, [onError]);
-
-    return (
-        <div className="relative overflow-hidden rounded-lg">
-            {!loaded && <Skeleton className={className} />}
-            <img
-                src={src}
-                alt={alt}
-                className={`${className} transition-all duration-500 ${
-                    loaded ? "opacity-100 scale-100" : "opacity-0 scale-105"
-                } ${loaded ? "" : "absolute inset-0"}`}
-                onLoad={handleLoad}
-                onError={handleError}
-                loading="lazy"
-                {...props}
-            />
-        </div>
-    );
-};
-
-const ItemCard = ({ item, type, baseUrl }) => {
-    const getImageUrl = useCallback(() => {
-        if (type === "events") {
-            return item.thumbnail.includes("default-event-images")
-                ? `${baseUrl}/storage${item.thumbnail}`
-                : `${baseUrl}/storage/thumbnails/${item.thumbnail}`;
-        }
-        return `${baseUrl}/storage/thumbnails/${item.thumbnail}`;
-    }, [item.thumbnail, type, baseUrl]);
-
-    const getPriceDisplay = useCallback(() => {
-        switch (type) {
-            case "events":
-                if (item.tickets?.length > 0 && item.tickets[0].price) {
-                    return `Mulai dari Rp ${item.tickets[0].price.toLocaleString()}`;
-                }
-                return "Gratis";
-            case "services":
-                return `Rp ${formatRupiah(item.price)}`;
-            case "buildings":
-            case "propertys":
-                return `Rp ${formatRupiah(item.price)}/Hari`;
-            default:
-                return "";
-        }
-    }, [item, type]);
-
-    const getHref = useCallback(() => {
-        const path = type === "propertys" ? "propertys" : type;
-        return `/${path}/${item.id}`;
-    }, [type, item.id]);
-
-    const getTitle = useCallback(() => {
-        switch (type) {
-            case "events":
-                return "Event";
-            case "services":
-                return "Jasa";
-            case "buildings":
-                return "Gedung";
-            case "propertys":
-                return "Property";
-            default:
-                return "Event";
-        }
-    }, [type]);
-
-    return (
-        <Link href={getHref()}>
-            <Card className="group w-72 flex-shrink-0 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-border/50 bg-card">
-                <CardHeader className="p-0">
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg">
-                        <LazyImage
-                            src={getImageUrl()}
-                            alt={item.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <Badge
-                            variant="secondary"
-                            className="absolute top-3 right-3 capitalize font-medium"
-                        >
-                            {getTitle(type)}
-                        </Badge>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-4 space-y-3">
-                    <h3 className="font-semibold text-lg line-clamp-2 capitalize text-card-foreground group-hover:text-primary transition-colors">
-                        {item.name}
-                    </h3>
-                    <div className="flex items-center text-muted-foreground text-sm">
-                        <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{item.location}</span>
-                    </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                    <div className="flex items-center justify-between w-full">
-                        <span className="font-bold text-lg text-primary">
-                            {getPriceDisplay()}
-                        </span>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
-                    </div>
-                </CardFooter>
-            </Card>
-        </Link>
-    );
-};
-
-// Komponen CategorySection yang diperbaiki
-const CategorySection = ({ title, items, type, baseUrl, id }) => {
-    return (
-        <section id={id} className="py-16 bg-background">
-            <div className="container mx-auto max-w-7xl px-4 md:px-6">
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
-                            {title}
-                        </h2>
-                        <p className="text-muted-foreground text-lg">
-                            Pilihan terbaik untuk kebutuhan Anda
-                        </p>
-                    </div>
-                    {/* 3. Tombol diperbaiki di sini */}
-                    <Link
-                        className="hidden md:flex items-center gap-2"
-                        href={route("listings.show", { type: type })}
-                    >
-                        Lihat Semua
-                        <ChevronRight className="w-4 h-4" />
-                    </Link>
-                </div>
-
-                <ScrollArea className="w-full">
-                    <div className="flex space-x-6 py-2">
-                        {items.length > 0 ? (
-                            items.map((item, index) => (
-                                <ItemCard
-                                    key={`${type}-${index}`}
-                                    item={item}
-                                    type={type}
-                                    baseUrl={baseUrl}
-                                />
-                            ))
-                        ) : (
-                            <Card className="w-full py-16">
-                                <CardContent className="text-center">
-                                    <p className="text-muted-foreground text-lg">
-                                        Tidak ada {title.toLowerCase()} yang
-                                        ditemukan
-                                    </p>
-                                    <Button
-                                        variant="outline"
-                                        className="mt-4"
-                                        onClick={() => window.location.reload()}
-                                    >
-                                        Muat Ulang
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                    <ScrollBar orientation="horizontal" className="mt-4" />
-                </ScrollArea>
-            </div>
-        </section>
-    );
-};
 
 function TestimonialSection({ testimonials: propTestimonials }) {
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -457,81 +285,6 @@ export default function Welcome() {
         router.visit(path);
     }, []);
 
-    const handleSearch = useCallback(
-        (e) => {
-            e.preventDefault();
-            if (searchQuery.trim()) {
-                router.visit(`/search?q=${encodeURIComponent(searchQuery)}`);
-            }
-        },
-        [searchQuery]
-    );
-
-    const AuthButtons = () => (
-        <div className="flex gap-3 items-center">
-            {auth.user ? (
-                <>
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={route("cart.index")}>
-                            <IoCart className="w-5 h-5" />
-                        </Link>
-                    </Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="hidden md:flex"
-                            >
-                                <IoPersonCircle className="w-5 h-5" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel className="capitalize">
-                                {auth.user.name}
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                onClick={() => handleNavigation("/profile")}
-                            >
-                                Profil
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={() => handleNavigation("/purchase")}
-                            >
-                                Pesanan Saya
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={handleLogout}
-                            >
-                                <LogOut className="w-4 h-4 mr-2" />
-                                Keluar
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </>
-            ) : (
-                <div className="flex gap-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleNavigation("/login")}
-                    >
-                        Masuk
-                    </Button>
-                    <Button
-                        size="sm"
-                        onClick={() => handleNavigation("/register")}
-                    >
-                        Daftar
-                    </Button>
-                </div>
-            )}
-        </div>
-    );
-
     const MobileSheet = () => (
         <Sheet>
             <SheetTrigger asChild className="md:hidden">
@@ -543,31 +296,10 @@ export default function Welcome() {
                 <SheetHeader>
                     <SheetTitle>Menu</SheetTitle>
                 </SheetHeader>
-                <div className="flex flex-col gap-2 mt-6">
-                    {mobileMenuItems.map((item, idx) => {
-                        const IconComponent = item.icon;
-                        return (
-                            <Button
-                                key={idx}
-                                variant="ghost"
-                                className="justify-start h-auto p-4"
-                                asChild
-                            >
-                                <Link href={item.href}>
-                                    <IconComponent className="w-5 h-5 mr-3" />
-                                    <div className="text-left">
-                                        <div className="font-medium">
-                                            {item.label}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {item.description}
-                                        </div>
-                                    </div>
-                                </Link>
-                            </Button>
-                        );
-                    })}
-                </div>
+                
+                {/* Use the new MobileMenu component */}
+                <MobileMenu />
+
                 {auth.user && (
                     <>
                         <Separator className="my-4" />
@@ -628,13 +360,13 @@ export default function Welcome() {
                             return (
                                 <Card
                                     key={idx}
-                                    className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border-border/50"
+                                    className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border-border/50 overflow-hidden"
                                     asChild
                                 >
                                     <Link href={item.href}>
                                         <CardContent className="p-6 text-center space-y-4">
-                                            <div className="bg-gradient-to-br from-primary to-secondary w-16 h-16 rounded-2xl mx-auto flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                                                <IconComponent className="w-8 h-8 text-primary-foreground" />
+                                            <div className={`bg-gradient-to-br ${item.bgGradient} ${item.hoverBg} w-16 h-16 rounded-2xl mx-auto flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg`}>
+                                                <IconComponent className={`w-8 h-8 ${item.iconColor}`} />
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">
@@ -657,6 +389,7 @@ export default function Welcome() {
                 <CategorySection
                     id="events"
                     title="Acara yang Sedang Populer"
+                    subtitle="Temukan event seru dan menarik di sekitarmu"
                     items={events}
                     type="events"
                     baseUrl={ziggy.url}
@@ -666,6 +399,7 @@ export default function Welcome() {
                     <CategorySection
                         id="services"
                         title="Andalan Utama dan Terbukti Efektif"
+                        subtitle="Vendor jasa profesional untuk mensukseskan acaramu"
                         items={services}
                         type="services"
                         baseUrl={ziggy.url}
@@ -675,6 +409,7 @@ export default function Welcome() {
                 <CategorySection
                     id="buildings"
                     title="Sewa Lokasi dan Solusi Teruji"
+                    subtitle="Pilihan gedung dan venue terbaik untuk berbagai acara"
                     items={buildings}
                     type="buildings"
                     baseUrl={ziggy.url}
@@ -684,6 +419,7 @@ export default function Welcome() {
                     <CategorySection
                         id="property"
                         title="Solusi Sewa Perlengkapan Acara"
+                        subtitle="Lengkapi kebutuhan acaramu dengan peralatan berkualitas"
                         items={propertys}
                         type="propertys"
                         baseUrl={ziggy.url}

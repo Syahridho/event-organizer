@@ -17,3 +17,38 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Storage files (images, uploads)
+/storage/app/public/thumbnails/*
+/storage/app/public/speakers/*
+/storage/app/public/seo/*
+/storage/app/public/default-event-images/*
+!/storage/app/public/.gitkeep
+!/storage/app/public/default-event-images/.gitkeep
+
+# Keep default images
+!/storage/app/public/default-event-images/dubby.webp
+
+# Logs
+/storage/logs/*
+!/storage/logs/.gitkeep
+
+# Framework cache
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+
+# Testing
+/coverage
+/.phpunit.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*.swo
+*~
+.project
+.settings
+.buildpath

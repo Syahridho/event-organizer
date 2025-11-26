@@ -7,8 +7,8 @@ export const loadCSS = (href) => {
             return;
         }
 
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
         link.href = href;
         link.onload = () => resolve();
         link.onerror = () => reject(new Error(`Failed to load CSS: ${href}`));
@@ -18,10 +18,20 @@ export const loadCSS = (href) => {
 
 // Load Leaflet CSS dynamically
 export const loadLeafletCSS = () => {
-    return loadCSS('/node_modules/leaflet/dist/leaflet.css');
+    // Try multiple possible paths for Leaflet CSS
+    const possiblePaths = [
+        "/node_modules/leaflet/dist/leaflet.css",
+        "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+    ];
+
+    // Try the first path, fallback to CDN if needed
+    return loadCSS(possiblePaths[0]).catch(() => {
+        console.warn("Local Leaflet CSS not found, using CDN");
+        return loadCSS(possiblePaths[1]);
+    });
 };
 
 // Load Quill CSS dynamically
 export const loadQuillCSS = () => {
-    return loadCSS('/node_modules/quill/dist/quill.snow.css');
+    return loadCSS("/node_modules/quill/dist/quill.snow.css");
 };

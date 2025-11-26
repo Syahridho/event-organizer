@@ -2,87 +2,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MainLayout from "@/Layouts/Main";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { useEffect, useRef, useState, useCallback } from "react";
-import { MapPin, Filter } from "lucide-react";
+import { useState } from "react";
+import { Filter } from "lucide-react";
+import ItemCard from "@/Components/ItemCard";
 
-const LazyImage = ({ src, alt, className }) => {
-    const [loaded, setLoaded] = useState(false);
-    const [inView, setInView] = useState(false);
-    const imgRef = useRef();
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setInView(true);
-                    observer.disconnect();
-                }
-            },
-            { rootMargin: "50px" }
-        );
-
-        if (imgRef.current) {
-            observer.observe(imgRef.current);
-        }
-
-        return () => observer.disconnect();
-    }, []);
-
-    return (
-        <div ref={imgRef} className={className}>
-            {inView && (
-                <>
-                    {!loaded && (
-                        <div className="w-full h-full bg-gray-200 animate-pulse rounded"></div>
-                    )}
-                    <img
-                        src={src}
-                        alt={alt}
-                        className={`w-full h-full object-cover rounded transition-opacity duration-300 ${
-                            loaded ? "opacity-100" : "opacity-0"
-                        }`}
-                        onLoad={() => setLoaded(true)}
-                        loading="lazy"
-                    />
-                </>
-            )}
-        </div>
-    );
-};
-
-export default function SearchPage({ products, keyword, type }) {
-    const { ziggy } = usePage().props;
-    const [activeFilter, setActiveFilter] = useState(type || "all");
-    console.log(type);
-    console.log(products);
-
-    const baseUrl = ziggy.url;
-    const getImageUrl = (thumbnail, type) => {
-        console.log(thumbnail);
-        // Kembalikan null jika tidak ada thumbnail, agar kita bisa render avatar huruf
-        if (!thumbnail || thumbnail === null) {
-            // For mitra type, return null to trigger avatar fallback
-            if (type === "mitra") {
-                return null;
-            }
-            // For other types, return default image
-            return `${baseUrl}/storage/default-event-images/dubby.webp`;
-        }
-
-        if (type === "mitra") {
-            return `${baseUrl}/storage/${thumbnail}`;
-        }
-
-        if (thumbnail.includes("default-event-images"))
-            return `${baseUrl}/storage/${thumbnail}`;
-        if (thumbnail.includes("thumbnails"))
-            return `${baseUrl}/storage/${thumbnail}`;
-        return thumbnail.startsWith("http")
-            ? thumbnail
-            : `${baseUrl}/storage/thumbnails/${thumbnail}`;
-    };
-
-    // Palet warna tetap (agar Tailwind tidak purging class)
+// Component for User/Mitra cards (different from ItemCard)
+const UserCard = ({ user, baseUrl }) => {
     const COLOR_PALETTE = [
         "bg-blue-500",
         "bg-emerald-500",
@@ -94,7 +19,6 @@ export default function SearchPage({ products, keyword, type }) {
         "bg-fuchsia-500",
     ];
 
-    // Pilih warna deterministik berdasarkan nama/type
     const pickColorClass = (seed = "") => {
         let hash = 0;
         const s = String(seed);
@@ -105,40 +29,58 @@ export default function SearchPage({ products, keyword, type }) {
         return COLOR_PALETTE[idx];
     };
 
-    // Ambil inisial huruf pertama (kapital)
     const getInitial = (name = "") => {
         const trimmed = String(name).trim();
         return trimmed.length ? trimmed[0].toUpperCase() : "?";
     };
 
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat("id-ID").format(price);
+    const getImageUrl = () => {
+        if (!user.thumbnail) return null;
+        return `${baseUrl}/storage/${user.thumbnail}`;
     };
 
-    const getBadgeLabel = (productType) => {
-        const labels = {
-            event: "Event",
-            service: "Layanan",
-            building: "Gedung",
-            property: "Properti",
-            user: "Pengguna",
-            mitra: "Mitra",
-        };
-        return labels[productType] || productType;
-    };
+    const href = `/chat/${user.uuid || user.id}`;
 
-    // Helper: tipe user
-    const isUserType = (t) => t === "user" || t === "mitra";
+    return (
+        <Link href={href} className="block h-full">
+            <div className="group h-full border rounded-lg hover:shadow-lg transition-all duration-300 overflow-hidden bg-card flex flex-col">
+                <div className="relative aspect-[4/3] overflow-hidden">
+                    {getImageUrl() ? (
+                        <img
+                            src={getImageUrl()}
+                            alt={user.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                    ) : (
+                        <div
+                            className={`w-full h-full ${pickColorClass(
+                                user.name || user.type
+                            )} flex items-center justify-center`}
+                        >
+                            <span className="text-white font-semibold text-5xl">
+                                {getInitial(user.name || user.type)}
+                            </span>
+                        </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
+                    <Badge className="absolute top-3 right-3 capitalize font-medium text-white border-0 shadow-lg bg-indigo-500 hover:bg-indigo-600">
+                        Mitra
+                    </Badge>
+                </div>
+                <div className="p-4 flex-grow flex flex-col justify-center">
+                    <h3 className="font-bold text-lg line-clamp-2 capitalize text-card-foreground group-hover:text-primary transition-colors leading-tight text-center">
+                        {user.name}
+                    </h3>
+                </div>
+            </div>
+        </Link>
+    );
+};
 
-    // Helper: tentukan URL sesuai tipe
-    const getHrefForProduct = (product) => {
-        const t = product.type;
-        if (isUserType(t)) {
-            const uuid = product.uuid || product.id;
-            return `/chat/${uuid}`;
-        }
-        return `/${t + "s"}/${product.id}`;
-    };
+export default function SearchPage({ products, keyword, type }) {
+    const { ziggy } = usePage().props;
+    const [activeFilter, setActiveFilter] = useState(type || "all");
+    const baseUrl = ziggy.url;
 
     const filters = [
         { value: "all", label: "Semua" },
@@ -162,15 +104,29 @@ export default function SearchPage({ products, keyword, type }) {
         });
     };
 
+    // Convert product type to ItemCard type format
+    const getItemCardType = (productType) => {
+        const typeMap = {
+            event: "events",
+            service: "services",
+            building: "buildings",
+            property: "propertys",
+        };
+        return typeMap[productType] || productType;
+    };
+
+    const isUserType = (t) => t === "user" || t === "mitra";
+
     return (
-        <div className="min-h-screen mx-auto xl:max-w-[950px] p-4 mb-20 md:mb-0">
+        <div className="min-h-screen mx-auto xl:max-w-[1200px] p-4 md:p-6 mb-20 md:mb-0">
             <Head title="Pencarian" />
+            
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-2xl font-bold mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">
                     Hasil Pencarian: "{keyword}"
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm md:text-base text-muted-foreground">
                     Ditemukan {products.length} hasil
                 </p>
             </div>
@@ -214,75 +170,23 @@ export default function SearchPage({ products, keyword, type }) {
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {products.map((product) => (
-                        <Link
-                            key={`${product.type}-${product.id}`}
-                            href={getHrefForProduct(product)}
-                        >
-                            <div className="border rounded-lg hover:shadow-lg transition-all duration-300 overflow-hidden group bg-white">
-                                <div className="relative aspect-[4/3] overflow-hidden">
-                                    {getImageUrl(product.thumbnail) ? (
-                                        <LazyImage
-                                            src={getImageUrl(
-                                                product.thumbnail,
-                                                product.type
-                                            )}
-                                            alt={product.name}
-                                            className="w-full h-full"
-                                        />
-                                    ) : (
-                                        <div
-                                            className={`w-full h-full ${pickColorClass(
-                                                product.name || product.type
-                                            )} flex items-center justify-center rounded`}
-                                        >
-                                            <span className="text-white font-semibold text-3xl sm:text-4xl">
-                                                {getInitial(
-                                                    product.name || product.type
-                                                )}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    <Badge
-                                        variant={"default"}
-                                        className="absolute top-3 right-3 font-medium shadow-sm"
-                                    >
-                                        {getBadgeLabel(product.type)}
-                                    </Badge>
-                                </div>
-                                <div className="p-4 space-y-2">
-                                    <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-primary transition-colors min-h-[3rem]">
-                                        {product.name}
-                                    </h3>
-
-                                    <div className="space-y-1.5">
-                                        {product.price &&
-                                            !isUserType(product.type) && (
-                                                <div className="flex items-center gap-1">
-                                                    <span className="font-bold text-lg text-green-600">
-                                                        Rp{" "}
-                                                        {formatPrice(
-                                                            product.price
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                        {product.location && (
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                                                <span className="text-sm line-clamp-1">
-                                                    {product.location}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {products.map((product) =>
+                        isUserType(product.type) ? (
+                            <UserCard
+                                key={`${product.type}-${product.id}`}
+                                user={product}
+                                baseUrl={baseUrl}
+                            />
+                        ) : (
+                            <ItemCard
+                                key={`${product.type}-${product.id}`}
+                                item={product}
+                                type={getItemCardType(product.type)}
+                                baseUrl={baseUrl}
+                            />
+                        )
+                    )}
                 </div>
             )}
         </div>
