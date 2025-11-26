@@ -393,7 +393,7 @@ const DetailProperty = () => {
                                                                 ].url
                                                             }
                                                             alt={property.name}
-                                                            className="object-cover rounded-lg max-h-[400px] w-full"
+                                                            className="object-cover rounded-lg max-h-[600px] w-full"
                                                         />
                                                     </CardContent>
                                                 </Card>
@@ -546,7 +546,7 @@ const DetailProperty = () => {
 
                     <div className="lg:col-span-5 space-y-6">
                         <div className="bg-white rounded-lg shadow-lg">
-                            <div className="p-6">
+                            <div className="px-6 pb-6">
                                 <div className="my-6">
                                     <CustomCalendar
                                         selected={selectedDate}

@@ -186,9 +186,10 @@ const CustomCalendar = ({
             }
         } else if (inCart) {
             dayClasses +=
-                "bg-blue-100 text-blue-700 border-2 border-blue-300 cursor-not-allowed ";
+                "bg-blue-100 text-blue-700 border-2 border-blue-300 cursor-not-allowed hover:!bg-blue-200 hover:!text-blue-800";
         } else if (inPending) {
-            dayClasses += "bg-amber-700 text-amber-100 cursor-not-allowed ";
+            dayClasses +=
+                "bg-amber-300 text-amber-100 border-2 border-amber-800 cursor-not-allowed ";
         } else if (leaveStatus) {
             dayClasses += "bg-yellow-100 text-yellow-700 cursor-not-allowed ";
         } else if (!isDisabled) {
@@ -289,7 +290,7 @@ const CustomCalendar = ({
                     <span>Di Keranjang</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-amber-700 rounded"></div>
+                    <div className="w-3 h-3 bg-amber-600 border border-amber-800 rounded"></div>
                     <span>Belum Bayar</span>
                 </div>
                 <div className="flex items-center gap-1">

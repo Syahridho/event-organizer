@@ -139,12 +139,15 @@ export default function CheckoutPage() {
         if (taxInfo.type === "percent") {
             return Math.round(subtotal * (taxInfo.value / 100));
         } else {
-            return taxInfo.value;
+            // Pastikan taxInfo.value dikonversi ke integer
+            return parseInt(taxInfo.value) || 0;
         }
     }, [taxInfo, subtotal]);
 
     const totalWithTax = useMemo(() => {
-        return subtotal + taxAmount;
+        console.log(subtotal, taxAmount);
+        // Pastikan keduanya integer sebelum dijumlahkan
+        return parseInt(subtotal) + parseInt(taxAmount);
     }, [subtotal, taxAmount]);
 
     // Get product detail URL helper

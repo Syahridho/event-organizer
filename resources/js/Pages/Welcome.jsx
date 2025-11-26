@@ -9,7 +9,17 @@ import {
     Calendar,
     Star,
 } from "lucide-react";
-import { IoCart, IoPersonCircle } from "react-icons/io5";
+
+// Use optimized Icon component instead of direct imports
+import Icon, {
+    IoCart,
+    IoPersonCircle,
+    IoTicket,
+    FaBuilding,
+    GiMicrophone,
+    GrFanOption,
+} from "@/components/Icon";
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -30,10 +40,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Rating from "react-rating";
-import { IoTicket } from "react-icons/io5";
-import { FaBuilding } from "react-icons/fa";
-import { GiMicrophone } from "react-icons/gi";
-import { GrFanOption } from "react-icons/gr";
 import {
     Sheet,
     SheetClose,

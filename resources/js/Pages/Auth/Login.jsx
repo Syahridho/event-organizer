@@ -13,27 +13,42 @@ import { Label } from "@/components/ui/label";
 import Checkbox from "@/components/Checkbox";
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputError from "@/components/InputError";
-import { Head, Link, useForm } from "@inertiajs/react";
-import { LoaderCircle } from "lucide-react";
+import { Head, Link, useForm, router } from "@inertiajs/react";
+import { LoaderCircle, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 export default function Login({ status, canResetPassword }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
 
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get("redirect") || "";
+
+    const [showPassword, setShowPassword] = useState(false);
+    const { csrfToken, refreshToken } = useCsrfToken();
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
         redirect: redirectUrl,
+        // Don't add _token here - global handler in app.jsx will add it automatically
     });
 
     const submit = (e) => {
         e.preventDefault();
 
+        // Ensure we have the latest CSRF token in meta tag before submitting
+        refreshToken();
+
         post(route("login"), {
             onFinish: () => reset("password"),
+            onError: (errors) => {
+                // If there's a CSRF error, refresh the token
+                if (errors.csrf || errors._token) {
+                    refreshToken();
+                }
+            },
         });
     };
 
@@ -51,6 +66,11 @@ export default function Login({ status, canResetPassword }) {
                         {status && (
                             <div className="mb-4 font-medium text-sm text-green-600">
                                 {status}
+                            </div>
+                        )}
+                        {errors.csrf && (
+                            <div className="mb-4 font-medium text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                                {errors.csrf}
                             </div>
                         )}
                     </CardHeader>
@@ -89,29 +109,53 @@ export default function Login({ status, canResetPassword }) {
                                         {canResetPassword && (
                                             <Link
                                                 href={route("password.request")}
-                                                className="underline text-sm italic"
+                                                className="text-sm underline underline-offset-4"
                                             >
-                                                Lupa Password?
+                                                Lupa password?
                                             </Link>
                                         )}
                                     </div>
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        name="password"
-                                        value={data.password}
-                                        className="mt-1 block w-full"
-                                        autoComplete="current-password"
-                                        onChange={(e) =>
-                                            setData("password", e.target.value)
-                                        }
-                                        required
-                                    />
+
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            type={
+                                                showPassword
+                                                    ? "text"
+                                                    : "password"
+                                            }
+                                            name="password"
+                                            value={data.password}
+                                            className="mt-1 block w-full pr-10"
+                                            autoComplete="current-password"
+                                            onChange={(e) =>
+                                                setData(
+                                                    "password",
+                                                    e.target.value
+                                                )
+                                            }
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3"
+                                            onClick={() =>
+                                                setShowPassword(!showPassword)
+                                            }
+                                        >
+                                            {showPassword ? (
+                                                <Eye className="h-4 w-4 text-gray-500" />
+                                            ) : (
+                                                <EyeOff className="h-4 w-4 text-gray-500" />
+                                            )}
+                                        </button>
+                                    </div>
                                     <InputError
                                         message={errors.password}
                                         className="mt-2"
                                     />
                                 </div>
+
                                 <div className="block">
                                     <label className="flex items-center">
                                         <Checkbox
@@ -124,11 +168,12 @@ export default function Login({ status, canResetPassword }) {
                                                 )
                                             }
                                         />
-                                        <span className="ml-2 text-sm">
-                                            ingat saya
+                                        <span className="ms-2 text-sm text-gray-600">
+                                            Ingat saya
                                         </span>
                                     </label>
                                 </div>
+
                                 <div className="flex items-center justify-end mt-4">
                                     <Button
                                         type="submit"

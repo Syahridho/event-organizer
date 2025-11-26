@@ -44,7 +44,7 @@ class NotificationController extends Controller
     {
         Auth::user()->unreadNotifications->markAsRead();
 
-        return response()->json(['message' => 'All notifications marked as read']);
+        return redirect()->back()->with(['message','All notifications marked as read']);
     }
 
     public function store(Request $request)

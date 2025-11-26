@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, router, usePage } from "@inertiajs/react";
 import {
     ShoppingCart,
@@ -88,6 +88,64 @@ export default function Navigation() {
         return ziggy.url === path || ziggy.url.startsWith(path + "/");
     };
 
+    // Function to handle logout with proper CSRF token handling
+    const handleLogout = useCallback((e) => {
+        e.preventDefault();
+
+        // Get current CSRF token
+        const token = document.head.querySelector('meta[name="csrf-token"]');
+        const currentToken = token ? token.content : "";
+
+        // Perform logout with current token
+        router.post(
+            route("logout"),
+            {
+                _token: currentToken,
+            },
+            {
+                onError: (errors) => {
+                    // If there's a CSRF error, try to refresh token and retry
+                    if (errors.csrf || errors._token) {
+                        // Try to get a fresh token
+                        fetch("/csrf-token", {
+                            method: "GET",
+                            headers: {
+                                "X-Requested-With": "XMLHttpRequest",
+                                Accept: "application/json",
+                            },
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data.token) {
+                                    // Update the meta tag
+                                    const metaTag = document.head.querySelector(
+                                        'meta[name="csrf-token"]'
+                                    );
+                                    if (metaTag) {
+                                        metaTag.setAttribute(
+                                            "content",
+                                            data.token
+                                        );
+                                    }
+                                    // Retry logout with new token
+                                    router.post(route("logout"), {
+                                        _token: data.token,
+                                    });
+                                }
+                            })
+                            .catch(() => {
+                                // If token refresh fails, fall back to page reload
+                                console.error(
+                                    "Failed to refresh CSRF token for logout"
+                                );
+                                window.location.href = route("logout");
+                            });
+                    }
+                },
+            }
+        );
+    }, []);
+
     const handleDesktopSearch = (e) => {
         e.preventDefault();
         if (searchKeyword && searchKeyword.trim()) {
@@ -161,12 +219,15 @@ export default function Navigation() {
                             </DropdownMenuItem>
                         ) : null}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            onClick={() => router.post(route("logout"))}
-                            className="text-destructive focus:text-destructive"
-                        >
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Keluar
+                        <DropdownMenuItem asChild>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="w-full text-left text-destructive focus:text-destructive flex items-center"
+                            >
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Keluar
+                            </button>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -203,12 +264,7 @@ export default function Navigation() {
                         <span className="text-xl md:text-2xl font-bold text-primary">
                             Eventnusa
                         </span>
-                        <Badge
-                            variant="secondary"
-                            className="hidden sm:inline-flex text-xs"
-                        >
-                            Beta
-                        </Badge>
+                      
                     </Link>
 
                     <div className="hidden md:flex flex-1 max-w-md mx-6">
@@ -405,14 +461,49 @@ export default function Navigation() {
                                                         Pesanan Saya
                                                     </Link>
                                                 </Button>
+                                                {/* <Button
+                                                        variant="ghost"
+                                                        className="justify-start w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        onClick={() => {
+                                                            console.log(
+                                                                "Logout clicked - mobile"
+                                                            );
+                                                            router.post(
+                                                                route("logout"),
+                                                                {},
+                                                                {
+                                                                    onStart: () => {
+                                                                        console.log(
+                                                                            "Logout request started"
+                                                                        );
+                                                                    },
+                                                                    onSuccess:
+                                                                        () => {
+                                                                            console.log(
+                                                                                "Logout successful"
+                                                                            );
+                                                                            window.location.href =
+                                                                                "/";
+                                                                        },
+                                                                    onError: (
+                                                                        errors
+                                                                    ) => {
+                                                                        console.error(
+                                                                            "Logout error:",
+                                                                            errors
+                                                                        );
+                                                                    },
+                                                                }
+                                                            );
+                                                        }}
+                                                    >
+                                                        <LogOut className="mr-2 h-4 w-4" />
+                                                        Keluar
+                                                    </Button> */}
                                                 <Button
                                                     variant="ghost"
                                                     className="justify-start w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                    onClick={() =>
-                                                        router.post(
-                                                            route("logout")
-                                                        )
-                                                    }
+                                                    onClick={handleLogout}
                                                 >
                                                     <LogOut className="mr-2 h-4 w-4" />
                                                     Keluar

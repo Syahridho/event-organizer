@@ -12,16 +12,30 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LoaderCircle } from "lucide-react";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
+import { useEffect } from "react";
 
 export default function ForgotPassword({ status }) {
+    const { csrfToken, refreshToken } = useCsrfToken();
     const { data, setData, post, processing, errors } = useForm({
         email: "",
+        // Don't add _token here - global handler in app.jsx will add it automatically
     });
 
     const submit = (e) => {
         e.preventDefault();
 
-        post(route("password.email"));
+        // Ensure we have the latest CSRF token in meta tag before submitting
+        refreshToken();
+
+        post(route("password.email"), {
+            onError: (errors) => {
+                // If there's a CSRF error, refresh the token
+                if (errors.csrf || errors._token) {
+                    refreshToken();
+                }
+            },
+        });
     };
 
     return (
@@ -36,6 +50,11 @@ export default function ForgotPassword({ status }) {
                     {status && (
                         <div className="mb-4 font-medium text-sm text-green-600">
                             {status}
+                        </div>
+                    )}
+                    {errors.csrf && (
+                        <div className="mb-4 font-medium text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                            {errors.csrf}
                         </div>
                     )}
                 </CardHeader>

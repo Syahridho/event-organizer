@@ -49,6 +49,13 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\MitraProfileController;
 
+// CSRF token refresh endpoint
+Route::get('/csrf-token', function () {
+    return response()->json([
+        'token' => csrf_token()
+    ]);
+})->middleware('web');
+
 // Main homepage
 Route::get('/', [HomeController::class, 'index'])->name('welcome');
 

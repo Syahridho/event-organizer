@@ -9,6 +9,8 @@ use App\Models\Ticket;
 use App\Models\Service;
 use App\Models\Building;
 use App\Models\RentProperty;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Helpers\TaxHelper;
 use App\Services\MidtransTaxService;
 use Illuminate\Http\Request;
@@ -618,6 +620,9 @@ class MidtransController extends Controller
                             ]);
                         }
                         
+                        // 💰 Credit wallet untuk event creator (hanya untuk tiket, pajak tidak termasuk)
+                        $this->creditEventCreatorWallet($transaction);
+                        
                         Log::info('Transaksi berhasil diperbarui', [
                             'order_id' => $request->order_id, 
                             'status' => $transaction->status
@@ -789,6 +794,105 @@ class MidtransController extends Controller
             'transaction_id' => $transaction->id,
             'order_id' => $transaction->order_id
         ]);
+    }
+
+    /**
+     * Credit wallet untuk mitra pembuat event ketika tiket dibeli
+     * Algoritma tercepat: batch processing dengan single query per owner
+     * 
+     * @param Transaction $transaction
+     * @return void
+     */
+    private function creditEventCreatorWallet(Transaction $transaction)
+    {
+        // Ambil semua transaction items dengan relasi yang dibutuhkan dalam satu query
+        $transactionItems = TransactionItem::where('transaction_id', $transaction->id)
+            ->where('item_type', 'ticket') // Hanya proses tiket
+            ->with(['item.event.user']) // Eager load relasi untuk menghindari N+1 query
+            ->get();
+
+        if ($transactionItems->isEmpty()) {
+            return; // Tidak ada tiket, skip
+        }
+
+        // Group items by event creator untuk batch processing
+        $revenueByOwner = [];
+        $transactionItemsByOwner = [];
+
+        foreach ($transactionItems as $tItem) {
+            // Dapatkan event creator user_id
+            $eventCreatorId = $tItem->item?->event?->user_id;
+            
+            if (!$eventCreatorId) {
+                Log::warning('Event creator tidak ditemukan untuk tiket', [
+                    'transaction_item_id' => $tItem->id,
+                    'ticket_id' => $tItem->item_id
+                ]);
+                continue;
+            }
+
+            // Hitung revenue (harga tiket * quantity, pajak tidak termasuk)
+            $revenue = $tItem->price * $tItem->qty;
+
+            // Akumulasi revenue per owner
+            if (!isset($revenueByOwner[$eventCreatorId])) {
+                $revenueByOwner[$eventCreatorId] = 0;
+                $transactionItemsByOwner[$eventCreatorId] = [];
+            }
+            
+            $revenueByOwner[$eventCreatorId] += $revenue;
+            $transactionItemsByOwner[$eventCreatorId][] = $tItem;
+        }
+
+        // Proses setiap owner (batch update wallet)
+        foreach ($revenueByOwner as $ownerId => $totalRevenue) {
+            try {
+                DB::beginTransaction();
+
+                // Cari atau buat wallet untuk owner
+                $wallet = Wallet::firstOrCreate(
+                    ['user_id' => $ownerId],
+                    ['balance' => 0]
+                );
+
+                // Update balance dengan atomic increment untuk menghindari race condition
+                $wallet->increment('balance', $totalRevenue);
+
+                // Catat wallet transaction untuk setiap item
+                foreach ($transactionItemsByOwner[$ownerId] as $tItem) {
+                    $itemRevenue = $tItem->price * $tItem->qty;
+                    
+                    WalletTransaction::create([
+                        'wallet_id' => $wallet->id,
+                        'user_id' => $ownerId,
+                        'amount' => $itemRevenue,
+                        'type' => 'CREDIT',
+                        'reference_type' => 'transaction_item',
+                        'reference_id' => $tItem->id,
+                        'description' => "Pendapatan dari penjualan tiket: {$tItem->item->name} (Order: {$transaction->order_id})"
+                    ]);
+                }
+
+                DB::commit();
+
+                Log::info('Wallet event creator berhasil dikreditkan', [
+                    'owner_id' => $ownerId,
+                    'total_revenue' => $totalRevenue,
+                    'order_id' => $transaction->order_id,
+                    'wallet_balance' => $wallet->fresh()->balance
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Gagal mengkreditkan wallet event creator', [
+                    'owner_id' => $ownerId,
+                    'total_revenue' => $totalRevenue,
+                    'order_id' => $transaction->order_id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        }
     }
 
     public function getTransaction($orderId)

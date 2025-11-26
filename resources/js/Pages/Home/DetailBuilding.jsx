@@ -324,7 +324,7 @@ const DetailBuilding = () => {
                                                                 ].url
                                                             }
                                                             alt={building.name}
-                                                            className="object-cover rounded-lg max-h-[400px] w-full"
+                                                            className="object-cover rounded-lg max-h-[600px] w-full"
                                                         />
                                                     </CardContent>
                                                 </Card>
@@ -356,7 +356,7 @@ const DetailBuilding = () => {
                                             img.caption ||
                                             `Foto gedung ${i + 1}`
                                         }
-                                        className="object-cover w-full h-full"
+                                        className="object-cover w-full h-full  sm:max-h-[600px]"
                                     />
                                 </button>
                             ))}
@@ -434,8 +434,8 @@ const DetailBuilding = () => {
                     </div>
 
                     <div className="lg:col-span-5 space-y-6">
-                        <div className="bg-white rounded-lg shadow-lg border">
-                            <div className="p-6">
+                        <div className="bg-white rounded-lg shadow-lg border sticky md:top-12">
+                            <div className="px-6 pb-6">
                                 <div className="my-6">
                                     <CustomCalendar
                                         selected={selectedDate}
@@ -459,9 +459,7 @@ const DetailBuilding = () => {
                                     <p className="text-sm text-slate-600 mt-1">
                                         Perhari
                                     </p>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Kapasitas: {building.capacity} orang
-                                    </p>
+
                                     {/* {building.tax_amount > 0 && (
                                         <div className="text-xs text-slate-500 mt-1">
                                             Pajak{" "}

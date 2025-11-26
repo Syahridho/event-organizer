@@ -143,6 +143,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get wallet for user.
+     */
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+
+    /**
+     * Get wallet transactions for user.
+     */
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
      * Get the route key for the model.
      *
      * @return string

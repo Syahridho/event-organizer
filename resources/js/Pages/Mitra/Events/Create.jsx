@@ -44,6 +44,7 @@ import { Badge } from "@/components/ui/badge";
 import LocationInputWithMap from "@/components/location-input-with-map";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import ReactQuill from "react-quill";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 const breadcrumbs = [
     {
@@ -61,7 +62,8 @@ const breadcrumbs = [
 ];
 
 export default function CreateEvent() {
-    const { ziggy, adminSettings } = usePage().props;
+    const { ziggy, adminSettings, errors } = usePage().props;
+    const { csrfToken, refreshToken } = useCsrfToken();
     const formRef = useRef(null);
 
     const startDateRef = useRef(null);
@@ -97,6 +99,7 @@ export default function CreateEvent() {
         tickets: [],
         ticket_date_start: null,
         ticket_date_end: null,
+        // Don't add _token here - global handler in app.jsx will add it automatically
     });
 
     const debounce = useDebounce(data.location, 500);
@@ -165,6 +168,12 @@ export default function CreateEvent() {
             return;
         }
 
+        // Ensure we have the latest CSRF token before submitting
+        const latestToken = refreshToken();
+        if (latestToken !== csrfToken) {
+            setData("_token", latestToken);
+        }
+
         const formSubmit = new FormData();
 
         Object.entries(data).forEach(([key, value]) => {
@@ -212,8 +221,18 @@ export default function CreateEvent() {
             }
         });
 
+        // Add the latest CSRF token to FormData
+        formSubmit.append("_token", latestToken || csrfToken);
+
         post(route("events.store"), formSubmit, {
             forceFormData: true,
+            onError: (errors) => {
+                // If there's a CSRF error, refresh the token
+                if (errors.csrf || errors._token) {
+                    const newToken = refreshToken();
+                    setData("_token", newToken);
+                }
+            },
         });
     };
 
@@ -248,6 +267,11 @@ export default function CreateEvent() {
                         Tambahkan Event Anda
                     </span>
                 </div>
+                {errors.csrf && (
+                    <div className="mb-4 font-medium text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                        {errors.csrf}
+                    </div>
+                )}
                 <form ref={formRef} onSubmit={submit} className="space-y-4">
                     <div className="grid h-auto w-full grid-cols-1 xl:grid-cols-3 xl:gap-8">
                         <div className="col-span-1 mb-12 flex flex-col justify-center gap-2 xl:justify-normal">
@@ -941,7 +965,7 @@ export default function CreateEvent() {
                                                                             >
                                                                                 Jumlah
                                                                                 Tiket
-                                                                                asd
+                                                                                
                                                                             </Label>
                                                                             <Input
                                                                                 id={`quota-${ticketName}`}

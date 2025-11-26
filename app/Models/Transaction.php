@@ -20,6 +20,7 @@ class Transaction extends Model
         'expired_at',
         'payment_type',
         'total',
+        'subtotal',
         'tax',
         'va_number',
         'bank_name',

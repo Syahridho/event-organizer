@@ -13,13 +13,16 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { LoaderCircle } from "lucide-react";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 export default function ResetPassword({ token, email }) {
+    const { csrfToken, refreshToken } = useCsrfToken();
     const { data, setData, post, processing, errors, reset } = useForm({
         token: token,
         email: email,
         password: "",
         password_confirmation: "",
+        // Don't add _token here - global handler in app.jsx will add it automatically
     });
 
     useEffect(() => {
@@ -31,7 +34,18 @@ export default function ResetPassword({ token, email }) {
     const submit = (e) => {
         e.preventDefault();
 
-        post(route("password.store"));
+        // Ensure we have the latest CSRF token in meta tag before submitting
+        refreshToken();
+
+        post(route("password.store"), {
+            onFinish: () => reset("password", "password_confirmation"),
+            onError: (errors) => {
+                // If there's a CSRF error, refresh the token
+                if (errors.csrf || errors._token) {
+                    refreshToken();
+                }
+            },
+        });
     };
 
     return (
@@ -40,6 +54,11 @@ export default function ResetPassword({ token, email }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-xl">Reset Password</CardTitle>
+                    {errors.csrf && (
+                        <div className="mb-4 font-medium text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                            {errors.csrf}
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={submit}>

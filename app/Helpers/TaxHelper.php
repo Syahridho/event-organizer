@@ -22,7 +22,7 @@ class TaxHelper
 
             return [
                 'tax_type' => $settings->tax_type ?? 'percent', // percent or fixed (DB enum)
-                'tax_value' => $settings->tax_value ?? 0,
+                'tax_value' => (float) ($settings->tax_value ?? 0), // Pastikan selalu float
             ];
         });
     }
@@ -82,7 +82,7 @@ class TaxHelper
 
         return [
             'type' => $taxSettings['tax_type'],
-            'value' => $taxSettings['tax_value'],
+            'value' => (float) $taxSettings['tax_value'], // Pastikan selalu float, bukan string
             'label' => $label,
         ];
     }

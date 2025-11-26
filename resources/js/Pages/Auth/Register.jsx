@@ -8,19 +8,27 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputError from "@/components/InputError";
-import { Head, Link, useForm } from "@inertiajs/react";
-import { LoaderCircle } from "lucide-react";
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
+import { LoaderCircle, Eye, EyeOff } from "lucide-react";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 export default function Register() {
+    const { props } = usePage();
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirmation, setShowPasswordConfirmation] =
+        useState(false);
+    const { csrfToken, refreshToken } = useCsrfToken();
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
         username: "",
         email: "",
         password: "",
         password_confirmation: "",
+        // Don't add _token here - global handler in app.jsx will add it automatically
     });
 
     useEffect(() => {
@@ -32,7 +40,18 @@ export default function Register() {
     const submit = (e) => {
         e.preventDefault();
 
-        post(route("register"));
+        // Ensure we have the latest CSRF token in meta tag before submitting
+        refreshToken();
+
+        post(route("register"), {
+            onFinish: () => reset("password", "password_confirmation"),
+            onError: (errors) => {
+                // If there's a CSRF error, refresh the token
+                if (errors.csrf || errors._token) {
+                    refreshToken();
+                }
+            },
+        });
     };
 
     return (
@@ -42,6 +61,11 @@ export default function Register() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-2xl">Daftar</CardTitle>
+                        {errors.csrf && (
+                            <div className="mb-4 font-medium text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                                {errors.csrf}
+                            </div>
+                        )}
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit}>
@@ -114,18 +138,40 @@ export default function Register() {
                                         Password
                                     </Label>
 
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        name="password"
-                                        value={data.password}
-                                        className="mt-1 block w-full"
-                                        autoComplete="new-password"
-                                        onChange={(e) =>
-                                            setData("password", e.target.value)
-                                        }
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            type={
+                                                showPassword
+                                                    ? "text"
+                                                    : "password"
+                                            }
+                                            name="password"
+                                            value={data.password}
+                                            className="mt-1 block w-full pr-10"
+                                            autoComplete="new-password"
+                                            onChange={(e) =>
+                                                setData(
+                                                    "password",
+                                                    e.target.value
+                                                )
+                                            }
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3"
+                                            onClick={() =>
+                                                setShowPassword(!showPassword)
+                                            }
+                                        >
+                                            {showPassword ? (
+                                                <Eye className="h-4 w-4 text-gray-500" />
+                                            ) : (
+                                                <EyeOff className="h-4 w-4 text-gray-500" />
+                                            )}
+                                        </button>
+                                    </div>
                                     <InputError
                                         message={errors.password}
                                         className="mt-2"
@@ -139,21 +185,42 @@ export default function Register() {
                                         Konfirmasi Password
                                     </Label>
 
-                                    <Input
-                                        id="password_confirmation"
-                                        type="password"
-                                        name="password_confirmation"
-                                        value={data.password_confirmation}
-                                        className="mt-1 block w-full"
-                                        autoComplete="new-password"
-                                        onChange={(e) =>
-                                            setData(
-                                                "password_confirmation",
-                                                e.target.value
-                                            )
-                                        }
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="password_confirmation"
+                                            type={
+                                                showPasswordConfirmation
+                                                    ? "text"
+                                                    : "password"
+                                            }
+                                            name="password_confirmation"
+                                            value={data.password_confirmation}
+                                            className="mt-1 block w-full pr-10"
+                                            autoComplete="new-password"
+                                            onChange={(e) =>
+                                                setData(
+                                                    "password_confirmation",
+                                                    e.target.value
+                                                )
+                                            }
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3"
+                                            onClick={() =>
+                                                setShowPasswordConfirmation(
+                                                    !showPasswordConfirmation
+                                                )
+                                            }
+                                        >
+                                            {showPasswordConfirmation ? (
+                                                <Eye className="h-4 w-4 text-gray-500" />
+                                            ) : (
+                                                <EyeOff className="h-4 w-4 text-gray-500" />
+                                            )}
+                                        </button>
+                                    </div>
                                     <InputError
                                         message={errors.password_confirmation}
                                         className="mt-2"
