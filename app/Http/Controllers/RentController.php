@@ -220,9 +220,10 @@ class RentController extends Controller
                 'description' => $rent->description,
                 'location' => $rent->location,
                 'thumbnail' => $rent->thumbnail,
-                'thumbnail' => $rent->thumbnail,
                 'item_photos' => $rent->itemPhotos,
                 'user_name' => $rent->user->name,
+                'picked_up' => $rent->picked_up,
+                'delivered' => $rent->delivered,
             ],
             'tax_info' => $taxInfo,
         ]);

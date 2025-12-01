@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useForm, usePage, router, Head } from "@inertiajs/react";
 import { toast } from "sonner";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 import {
     CircleCheck,
     AlertTriangle,
@@ -109,6 +110,8 @@ export default function PartnerRegistration({ existingMitra }) {
 
 // ==================== STEP 1: Register Account ====================
 function Step1RegisterAccount() {
+    const { refreshToken } = useCsrfToken();
+    
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
         username: "",
@@ -123,15 +126,23 @@ function Step1RegisterAccount() {
         };
     }, []);
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
+        
+        // Refresh CSRF token before submitting
+        await refreshToken();
+        
         post(route("register"), {
             onSuccess: () => {
                 toast.success("Akun berhasil dibuat!", {
                     description: "Silakan lengkapi data mitra Anda.",
                 });
             },
-            onError: () => {
+            onError: async (err) => {
+                // If there's a CSRF error, refresh the token
+                if (err.csrf || err._token) {
+                    await refreshToken();
+                }
                 toast.error("Gagal membuat akun", {
                     description: "Periksa kembali data yang Anda masukkan.",
                 });
@@ -324,6 +335,8 @@ function Step1RegisterAccount() {
 
 // ==================== STEP 2: Partner Form ====================
 function Step2PartnerForm({ user, onSuccess }) {
+    const { refreshToken } = useCsrfToken();
+    
     const { data, setData, post, processing, errors, progress } = useForm({
         address: "",
         description: "",
@@ -332,8 +345,11 @@ function Step2PartnerForm({ user, onSuccess }) {
         business_file: null,
     });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Refresh CSRF token before submitting to ensure it's valid
+        await refreshToken();
 
         post(route("partner.store"), {
             forceFormData: true,
@@ -344,10 +360,18 @@ function Step2PartnerForm({ user, onSuccess }) {
                 });
                 onSuccess();
             },
-            onError: (err) => {
-                toast.error("Gagal Mengajukan", {
-                    description: "Periksa kembali data yang Anda masukkan.",
-                });
+            onError: async (err) => {
+                // If there's a CSRF error, refresh the token and show specific error
+                if (err.csrf || err._token) {
+                    await refreshToken();
+                    toast.error("Sesi Anda Telah Berakhir", {
+                        description: "Silakan coba kirim formulir kembali.",
+                    });
+                } else {
+                    toast.error("Gagal Mengajukan", {
+                        description: "Periksa kembali data yang Anda masukkan.",
+                    });
+                }
                 console.error("Form Errors:", err);
             },
         });
@@ -577,6 +601,34 @@ function Step2PartnerForm({ user, onSuccess }) {
 
 // ==================== STEP 3: Status ====================
 function Step3Status({ existingMitra }) {
+    const [showReapplyDialog, setShowReapplyDialog] = React.useState(false);
+    const [isReapplying, setIsReapplying] = React.useState(false);
+
+    const handleReapply = () => {
+        setIsReapplying(true);
+        
+        router.post(
+            route("partner.reapply"),
+            {},
+            {
+                preserveState: false,
+                onSuccess: () => {
+                    setShowReapplyDialog(false);
+                    setIsReapplying(false);
+                    toast.success("Berhasil!", {
+                        description: "Data lama telah dihapus. Silakan lengkapi formulir kembali.",
+                    });
+                },
+                onError: (errors) => {
+                    setIsReapplying(false);
+                    toast.error("Gagal", {
+                        description: errors.message || "Terjadi kesalahan saat menghapus data lama.",
+                    });
+                },
+            }
+        );
+    };
+
     if (!existingMitra) {
         return (
             <Card className="max-w-3xl mx-auto shadow-xl border-2">
@@ -624,13 +676,65 @@ function Step3Status({ existingMitra }) {
         bgColor = "bg-red-50";
         iconColor = "text-red-600";
         buttonAction = (
-            <Button
-                size="lg"
-                onClick={() => router.visit(route("partner.create"))}
-                className="bg-red-600 hover:bg-red-700 text-base"
-            >
-                Ajukan Kembali
-            </Button>
+            <>
+                <Button
+                    size="lg"
+                    onClick={() => setShowReapplyDialog(true)}
+                    className="bg-red-600 hover:bg-red-700 text-base"
+                    disabled={isReapplying}
+                >
+                    {isReapplying ? "Memproses..." : "Ajukan Kembali"}
+                </Button>
+
+                {/* Confirmation Dialog */}
+                {showReapplyDialog && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <Card className="max-w-md w-full">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                                    Konfirmasi Ajukan Kembali
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <p className="text-sm text-slate-600">
+                                    Dengan mengajukan kembali, data pengajuan lama Anda akan <strong>dihapus permanen</strong> termasuk dokumen yang telah diupload.
+                                </p>
+                                <p className="text-sm text-slate-600">
+                                    Anda akan kembali ke <strong>Step 2</strong> untuk mengisi formulir dari awal dengan data yang baru.
+                                </p>
+                                <p className="text-sm font-medium text-slate-800">
+                                    Apakah Anda yakin ingin melanjutkan?
+                                </p>
+                                <div className="flex gap-3 pt-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowReapplyDialog(false)}
+                                        className="flex-1"
+                                        disabled={isReapplying}
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button
+                                        onClick={handleReapply}
+                                        className="flex-1 bg-red-600 hover:bg-red-700"
+                                        disabled={isReapplying}
+                                    >
+                                        {isReapplying ? (
+                                            <>
+                                                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                                Memproses...
+                                            </>
+                                        ) : (
+                                            "Ya, Ajukan Kembali"
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+            </>
         );
     } else {
         // Pending

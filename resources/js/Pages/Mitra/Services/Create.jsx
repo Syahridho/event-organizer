@@ -9,7 +9,10 @@ import clsx from "clsx";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
-import ReactQuill from "react-quill";
+import { lazy, Suspense } from "react";
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = lazy(() => import("react-quill"));
 
 const breadcrumbs = [
     {
@@ -234,25 +237,27 @@ export default function ServicesCreate() {
                     <div className="space-y-3">
                         <Label htmlFor="description">Deskripsi Jasa</Label>
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
-                            <ReactQuill
-                                theme="snow"
-                                value={data.description}
-                                onChange={(content) =>
-                                    setData("description", content)
-                                }
-                                className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
-                                placeholder="Masukkan deskripsi..."
-                                modules={{
-                                    toolbar: [
-                                        ["bold", "italic", "underline"],
-                                        [
-                                            { list: "ordered" },
-                                            { list: "bullet" },
+                            <Suspense fallback={<div className="p-4 text-center">Loading editor...</div>}>
+                                <ReactQuill
+                                    theme="snow"
+                                    value={data.description}
+                                    onChange={(content) =>
+                                        setData("description", content)
+                                    }
+                                    className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
+                                    placeholder="Masukkan deskripsi..."
+                                    modules={{
+                                        toolbar: [
+                                            ["bold", "italic", "underline"],
+                                            [
+                                                { list: "ordered" },
+                                                { list: "bullet" },
+                                            ],
+                                            ["clean"],
                                         ],
-                                        ["clean"],
-                                    ],
-                                }}
-                            />
+                                    }}
+                                />
+                            </Suspense>
                         </div>
                     </div>
                     <div className="grid w-full items-center gap-3">

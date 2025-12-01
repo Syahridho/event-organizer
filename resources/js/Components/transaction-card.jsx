@@ -116,9 +116,23 @@ export function TransactionCard({
             : "-");
 
     // Logika utama untuk tombol Selesai (Completed)
-    // cek sebelum pulang
-    const canComplete =
-        item.status === "work" && !isRentDateArrivedOrPassed(item.rent_days);
+    // - Untuk rent_property/service: status "work" DAN tanggal sewa sudah lewat
+    // - Untuk building: status "confirmed" DAN tanggal event sudah lewat
+    const canComplete = useMemo(() => {
+        // Untuk building: langsung dari confirmed ke completed
+        if (item.item_type === "building") {
+            return (
+                item.status === "confirmed" &&
+                isRentDateArrivedOrPassed(item.rent_days)
+            );
+        }
+        
+        // Untuk rent_property/service: dari work ke completed
+        return (
+            item.status === "work" &&
+            isRentDateArrivedOrPassed(item.rent_days)
+        );
+    }, [item.status, item.item_type, item.rent_days]);
 
     const transaction = item.transaction;
     const address = transaction.address;
@@ -605,42 +619,58 @@ export function TransactionCard({
                         </Button>
                     )}
 
-                    {/* Tombol Selesai (Completed) - Menggunakan Logika Gabungan */}
+                    {/* Tombol Selesai (Completed) - Selalu tampil tapi disabled jika belum waktunya */}
                     {console.log(canComplete)}
-                    {canComplete && (
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button>Selesai</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                        Selesaikan Transaksi
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Apakah Anda yakin telah menyelesaikan{" "}
-                                        {item.item_type === "building"
-                                            ? "acara"
-                                            : "pekerjaan"}{" "}
-                                        ini? Status akan diubah menjadi selesai
-                                        dan dana akan masuk ke dompet Anda. Uang{" "}
-                                        {formatRupiah(item.price)}
-                                        {item.item_type === "rent_property" &&
-                                            `Ongkir ${formatRupiah(
-                                                item.delivery_fee
-                                            )}`}
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={() => onCompleted(item.id)}
-                                    >
-                                        Ya, Selesai
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                    {(item.status === "work" || 
+                      (item.item_type === "building" && item.status === "confirmed")) && (
+                        <div className="flex flex-col gap-2">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button disabled={!canComplete}>
+                                        Selesai
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                            Selesaikan Transaksi
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Apakah Anda yakin telah menyelesaikan{" "}
+                                            {item.item_type === "building"
+                                                ? "acara"
+                                                : "pekerjaan"}{" "}
+                                            ini? Status akan diubah menjadi selesai
+                                            dan dana akan masuk ke dompet Anda. Uang{" "}
+                                            {formatRupiah(item.price)}
+                                            {item.item_type === "rent_property" &&
+                                                ` + Ongkir ${formatRupiah(
+                                                    item.delivery_fee
+                                                )}`}
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => onCompleted(item.id)}
+                                        >
+                                            Ya, Selesai
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            
+                            {/* Peringatan jika tombol disabled */}
+                            {!canComplete && item.rent_days && (
+                                <span className="text-xs text-center text-yellow-600 font-medium leading-relaxed">
+                                    ⚠️ Tombol aktif setelah tanggal {item.item_type === "building" ? "acara" : "sewa"}
+                                    <br />
+                                    <span className="text-yellow-700">
+                                        {format(new Date(item.rent_days), "dd MMMM yyyy", { locale: id })}
+                                    </span>
+                                </span>
+                            )}
+                        </div>
                     )}
 
                     {/* Chat */}

@@ -16,6 +16,11 @@ const STATUS_CONFIG = {
         className:
             "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200",
     },
+    pending_admin: {
+        label: "Menunggu Konfirmasi",
+        className:
+            "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200",
+    },
     confirmed: {
         label: "Diterima",
         className:
@@ -30,6 +35,11 @@ const STATUS_CONFIG = {
         label: "Siap Diambil",
         className:
             "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200",
+    },
+    shipping: {
+        label: "Dalam Perjalanan",
+        className:
+            "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200",
     },
     work: {
         label: "Sedang Dikerjakan",

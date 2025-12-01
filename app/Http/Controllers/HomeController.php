@@ -500,6 +500,8 @@ class HomeController extends Controller
             'user_id' => $property->user_id,
             'user_name' => $property->user->name,
             'user_avatar' => $property->user->profile_photo,
+            'picked_up' => $property->picked_up,
+            'delivered' => $property->delivered,
             'created_at' => $property->created_at,
             'updated_at' => $property->updated_at,
         ];

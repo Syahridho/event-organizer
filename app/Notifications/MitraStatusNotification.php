@@ -45,7 +45,7 @@ class MitraStatusNotification extends Notification
                 'type' => 'mitra_rejected',
                 'status' => 'rejected',
                 'reason' => $this->reason,
-                'url' => route('mitra.reapply'), // Sesuaikan route
+                'url' => route('partner.create'), // Route untuk mengajukan kembali
             ];
         }
     }

@@ -71,10 +71,40 @@ export function useCsrfToken() {
     }, [props]);
 
     /**
-     * Get the latest CSRF token from the DOM
+     * Get the latest CSRF token from the DOM and optionally fetch from server
      * Useful for ensuring we have the most recent token before form submission
      */
-    const refreshToken = () => {
+    const refreshToken = async () => {
+        try {
+            // Fetch a fresh token from the server
+            const response = await fetch("/csrf-token", {
+                method: "GET",
+                credentials: "same-origin",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    Accept: "application/json",
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.token) {
+                    // Update both the meta tag and state
+                    const metaTag = document.head.querySelector(
+                        'meta[name="csrf-token"]'
+                    );
+                    if (metaTag) {
+                        metaTag.setAttribute("content", data.token);
+                    }
+                    setCsrfToken(data.token);
+                    return data.token;
+                }
+            }
+        } catch (error) {
+            console.error("Failed to refresh CSRF token:", error);
+        }
+
+        // Fallback to reading from meta tag
         const token = document.head.querySelector('meta[name="csrf-token"]');
         if (token && token.content !== csrfToken) {
             setCsrfToken(token.content);

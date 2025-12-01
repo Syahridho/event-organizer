@@ -12,7 +12,7 @@ import { Toaster } from "sonner";
 import { Provider } from "react-redux";
 import { store } from "./Store";
 import Initializer from "./hooks/useInitializeTheme";
-import OnlineStatusProvider from "./components/OnlineStatusProvider";
+import OnlineStatusProvider from "./Components/OnlineStatusProvider";
 
 function AppWrapper({ App, props }) {
     return (
@@ -34,12 +34,12 @@ let root = null;
 // This ensures all Inertia requests have a fresh CSRF token
 router.on("before", (event) => {
     const method = event.detail.visit.method.toUpperCase();
-    
+
     // Only add CSRF token to POST, PUT, PATCH, DELETE requests
     // DO NOT add to GET requests to prevent token from appearing in URL
     if (method !== "GET" && method !== "HEAD") {
         const token = document.head.querySelector('meta[name="csrf-token"]');
-        
+
         if (token && event.detail.visit.data) {
             // Add or update the CSRF token in the request data
             if (event.detail.visit.data instanceof FormData) {

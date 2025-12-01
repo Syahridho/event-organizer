@@ -114,7 +114,7 @@ const RatingDialog = ({
                 <Button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600"
+                    className="w-full sm:w-auto bg-primary hover:bg-primary/50"
                 >
                     {isLoading ? "Mengirim..." : "Kirim Ulasan"}
                 </Button>
@@ -155,6 +155,7 @@ const TransactionItem = React.memo(
         );
 
         const [isExpired, setIsExpired] = useState(() => {
+            if (!transaction.expired_at) return true;
             const expiredDate = new Date(
                 transaction.expired_at.replace(" ", "T")
             );
@@ -313,19 +314,9 @@ const TransactionItem = React.memo(
                                                 )
                                                     return null;
 
-                                                // Tampilkan badge sold_out (prioritas tertinggi)
-                                                if (
-                                                    item?.status === "sold_out"
-                                                ) {
-                                                    return (
-                                                        <ItemStatusBadge status="sold_out" />
-                                                    );
-                                                }
-
-                                                // Tampilkan badge untuk non-ticket items
-                                                if (
-                                                    item.item_type !== "ticket"
-                                                ) {
+                                                // Tampilkan badge untuk semua item yang memiliki status
+                                                // Ini termasuk pending_admin, shipping, work, otw, dll
+                                                if (item?.status) {
                                                     return (
                                                         <ItemStatusBadge
                                                             status={item.status}
@@ -769,11 +760,35 @@ export default function PurchaseIndex() {
     );
 
     // OPTIMIZED: Memoized filtered transactions with O(1) status lookup
+    // Updated to check BOTH transaction status AND item status
     const filteredTransactions = useMemo(() => {
         if (currentTab === "all") return allTransactions;
-        return allTransactions.filter(
-            (trx) => STATUS_MAPPING[trx.status] === currentTab
-        );
+        
+        return allTransactions.filter((trx) => {
+            // First check transaction-level status
+            if (STATUS_MAPPING[trx.status] === currentTab) {
+                return true;
+            }
+            
+            // Then check if ANY item has the matching status
+            // This handles cases like "pending_admin" and "shipping" which are item-level statuses
+            if (trx.items && Array.isArray(trx.items)) {
+                return trx.items.some((item) => {
+                    // Map item status to tab status
+                    const itemStatusMap = {
+                        pending_admin: "pending_admin",
+                        shipping: "shipped",
+                        otw: "shipped",
+                        work: "shipped",
+                        completed: "completed",
+                    };
+                    
+                    return itemStatusMap[item.status] === currentTab;
+                });
+            }
+            
+            return false;
+        });
     }, [allTransactions, currentTab]);
 
     // Auto-open rating dialog for the first completed item without a review

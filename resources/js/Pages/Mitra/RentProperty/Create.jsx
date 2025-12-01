@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import LocationInputWithMap from "@/components/location-input-with-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "sonner";
-import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = lazy(() => import("react-quill"));
 
 const breadcrumbs = [
     {
@@ -29,6 +30,7 @@ const breadcrumbs = [
 ];
 
 export default function RentProperyCreate() {
+    const { ziggy } = usePage().props;
     const { data, setData, processing, post } = useForm({
         name: "",
         thumbnail: null,
@@ -251,15 +253,17 @@ export default function RentProperyCreate() {
                     <div className="space-y-3">
                         <Label htmlFor="description">Deskripsi Property</Label>
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
-                            <ReactQuill
-                                theme="snow"
-                                value={data.description}
-                                onChange={(content) =>
-                                    setData("description", content)
-                                }
-                                className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
-                                placeholder="Masukkan deskripsi..."
-                            />
+                            <Suspense fallback={<div className="p-4 text-center">Loading editor...</div>}>
+                                <ReactQuill
+                                    theme="snow"
+                                    value={data.description}
+                                    onChange={(content) =>
+                                        setData("description", content)
+                                    }
+                                    className="[&_.ql-toolbar]:bg-gray-50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-container]:border-0 [&_.ql-editor]:min-h-[120px] [&_.ql-editor]:text-sm"
+                                    placeholder="Masukkan deskripsi..."
+                                />
+                            </Suspense>
                         </div>
                     </div>
                     <div className="grid w-full items-center gap-3">

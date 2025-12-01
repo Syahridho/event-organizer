@@ -1,26 +1,17 @@
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputError from "@/components/InputError";
-import { Head, Link, useForm, usePage } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
 import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 export default function Register() {
-    const { props } = usePage();
     const [showPassword, setShowPassword] = useState(false);
-    const [showPasswordConfirmation, setShowPasswordConfirmation] =
-        useState(false);
-    const { csrfToken, refreshToken } = useCsrfToken();
+    const { refreshToken } = useCsrfToken();
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
@@ -37,18 +28,18 @@ export default function Register() {
         };
     }, []);
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
 
         // Ensure we have the latest CSRF token in meta tag before submitting
-        refreshToken();
+        await refreshToken();
 
         post(route("register"), {
             onFinish: () => reset("password", "password_confirmation"),
-            onError: (errors) => {
+            onError: async (errors) => {
                 // If there's a CSRF error, refresh the token
                 if (errors.csrf || errors._token) {
-                    refreshToken();
+                    await refreshToken();
                 }
             },
         });
@@ -189,7 +180,7 @@ export default function Register() {
                                         <Input
                                             id="password_confirmation"
                                             type={
-                                                showPasswordConfirmation
+                                                showPassword
                                                     ? "text"
                                                     : "password"
                                             }
@@ -209,12 +200,10 @@ export default function Register() {
                                             type="button"
                                             className="absolute inset-y-0 right-0 flex items-center pr-3"
                                             onClick={() =>
-                                                setShowPasswordConfirmation(
-                                                    !showPasswordConfirmation
-                                                )
+                                                setShowPassword(!showPassword)
                                             }
                                         >
-                                            {showPasswordConfirmation ? (
+                                            {showPassword ? (
                                                 <Eye className="h-4 w-4 text-gray-500" />
                                             ) : (
                                                 <EyeOff className="h-4 w-4 text-gray-500" />

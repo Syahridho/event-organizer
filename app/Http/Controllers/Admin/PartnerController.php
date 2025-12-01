@@ -82,10 +82,15 @@ class PartnerController extends Controller
         try {
             Log::info('Attempting to reject mitra', [
                 'mitra_id' => $mitra->id,
-                'current_status' => $mitra->status
+                'current_status' => $mitra->status,
+                'user_id' => $mitra->user_id,
             ]);
 
             if ($mitra->status !== 'pending') {
+                Log::warning('Cannot reject mitra - status not pending', [
+                    'mitra_id' => $mitra->id,
+                    'status' => $mitra->status
+                ]);
                 return Redirect::back()->with('error', 'Status mitra ini sudah bukan pending dan tidak bisa ditolak.');
             }
 
@@ -104,7 +109,10 @@ class PartnerController extends Controller
             DB::commit();
 
             $mitra->refresh();
-            Log::info('Rejection completed', ['new_status' => $mitra->status]);
+            Log::info('Rejection completed successfully', [
+                'mitra_id' => $mitra->id,
+                'new_status' => $mitra->status
+            ]);
 
             return Redirect::route('admin.partners.index')->with('success', "Pengajuan mitra untuk {$mitra->user->name} berhasil ditolak.");
 
@@ -113,7 +121,8 @@ class PartnerController extends Controller
             
             Log::error('Error rejecting mitra', [
                 'mitra_id' => $mitra->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return Redirect::back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
@@ -121,7 +130,7 @@ class PartnerController extends Controller
     }
 
     /**
-     * View PDF file inline (tampil di browser)
+     * View document file inline (supports PDF, PNG, JPG)
      */
     public function viewPdf(Mitra $mitra, $type)
     {
@@ -133,8 +142,22 @@ class PartnerController extends Controller
         
         $fullPath = Storage::disk('public')->path($filePath);
         
+        // Detect MIME type automatically
+        $mimeType = Storage::disk('public')->mimeType($filePath);
+        
+        // Fallback to file extension if MIME type detection fails
+        if (!$mimeType) {
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $mimeType = match($extension) {
+                'pdf' => 'application/pdf',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                default => 'application/octet-stream',
+            };
+        }
+        
         return response()->file($fullPath, [
-            'Content-Type' => 'application/pdf',
+            'Content-Type' => $mimeType,
         ]);
     }
 

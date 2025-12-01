@@ -98,4 +98,50 @@ class PartnerController extends Controller
                 ->withInput();
         }
     }
+
+    /**
+     * Allow rejected mitra to reapply by deleting old rejected record
+     */
+    public function reapply()
+    {
+        try {
+            $user = auth()->user();
+            $existingMitra = Mitra::where('user_id', $user->id)->first();
+
+            // Only allow reapply if status is rejected
+            if (!$existingMitra || $existingMitra->status !== 'rejected') {
+                return redirect()->route('partner.create')
+                    ->with('error', 'Anda tidak memiliki pengajuan yang ditolak.');
+            }
+
+            // Delete old files
+            if ($existingMitra->npwp_file_path && Storage::disk('public')->exists($existingMitra->npwp_file_path)) {
+                Storage::disk('public')->delete($existingMitra->npwp_file_path);
+            }
+            if ($existingMitra->business_file_path && Storage::disk('public')->exists($existingMitra->business_file_path)) {
+                Storage::disk('public')->delete($existingMitra->business_file_path);
+            }
+
+            // Delete mitra record
+            $existingMitra->delete();
+
+            \Log::info('Mitra reapply - old record deleted', [
+                'user_id' => $user->id,
+                'old_mitra_id' => $existingMitra->id
+            ]);
+
+            return redirect()->route('partner.create')
+                ->with('success', 'Data lama telah dihapus. Silakan lengkapi formulir kembali.');
+
+        } catch (\Exception $e) {
+            \Log::error('Reapply failed', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->route('partner.create')
+                ->with('error', 'Terjadi kesalahan. Silakan coba lagi.');
+        }
+    }
 }

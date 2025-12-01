@@ -1,83 +1,34 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
-import {
-    Tickets,
-    MicVocal,
-    Package,
-    Building,
-    DollarSign,
-    MapPin,
-} from "lucide-react";
-import {
-    Card,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Tickets, MicVocal, Package, Building } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 import MainLayout from "@/Layouts/Main";
+import ItemCard from "@/Components/ItemCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Skeleton Loading Component
 const ItemSkeleton = () => (
-    <div className="p-4 border rounded animate-pulse">
-        <div className="aspect-video bg-gray-200 rounded mb-3"></div>
-        <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-        <div className="space-y-1">
-            <div className="h-3 bg-gray-200 rounded"></div>
-            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+    <Card className="h-full w-full overflow-hidden flex flex-col">
+        <div className="aspect-[4/3] overflow-hidden">
+            <Skeleton className="w-full h-full" />
         </div>
-    </div>
+        <div className="p-4 space-y-3 flex-grow">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+        </div>
+        <div className="p-4 pt-0 mt-auto border-t">
+            <div className="flex items-center justify-between pt-3">
+                <div className="space-y-2">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-5 w-24" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
+        </div>
+    </Card>
 );
-
-// Optimized Image Component dengan lazy loading
-const LazyImage = ({ src, alt, className }) => {
-    const [loaded, setLoaded] = useState(false);
-    const [inView, setInView] = useState(false);
-    const imgRef = useRef();
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setInView(true);
-                    observer.disconnect();
-                }
-            },
-            { rootMargin: "50px" }
-        );
-
-        if (imgRef.current) {
-            observer.observe(imgRef.current);
-        }
-
-        return () => observer.disconnect();
-    }, []);
-
-    return (
-        <div ref={imgRef} className={className}>
-            {inView && (
-                <>
-                    {!loaded && (
-                        <div className="w-full h-full bg-gray-200 animate-pulse rounded"></div>
-                    )}
-                    <img
-                        src={src}
-                        alt={alt}
-                        className={`w-full h-full object-cover rounded transition-opacity duration-300 ${
-                            loaded ? "opacity-100" : "opacity-0"
-                        }`}
-                        onLoad={() => setLoaded(true)}
-                        loading="lazy"
-                        style={{ display: loaded ? "block" : "none" }}
-                    />
-                </>
-            )}
-        </div>
-    );
-};
 
 export default function Home() {
     const { props } = usePage();
@@ -154,24 +105,6 @@ export default function Home() {
         return () => observer.disconnect();
     }, [fetchNext, nextPageUrl, loading, initialLoad]);
 
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat("id-ID").format(price);
-    };
-
-    const getImageUrl = (thumbnail) => {
-        if (!thumbnail)
-            return `${baseUrl}/storage/default-event-images/dubby.webp`;
-        return thumbnail.startsWith("http")
-            ? thumbnail
-            : `${baseUrl}/storage${thumbnail}`;
-    };
-
-    const truncateDescription = (desc) => {
-        if (!desc) return "";
-        const text = desc.replace(/<\/?[^>]+(>|$)/g, "");
-        return text.length > 120 ? text.slice(0, 120) + "..." : text;
-    };
-
     return (
         <>
             <Head title="Beranda" />
@@ -236,45 +169,12 @@ export default function Home() {
                                   <ItemSkeleton key={`skeleton-${i}`} />
                               ))
                             : items.map((item) => (
-                                  <Link
+                                  <ItemCard
                                       key={item.id}
-                                      href={`/services/${item.id}`}
-                                  >
-                                      <div className="border rounded hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                                          <LazyImage
-                                              src={getImageUrl(item.thumbnail)}
-                                              alt={item.name}
-                                              className="aspect-video w-full overflow-hidden"
-                                          />
-                                          <div className="p-4 space-y-0.5">
-                                              <h3 className="font-semibold text-sm leading-tight group-hover:text-blue-600 transition-colors">
-                                                  {item.name}
-                                              </h3>
-
-                                              <div className="space-y-2">
-                                                  {item.price && (
-                                                      <div className="flex items-center gap-2 text-green-600">
-                                                          <span className="font-semibold text-xs">
-                                                              Rp{" "}
-                                                              {formatPrice(
-                                                                  item.price
-                                                              )}
-                                                          </span>
-                                                      </div>
-                                                  )}
-
-                                                  {item.location && (
-                                                      <div className="flex items-center gap-2 text-gray-600">
-                                                          <MapPin className="h-4 w-4" />
-                                                          <span className="text-sm">
-                                                              {item.location}
-                                                          </span>
-                                                      </div>
-                                                  )}
-                                              </div>
-                                          </div>
-                                      </div>
-                                  </Link>
+                                      item={item}
+                                      type="services"
+                                      baseUrl={baseUrl}
+                                  />
                               ))}
 
                         {/* Loading skeletons for pagination */}

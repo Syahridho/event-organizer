@@ -76,7 +76,10 @@ const DetailProperty = () => {
         pendingDates,
     } = usePage().props;
 
-    console.log(transaction, user);
+    console.log("Property Data:", property);
+    console.log("Picked Up:", property.picked_up, "Type:", typeof property.picked_up);
+    console.log("Delivered:", property.delivered, "Type:", typeof property.delivered);
+
 
     const dispatch = useDispatch();
     const [latitude, longitude] =
@@ -355,6 +358,22 @@ const DetailProperty = () => {
         }
     }, [setAddresses, setSelectedAddressId, selectedAddressId]);
 
+    // Set default delivery option based on property settings
+    useEffect(() => {
+        const hasPickup = property.picked_up === 1 || property.picked_up === true;
+        const hasDelivery = property.delivered === 1 || property.delivered === true;
+        
+        // Set default based on available options
+        if (hasPickup && !hasDelivery) {
+            setDeliveryOption("pickup");
+        } else if (!hasPickup && hasDelivery) {
+            setDeliveryOption("delivery");
+        } else if (hasPickup && hasDelivery) {
+            // Both available, default to pickup
+            setDeliveryOption("pickup");
+        }
+    }, [property.picked_up, property.delivered]);
+
     // Reset selected address when switching to pickup
     useEffect(() => {
         if (deliveryOption === "pickup") {
@@ -548,7 +567,7 @@ const DetailProperty = () => {
                     </div>
 
                     <div className="lg:col-span-5 space-y-6">
-                        <div className="bg-white rounded-lg shadow-lg">
+                        <div className="bg-white rounded-lg shadow-lg border sticky md:top-12">
                             <div className="px-6 pb-6">
                                 <div className="my-6">
                                     <CustomCalendar
@@ -643,7 +662,7 @@ const DetailProperty = () => {
                             />
                         </div>
 
-                        {/* Delivery/Pickup Dropdown */}
+                        {/* Delivery/Pickup Dropdown - DYNAMIC */}
                         <div className="space-y-3">
                             <Label
                                 htmlFor="delivery-option"
@@ -651,22 +670,68 @@ const DetailProperty = () => {
                             >
                                 Metode Penyewaan
                             </Label>
-                            <Select
-                                value={deliveryOption}
-                                onValueChange={setDeliveryOption}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih metode penyewaan" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="pickup">
-                                        Ambil di Lokasi
-                                    </SelectItem>
-                                    <SelectItem value="delivery">
-                                        Diantar ke Alamat
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                            
+                            {/* Show available options based on property settings */}
+                            {(() => {
+                                const hasPickup = property.picked_up === 1 || property.picked_up === true;
+                                const hasDelivery = property.delivered === 1 || property.delivered === true;
+                                
+                                // If no options available, show message
+                                if (!hasPickup && !hasDelivery) {
+                                    return (
+                                        <div className="border rounded-lg p-4 bg-yellow-50 text-yellow-800 text-sm">
+                                            Metode penyewaan belum ditentukan oleh pemilik
+                                        </div>
+                                    );
+                                }
+                                
+                                // If only one option, show it as disabled select (informational)
+                                if (hasPickup && !hasDelivery) {
+                                    return (
+                                        <div className="border rounded-lg p-4 bg-slate-50">
+                                            <div className="flex items-center gap-2 text-slate-700">
+                                                <span className="font-medium">Ambil di Lokasi</span>
+                                                <span className="text-xs text-slate-500">(Satu-satunya opsi)</span>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                
+                                if (!hasPickup && hasDelivery) {
+                                    return (
+                                        <div className="border rounded-lg p-4 bg-slate-50">
+                                            <div className="flex items-center gap-2 text-slate-700">
+                                                <span className="font-medium">Diantar ke Alamat</span>
+                                                <span className="text-xs text-slate-500">(Satu-satunya opsi)</span>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                
+                                // Both options available - show dropdown
+                                return (
+                                    <Select
+                                        value={deliveryOption}
+                                        onValueChange={setDeliveryOption}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih metode penyewaan" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {hasPickup && (
+                                                <SelectItem value="pickup">
+                                                    Ambil di Lokasi
+                                                </SelectItem>
+                                            )}
+                                            {hasDelivery && (
+                                                <SelectItem value="delivery">
+                                                    Diantar ke Alamat
+                                                </SelectItem>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                );
+                            })()}
                         </div>
 
                         {/* Address Section - Only show if delivery is selected */}

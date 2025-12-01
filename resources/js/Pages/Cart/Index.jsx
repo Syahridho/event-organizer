@@ -954,86 +954,133 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                         </div>
                                     )}
 
-                                    {/* FASTEST ALGORITHM: Simplified Delivery Options (KODE BARU) */}
+                                    {/* DYNAMIC DELIVERY OPTIONS: Based on property settings */}
                                     {item.type === "property" &&
                                         (!status.disabled ||
-                                            status.type === "ticket_sold") && (
-                                            <div className="mb-4">
-                                                <label className="text-sm font-semibold text-gray-900 block mb-2">
-                                                    Pilihan Pengiriman
-                                                </label>
-                                                <Select
-                                                    value={
-                                                        item.delivery_type ||
-                                                        "pickup"
-                                                    }
-                                                    onValueChange={async (
-                                                        value
-                                                    ) => {
-                                                        try {
-                                                            const response =
-                                                                await axios.post(
-                                                                    "/cart/update-delivery-type",
-                                                                    {
-                                                                        cart_id:
-                                                                            item.id,
-                                                                        delivery_type:
-                                                                            value,
-                                                                    }
-                                                                );
-
-                                                            if (
-                                                                response.data
-                                                                    .success
-                                                            ) {
-                                                                // Update local Redux state
-                                                                dispatch(
-                                                                    updateCartQuantity(
+                                            status.type === "ticket_sold") && (() => {
+                                            const hasPickup = item.item?.picked_up === 1 || item.item?.picked_up === true;
+                                            const hasDelivery = item.item?.delivered === 1 || item.item?.delivered === true;
+                                            
+                                            // If no options available, show message
+                                            if (!hasPickup && !hasDelivery) {
+                                                return (
+                                                    <div className="mb-4">
+                                                        <label className="text-sm font-semibold text-gray-900 block mb-2">
+                                                            Pilihan Pengiriman
+                                                        </label>
+                                                        <div className="border rounded-lg p-3 bg-yellow-50 text-yellow-800 text-sm">
+                                                            Metode penyewaan belum ditentukan oleh pemilik
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            // If only one option, show it as read-only
+                                            if ((hasPickup && !hasDelivery) || (!hasPickup && hasDelivery)) {
+                                                const singleOption = hasPickup ? "pickup" : "delivery";
+                                                const singleLabel = hasPickup ? "Ambil di Tempat" : "Antar ke Alamat";
+                                                
+                                                return (
+                                                    <div className="mb-4">
+                                                        <label className="text-sm font-semibold text-gray-900 block mb-2">
+                                                            Pilihan Pengiriman
+                                                        </label>
+                                                        <div className="border rounded-lg p-3 bg-slate-50">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-medium text-slate-700">{singleLabel}</span>
+                                                                <span className="text-xs text-slate-500">(Satu-satunya opsi)</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            // Both options available - show dropdown
+                                            return (
+                                                <div className="mb-4">
+                                                    <label className="text-sm font-semibold text-gray-900 block mb-2">
+                                                        Pilihan Pengiriman
+                                                    </label>
+                                                    <Select
+                                                        value={
+                                                            item.delivery_type ||
+                                                            (hasPickup ? "pickup" : "delivery")
+                                                        }
+                                                        onValueChange={async (
+                                                            value
+                                                        ) => {
+                                                            try {
+                                                                const response =
+                                                                    await axios.post(
+                                                                        "/cart/update-delivery-type",
                                                                         {
                                                                             cart_id:
                                                                                 item.id,
-                                                                            quantity:
-                                                                                item.item_qty,
                                                                             delivery_type:
                                                                                 value,
                                                                         }
-                                                                    )
+                                                                    );
+
+                                                                if (
+                                                                    response.data
+                                                                        .success
+                                                                ) {
+                                                                    // Update local Redux state
+                                                                    dispatch(
+                                                                        updateCartQuantity(
+                                                                            {
+                                                                                cart_id:
+                                                                                    item.id,
+                                                                                quantity:
+                                                                                    item.item_qty,
+                                                                                delivery_type:
+                                                                                    value,
+                                                                            }
+                                                                        )
+                                                                    );
+                                                                    toast.success(
+                                                                        "Pilihan pengiriman diperbarui"
+                                                                    );
+                                                                }
+                                                            } catch (error) {
+                                                                console.error(
+                                                                    "Failed to update delivery option:",
+                                                                    error
+                                                                );
+                                                                toast.error(
+                                                                    "Gagal memperbarui pilihan pengiriman"
                                                                 );
                                                             }
-                                                        } catch (error) {
-                                                            console.error(
-                                                                "Failed to update delivery option:",
-                                                                error
-                                                            );
-                                                            toast.error(
-                                                                "Gagal memperbarui pilihan pengiriman"
-                                                            );
+                                                        }}
+                                                        disabled={
+                                                            status.disabled &&
+                                                            status.type !==
+                                                                "ticket_sold" &&
+                                                            status.type !==
+                                                                "event_banned" &&
+                                                            status.type !==
+                                                                "already_booked_by_me"
                                                         }
-                                                    }}
-                                                    disabled={
-                                                        status.disabled &&
-                                                        status.type !==
-                                                            "ticket_sold" &&
-                                                        status.type !==
-                                                            "event_banned" &&
-                                                        status.type !==
-                                                            "already_booked_by_me"
-                                                    }
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Pilih jenis pengiriman" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="pickup">
-                                                            Ambil di Tempat
-                                                        </SelectItem>
-                                                        <SelectItem value="delivery">
-                                                            Antar ke Alamat
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )}
+                                                    >
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Pilih jenis pengiriman" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {hasPickup && (
+                                                                <SelectItem value="pickup">
+                                                                    Ambil di Tempat
+                                                                </SelectItem>
+                                                            )}
+                                                            {hasDelivery && (
+                                                                <SelectItem value="delivery">
+                                                                    Antar ke Alamat
+                                                                </SelectItem>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            );
+                                        })()}
 
                                     {/* Quantity Selector (Ticket only in this block) */}
                                     {item.type === "ticket" && (

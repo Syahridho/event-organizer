@@ -78,6 +78,26 @@ const AddressManager = ({
     ]);
 
     const handleAddressFormChange = (field, value) => {
+        // Validation for postal_code - only numbers
+        if (field === "postal_code") {
+            const numericValue = value.replace(/\D/g, ""); // Remove non-numeric characters
+            setAddressForm((prev) => ({
+                ...prev,
+                [field]: numericValue,
+            }));
+            return;
+        }
+
+        // Validation for phone - only numbers
+        if (field === "phone") {
+            const numericValue = value.replace(/\D/g, ""); // Remove non-numeric characters
+            setAddressForm((prev) => ({
+                ...prev,
+                [field]: numericValue,
+            }));
+            return;
+        }
+
         setAddressForm((prev) => ({
             ...prev,
             [field]: value,

@@ -202,7 +202,7 @@ const ItemCard = ({ item, baseUrl, viewMode }) => {
 };
 
 // Pagination Component
-const Pagination = ({ links, currentPage, lastPage }) => {
+const Pagination = ({ links, _currentPage, _lastPage }) => {
     if (!links || links.length <= 3) return null;
 
     return (
@@ -258,16 +258,16 @@ export default function Index() {
             <Head title="Semua Listing - Eventnusa" />
 
             {/* Hero Section */}
-            <section className="bg-gradient-to-br from-primary via-primary/90 to-secondary py-16">
+            <section className="bg-primary py-16">
                 <div className="container mx-auto max-w-7xl px-4 md:px-6">
                     <div className="text-center text-primary-foreground space-y-4">
                         <Badge variant="secondary" className="mb-2">
                             🎯 Rekomendasi Terbaik
                         </Badge>
-                        <h1 className="text-4xl md:text-5xl font-bold">
+                        <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground">
                             Jelajahi Semua Penawaran
                         </h1>
-                        <p className="text-xl opacity-90 max-w-2xl mx-auto">
+                        <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto">
                             Temukan event, jasa, gedung, dan property terbaik
                             untuk kebutuhan Anda
                         </p>

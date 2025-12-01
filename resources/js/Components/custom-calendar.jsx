@@ -189,7 +189,7 @@ const CustomCalendar = ({
                 "bg-blue-100 text-blue-700 border-2 border-blue-300 cursor-not-allowed hover:!bg-blue-200 hover:!text-blue-800";
         } else if (inPending) {
             dayClasses +=
-                "bg-amber-300 text-amber-100 border-2 border-amber-800 cursor-not-allowed ";
+                "bg-amber-600 text-amber-100 border-2 border-amber-800 cursor-not-allowed hover:!bg-amber-700";
         } else if (leaveStatus) {
             dayClasses += "bg-yellow-100 text-yellow-700 cursor-not-allowed ";
         } else if (!isDisabled) {
@@ -244,7 +244,7 @@ const CustomCalendar = ({
 
     return (
         <div className="w-full">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 pt-8 md:pt-0">
                 <button
                     onClick={prevMonth}
                     className="p-1 hover:bg-gray-100 rounded"

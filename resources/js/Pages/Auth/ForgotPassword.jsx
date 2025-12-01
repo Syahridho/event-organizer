@@ -1,6 +1,6 @@
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputError from "@/components/InputError";
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, Link } from "@inertiajs/react";
 import {
     Card,
     CardContent,
@@ -84,7 +84,7 @@ export default function ForgotPassword({ status }) {
                         <div className="flex items-center justify-end mt-4">
                             <Button
                                 type="submit"
-                                className="ml-4"
+                                className="w-full"
                                 disabled={processing}
                             >
                                 {processing ? (
@@ -98,6 +98,15 @@ export default function ForgotPassword({ status }) {
                             </Button>
                         </div>
                     </form>
+                    <div className="mt-4 text-center text-sm">
+                        Sudah ganti password?{" "}
+                        <Link
+                            href="/login"
+                            className="underline underline-offset-4"
+                        >
+                            Masuk
+                        </Link>
+                    </div>
                 </CardContent>
             </Card>
         </GuestLayout>

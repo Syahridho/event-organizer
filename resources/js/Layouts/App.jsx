@@ -1,16 +1,18 @@
 import React, { useEffect } from "react";
-import MineProfileChat from "@/components/MineProfileChat.jsx";
 import SearchChatBar from "@/components/SearchChatBar.jsx";
 import ChatListUser from "@/components/ChatListUser.jsx";
 import { router, usePage } from "@inertiajs/react";
 import { debounce } from "lodash";
 import Navigation from "@/components/navigation";
 import Footer from "@/components/footer";
+import { initializeEcho } from "@/bootstrap";
 
 export default function AppChat({ children }) {
     const { auth } = usePage().props;
 
     useEffect(() => {
+        if (!auth?.user?.uuid) return;
+
         const debouncedReload = debounce(() => {
             router.reload({
                 preserveScroll: true,
@@ -18,22 +20,26 @@ export default function AppChat({ children }) {
             });
         }, 350);
 
-        Echo.private("message." + auth.user.uuid)
-            .listen("ReadMessageEvent", () => {
-                debouncedReload();
-            })
-            .listen("NewMessageEvent", () => {
-                debouncedReload();
-            });
+        const setupEcho = async () => {
+            const Echo = await initializeEcho();
+            const channel = Echo.private(`message.${auth.user.uuid}`);
+
+            channel
+                .listen("ReadMessageEvent", debouncedReload)
+                .listen("NewMessageEvent", debouncedReload);
+
+            return () => {
+                channel.stopListening("ReadMessageEvent");
+                channel.stopListening("NewMessageEvent");
+            };
+        };
+
+        const cleanup = setupEcho();
 
         return () => {
-            Echo.private("message." + auth.user.uuid)
-                .stopListening("ReadMessageEvent", () => {
-                    debouncedReload();
-                })
-                .stopListening("NewMessageEvent");
+            cleanup.then((cleanupFn) => cleanupFn && cleanupFn());
         };
-    }, []);
+    }, [auth?.user?.uuid]);
 
     const renderSidebarScreen = () => {
         const currentPath = route().current();

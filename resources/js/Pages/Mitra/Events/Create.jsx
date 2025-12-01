@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,8 +43,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import LocationInputWithMap from "@/components/location-input-with-map";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
-import ReactQuill from "react-quill";
 import { useCsrfToken } from "@/hooks/useCsrfToken";
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = lazy(() => import("react-quill"));
 
 const breadcrumbs = [
     {
@@ -492,25 +494,27 @@ export default function CreateEvent() {
                                                         </Button>
                                                     </div>
 
-                                                    <div className="mt-4 space-y-4">
-                                                        <div className="h-80">
-                                                            <ReactQuill
-                                                                theme="snow"
-                                                                value={
-                                                                    data.description
-                                                                }
-                                                                onChange={(
-                                                                    content
-                                                                ) =>
-                                                                    setData(
-                                                                        "description",
-                                                                        content
-                                                                    )
-                                                                }
-                                                                placeholder="Masukkan deskripsi..."
-                                                                className="h-64"
-                                                            />
-                                                        </div>
+                                                        <div className="mt-4 space-y-4">
+                                                            <div className="h-80">
+                                                                <Suspense fallback={<div className="p-4 text-center">Loading editor...</div>}>
+                                                                    <ReactQuill
+                                                                        theme="snow"
+                                                                        value={
+                                                                            data.description
+                                                                        }
+                                                                        onChange={(
+                                                                            content
+                                                                        ) =>
+                                                                            setData(
+                                                                                "description",
+                                                                                content
+                                                                            )
+                                                                        }
+                                                                        placeholder="Masukkan deskripsi..."
+                                                                        className="h-64"
+                                                                    />
+                                                                </Suspense>
+                                                            </div>
 
                                                         <div className="flex justify-end gap-2">
                                                             <Button

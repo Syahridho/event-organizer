@@ -109,6 +109,8 @@ Route::get('/midtrans/unfinish', [MidtransController::class, 'unfinish'])->name(
 
 Route::get('/partner/register', [PartnerController::class, 'index'])->name('partner.create');
 Route::post('/partner/register', [PartnerController::class, 'store'])->name('partner.store');
+Route::post('/partner/reapply', [PartnerController::class, 'reapply'])->name('partner.reapply')->middleware('auth');
+
 
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
 
@@ -126,44 +128,6 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     Route::put('/addresses/ajax/{id}', [AddressController::class, 'update']);
     Route::delete('/addresses/ajax/{id}', [AddressController::class, 'destroy']);
     Route::put('/addresses/{id}/set-default', [AddressController::class, 'setDefault']);
-
-    // RajaOngkir API routes
-    Route::get('/rajaongkir/provinces', function () {
-        try {
-            $response = Http::withHeaders([
-                'key' => env('RAJAONGKIR_API_KEY')
-            ])->get('https://rajaongkir.komerce.id/api/v1/destination/province'); 
-            return $response->json();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Gagal memuat provinsi: ' . $e->getMessage()], 500);
-        }
-    });
-
-    Route::get('/rajaongkir/cities/{provinceId}', function ($provinceId) {
-        try {
-            $response = Http::withHeaders([
-                'key' => env('RAJAONGKIR_API_KEY')
-            ])->get('https://rajaongkir.komerce.id/api/v1/destination/city', [
-                'province' => $provinceId
-            ]);
-            return $response->json();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Gagal memuat kota: ' . $e->getMessage()], 500);
-        }
-    });
-
-    Route::get('/rajaongkir/districts/{cityId}', function ($cityId) {
-        try {
-            $response = Http::withHeaders([
-                'key' => env('RAJAONGKIR_API_KEY')
-            ])->get('https://rajaongkir.komerce.id/api/v1/destination/district', [ // FIXED: Changed endpoint from province to district
-                'city' => $cityId
-            ]);
-            return $response->json();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Gagal memuat kecamatan: ' . $e->getMessage()], 500);
-        }
-    });
 
     // Cart management
     Route::delete('/cart/clear-after-checkout', [CartController::class, 'clearAfterCheckout']);

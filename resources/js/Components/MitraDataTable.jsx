@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowUpDown, ChevronDown, Eye, Filter } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Eye, Filter, Download } from "lucide-react";
 import {
     flexRender,
     getCoreRowModel,
@@ -54,6 +54,75 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { router } from "@inertiajs/react";
+import { toast } from "sonner";
+
+// Document Viewer Component - supports PDF, PNG, JPG
+function DocumentViewer({ mitraId, type }) {
+    const [fileType, setFileType] = React.useState(null);
+    const [isLoading, setIsLoading] = React.useState(true);
+    const documentUrl = route("admin.partners.view-pdf", {
+        mitra: mitraId,
+        type: type,
+    });
+
+    React.useEffect(() => {
+        // Detect file type by fetching headers
+        setIsLoading(true);
+        fetch(documentUrl, { method: 'HEAD' })
+            .then(response => {
+                const contentType = response.headers.get('Content-Type');
+                if (contentType?.includes('image')) {
+                    setFileType('image');
+                } else if (contentType?.includes('pdf')) {
+                    setFileType('pdf');
+                } else {
+                    setFileType('pdf'); // default fallback
+                }
+                setIsLoading(false);
+            })
+            .catch(() => {
+                setFileType('pdf'); // fallback on error
+                setIsLoading(false);
+            });
+    }, [documentUrl]);
+
+    if (isLoading) {
+        return (
+            <div className="border rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center h-[300px] md:h-[500px]">
+                <p className="text-sm text-gray-500">Memuat dokumen...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="border rounded-lg overflow-hidden bg-gray-50">
+            {fileType === 'image' ? (
+                <div className="p-4 flex flex-col items-center">
+                    <img
+                        src={documentUrl}
+                        alt={type === "npwp" ? "NPWP" : "Dokumen Usaha"}
+                        className="max-w-full h-auto max-h-[500px] object-contain rounded shadow-lg"
+                    />
+                    <a
+                        href={documentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-2"
+                    >
+                        <Download className="h-4 w-4" />
+                        Lihat ukuran penuh
+                    </a>
+                </div>
+            ) : (
+                <iframe
+                    src={documentUrl}
+                    className="w-full h-[300px] md:h-[500px]"
+                    title={type === "npwp" ? "NPWP" : "Dokumen Usaha"}
+                />
+            )}
+        </div>
+    );
+}
 
 const getStatusBadge = (status) => {
     const baseClasses = "capitalize min-w-[70px] justify-center text-xs";
@@ -125,12 +194,23 @@ export function MitraDataTable({ data }) {
                 route("admin.partners.approve", mitra.id),
                 {},
                 {
+                    preserveState: false,
+                    preserveScroll: false,
                     onSuccess: () => {
                         setIsModalOpen(false);
                         setAlertConfig({
                             open: false,
                             type: null,
                             mitra: null,
+                        });
+                        toast.success("Berhasil!", {
+                            description: `Pengajuan mitra ${mitra.user.name} telah disetujui.`,
+                        });
+                    },
+                    onError: (errors) => {
+                        console.error("Approve error:", errors);
+                        toast.error("Gagal Menyetujui", {
+                            description: errors.message || "Terjadi kesalahan saat menyetujui mitra.",
                         });
                     },
                 }
@@ -140,12 +220,23 @@ export function MitraDataTable({ data }) {
                 route("admin.partners.reject", mitra.id),
                 {},
                 {
+                    preserveState: false,
+                    preserveScroll: false,
                     onSuccess: () => {
                         setIsModalOpen(false);
                         setAlertConfig({
                             open: false,
                             type: null,
                             mitra: null,
+                        });
+                        toast.success("Berhasil!", {
+                            description: `Pengajuan mitra ${mitra.user.name} telah ditolak.`,
+                        });
+                    },
+                    onError: (errors) => {
+                        console.error("Reject error:", errors);
+                        toast.error("Gagal Menolak", {
+                            description: errors.message || "Terjadi kesalahan saat menolak mitra.",
                         });
                     },
                 }
@@ -482,6 +573,14 @@ export function MitraDataTable({ data }) {
                                         {selectedMitra.address}
                                     </p>
                                 </div>
+                                <div className="col-span-1 md:col-span-2">
+                                    <p className="text-xs text-gray-500">
+                                        Deskripsi Layanan
+                                    </p>
+                                    <p className="font-medium text-sm whitespace-pre-wrap">
+                                        {selectedMitra.description || "Tidak ada deskripsi"}
+                                    </p>
+                                </div>
                             </div>
 
                             <div>
@@ -512,20 +611,10 @@ export function MitraDataTable({ data }) {
                                 </Select>
                             </div>
 
-                            <div className="border rounded-lg overflow-hidden">
-                                <iframe
-                                    src={route("admin.partners.view-pdf", {
-                                        mitra: selectedMitra.id,
-                                        type: pdfType,
-                                    })}
-                                    className="w-full h-[300px] md:h-[500px]"
-                                    title={
-                                        pdfType === "npwp"
-                                            ? "NPWP"
-                                            : "Dokumen Usaha"
-                                    }
-                                />
-                            </div>
+                            <DocumentViewer 
+                                mitraId={selectedMitra.id}
+                                type={pdfType}
+                            />
 
                             {selectedMitra.status === "pending" && (
                                 <div className="flex flex-col sm:flex-row justify-end gap-2 md:gap-3 pt-4 border-t">
