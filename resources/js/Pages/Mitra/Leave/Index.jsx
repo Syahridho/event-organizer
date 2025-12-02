@@ -27,7 +27,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import AppLayout from "../../../Layouts/App/AppSidebarLayout";
+import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Head, router } from "@inertiajs/react";
