@@ -1,6 +1,9 @@
 import "./bootstrap";
 import "../css/app.css";
 
+// Initialize timezone configuration globally
+import "./Utils/timezone";
+
 // Lazy load heavy CSS only when needed
 // import "leaflet/dist/leaflet.css";
 // import "quill/dist/quill.snow.css";

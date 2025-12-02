@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, usePage, router } from "@inertiajs/react";
+import { usePage, router } from "@inertiajs/react";
 import ProfilePictureOnChat from "@/components/ProfilePictureOnChat.jsx";
 import clsx from "clsx";
 import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
@@ -65,7 +65,6 @@ export default function ChatListUser() {
 
                     return (
                         <div
-                            preserveScroll
                             key={user.uuid}
                             onClick={() => handleChatNavigation(user.uuid)}
                             className={clsx(

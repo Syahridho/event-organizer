@@ -1,10 +1,8 @@
-// resources/js/Pages/Mitra/WithdrawDashboard.jsx
-
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head, usePage, router, useForm } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { useState} from "react";
 import moment from "moment";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import {
     Table,
     TableBody,
@@ -127,6 +125,12 @@ export default function MitraWithdrawDashboard() {
 
     const handleWithdrawSubmit = (e) => {
         e.preventDefault();
+
+        // Cegah submit jika sedang processing
+        if (processing) {
+            return;
+        }
+
         if (parseFloat(data.amount || "0") < 10000) {
             toast.error("Jumlah Harus Lebih Dari Rp 10.000.");
             return;
@@ -141,6 +145,7 @@ export default function MitraWithdrawDashboard() {
         };
         post(route("mitra.withdraw"), {
             data: payload,
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success("Permintaan penarikan berhasil dikirim!");
                 reset();

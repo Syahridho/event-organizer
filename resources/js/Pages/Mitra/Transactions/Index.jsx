@@ -17,7 +17,7 @@ import { TransactionCardSkeleton } from "@/components/transaction-card-skeleton"
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
-    DialogTrigger,
+  
     DialogContent,
     DialogHeader,
     DialogTitle,
@@ -75,20 +75,6 @@ const statusTranslations = {
     completed: "Selesai",
 };
 
-const serviceTypes = {
-    service: {
-        text: "Jasa",
-        color: "bg-yellow-100 text-yellow-800",
-    },
-    building: {
-        text: "Gedung",
-        color: "bg-amber-100 text-amber-800",
-    },
-    property: {
-        text: "Properti",
-        color: "bg-purple-100 text-purple-800",
-    },
-};
 
 const allPossibleStatuses = [
     // Filter by TRANSACTION status for /dashboard/transactions
@@ -102,7 +88,6 @@ const allPossibleStatuses = [
 ];
 
 export default function MitraTransactionDashboard({ transactionItems }) {
-    console.log({ transactionItems });
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedItem, setSelectedItem] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -217,7 +202,6 @@ export default function MitraTransactionDashboard({ transactionItems }) {
     };
 
     const handleChat = (buyerId) => {
-        console.log(`Mulai chat dengan pembeli ID: ${buyerId}`);
     };
 
     const handleOpenDetailModal = (item) => {

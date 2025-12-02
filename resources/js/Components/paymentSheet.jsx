@@ -29,7 +29,6 @@ export const PaymentSheet = ({
     taxAmount = 0, // received from parent (ShowEvent.jsx)
     taxLabel = "", // descriptive label from parent
 }) => {
-    console.log(taxAmount, taxLabel);
     const showTax =
         Boolean(hasSelectedTickets) &&
         Number(totalHarga) > 0 &&

@@ -126,19 +126,30 @@ class MitraController extends Controller
         $salesData = collect();
 
         // Base Query
+        $eventIds = Event::where('user_id', $user->id)->pluck('id');
+        
         $query = TransactionItem::query()
-            ->where(function ($q) use ($serviceIds, $buildingIds, $rentPropertyIds) {
-                 $q->where(function ($qq) use ($serviceIds) {
-                    $qq->where('item_type', 'service')->whereIn('item_id', $serviceIds);
-                })->orWhere(function ($qq) use ($buildingIds) {
-                    $qq->where('item_type', 'building')->whereIn('item_id', $buildingIds);
-                })->orWhere(function ($qq) use ($rentPropertyIds) {
-                    $qq->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
-                       ->whereIn('item_id', $rentPropertyIds);
-                });
-            })
-            ->whereHas('transaction', function($q) {
-                $q->whereIn('status', ['settlement', 'capture', 'completed']);
+            ->where(function ($q) use ($serviceIds, $buildingIds, $rentPropertyIds, $eventIds) {
+                 // 1. Non-Event items: Must be 'completed'
+                 $q->where(function ($sub) use ($serviceIds, $buildingIds, $rentPropertyIds) {
+                     $sub->where(function ($qq) use ($serviceIds) {
+                        $qq->where('item_type', 'service')->whereIn('item_id', $serviceIds);
+                    })->orWhere(function ($qq) use ($buildingIds) {
+                        $qq->where('item_type', 'building')->whereIn('item_id', $buildingIds);
+                    })->orWhere(function ($qq) use ($rentPropertyIds) {
+                        $qq->whereIn('item_type', ['rent_property', 'property', 'App\\Models\\RentProperty'])
+                           ->whereIn('item_id', $rentPropertyIds);
+                    });
+                 })->where('status', 'completed')
+                 
+                 // 2. Event items: Must be paid (transaction status)
+                 ->orWhere(function ($sub) use ($eventIds) {
+                     $sub->whereIn('item_type', ['event', 'App\\Models\\Event'])
+                         ->whereIn('item_id', $eventIds)
+                         ->whereHas('transaction', function($tr) {
+                             $tr->whereIn('status', ['settlement', 'capture', 'completed']);
+                         });
+                 });
             });
 
         if ($chartFilter === 'year') {

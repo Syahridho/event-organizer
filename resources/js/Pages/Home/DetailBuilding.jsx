@@ -1,57 +1,41 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-    ArrowLeft,
-    MapPin,
-    Star,
-    Share2,
-    Heart,
-    Loader2,
-    Users,
-} from "lucide-react";
+import React, { useState,  useMemo, useCallback, lazy, Suspense } from "react";
+import { ArrowLeft, MapPin, Users, Loader2 } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetDescription,
-    SheetFooter,
-} from "@/components/ui/sheet";
-import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogCancel,
-    AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-} from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/Lib/utils";
-import { Textarea } from "@/components/ui/textarea";
-import { FaShoppingCart, FaMapMarkerAlt } from "react-icons/fa";
-import { useDispatch } from "react-redux";
-import { useSelected } from "@/hooks/useSelection";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { router } from "@inertiajs/react";
 import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
-import Rating from "@/components/rating";
-import CustomCalendar from "@/components/custom-calendar";
+import { useSelected } from "@/hooks/useSelection";
+import { useDispatch } from "react-redux";
 import { getBookedDatesWithUser } from "@/Utils/bookedDates";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
-import MainLayout from "@/Layouts/Main";
-import ReviewSection from "@/Components/ReviewSection";
 import { createPaymentPayload } from "@/Utils/PaymentHelper";
+import MainLayout from "@/Layouts/Main";
+
+// Lazy load components
+const CustomCalendar = lazy(() => import("@/components/custom-calendar"));
+const ReviewSection = lazy(() => import("@/components/ReviewSection"));
+const BuildingPaymentSheet = lazy(() => import("@/Components/DetailPage/BuildingPaymentSheet"));
+const BuildingConfirmDialog = lazy(() => import("@/Components/DetailPage/BuildingConfirmDialog"));
+const ImageGallery = lazy(() => import("@/Components/DetailPage/ImageGallery"));
+
+// Skeleton components
+const CalendarSkeleton = () => (
+    <div className="space-y-3">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-64 w-full" />
+    </div>
+);
+
+const ReviewSkeleton = () => (
+    <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+    </div>
+);
 
 const DetailBuilding = () => {
     const {
@@ -66,8 +50,6 @@ const DetailBuilding = () => {
         pendingDates,
     } = usePage().props;
 
-    console.log(transaction, user);
-
     const dispatch = useDispatch();
     const [latitude, longitude] =
         building?.pin?.split(",") ?? "0.5761133,101.4252478";
@@ -78,11 +60,12 @@ const DetailBuilding = () => {
         () => [{ id: building.id, price: building.price }],
         [building.id, building.price]
     );
+    
     const {
-        itemCounts,
-        selectedDates,
-        handleChangeSelectedDate,
-        totalHarga,
+        // itemCounts,
+        // selectedDates,
+        // handleChangeSelectedDate,
+        // totalHarga,
         handleChangeItem,
     } = useSelected(items);
 
@@ -102,10 +85,8 @@ const DetailBuilding = () => {
         return getBookedDatesWithUser(transaction, user?.id);
     }, [transaction, user?.id]);
 
-    // Format leaves data untuk calendar
     const disabledLeaves = useMemo(() => {
         if (!leaves || leaves.length === 0) return [];
-
         return leaves.map((leave) => ({
             type: leave.date ? "once" : "weekly",
             date: leave.date,
@@ -113,7 +94,19 @@ const DetailBuilding = () => {
         }));
     }, [leaves]);
 
-    const handleAddToCart = async () => {
+    const images = useMemo(() => [
+        {
+            url: `${ziggy.url}/storage/thumbnails/${building.thumbnail}`,
+            type: "thumbnail",
+        },
+        ...(photos?.map((p) => ({
+            url: `${ziggy.url}/storage/item-photos/${p.photo}`,
+            type: "photo",
+            caption: p.caption,
+        })) || []),
+    ], [ziggy.url, building.thumbnail, photos]);
+
+    const handleAddToCart = useCallback(async () => {
         if (!selectedDate) {
             toast.error("Silahkan pilih tanggal sewa gedung");
             return;
@@ -152,7 +145,7 @@ const DetailBuilding = () => {
         } finally {
             setIsLoading((prev) => ({ ...prev, cart: false }));
         }
-    };
+    }, [selectedDate, user, building, dispatch, handleChangeItem]);
 
     const handlePayment = useCallback(
         async (e) => {
@@ -170,7 +163,6 @@ const DetailBuilding = () => {
             }
 
             setIsConfirmOpen(false);
-
             setPaymentError(null);
             setIsLoading((prev) => ({ ...prev, payment: true }));
 
@@ -182,7 +174,6 @@ const DetailBuilding = () => {
             }
 
             try {
-                // Create building item with rent_days for payment
                 const buildingItem = {
                     ...building,
                     rent_days: selectedDate.toLocaleDateString("en-CA", {
@@ -190,15 +181,12 @@ const DetailBuilding = () => {
                     }),
                 };
 
-                // Use PaymentHelper to create payment payload
                 const paymentData = createPaymentPayload(
                     buildingItem,
                     1,
                     user,
-                    null // Building doesn't use shipping address
+                    null
                 );
-
-                // Add note to payment data
                 paymentData.note = note;
 
                 const response = await axios.post(
@@ -213,7 +201,7 @@ const DetailBuilding = () => {
                     }
                 );
 
-                const { token: snapToken, order_id } = response.data;
+                const { token: snapToken } = response.data;
 
                 if (!snapToken) {
                     throw new Error("Token pembayaran tidak diterima");
@@ -221,21 +209,21 @@ const DetailBuilding = () => {
 
                 window.snap.pay(snapToken, {
                     skipOrderSummary: false,
-                    onSuccess: (result) => {
+                    onSuccess: () => {
                         setIsLoading((prev) => ({ ...prev, payment: false }));
                         router.visit("/purchase", {
                             method: "get",
                             preserveState: false,
                         });
                     },
-                    onPending: (result) => {
+                    onPending: () => {
                         setIsLoading((prev) => ({ ...prev, payment: false }));
                         router.visit("/purchase?tab=unpaid", {
                             method: "get",
                             preserveState: false,
                         });
                     },
-                    onError: (error) => {
+                    onError: () => {
                         setIsLoading((prev) => ({ ...prev, payment: false }));
                         setPaymentError(
                             "Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi."
@@ -271,27 +259,15 @@ const DetailBuilding = () => {
                 setIsLoading((prev) => ({ ...prev, payment: false }));
             }
         },
-        [snapLoaded, selectedDate, building, user, note]
+        [snapLoaded, selectedDate, building, user, note, setPaymentError]
     );
 
-    const formatPrice = (price) => {
+    const formatPrice = useCallback((price) => {
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
             currency: "IDR",
         }).format(price);
-    };
-
-    const images = [
-        {
-            url: `${ziggy.url}/storage/thumbnails/${building.thumbnail}`,
-            type: "thumbnail",
-        },
-        ...(photos?.map((p) => ({
-            url: `${ziggy.url}/storage/item-photos/${p.photo}`,
-            type: "photo",
-            caption: p.caption,
-        })) || []),
-    ];
+    }, []);
 
     return (
         <div className="min-h-screen">
@@ -307,60 +283,18 @@ const DetailBuilding = () => {
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                 </Button>
+                
                 <div className="grid lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-7 space-y-6">
-                        <div className="bg-white rounded-lg overflow-hidden shadow-lg">
-                            <div className="aspect-video relative">
-                                <div className="flex-1">
-                                    <Carousel>
-                                        <CarouselContent>
-                                            <CarouselItem>
-                                                <Card className="overflow-hidden">
-                                                    <CardContent className="flex items-center justify-center p-0">
-                                                        <img
-                                                            src={
-                                                                images[
-                                                                    activeImage
-                                                                ].url
-                                                            }
-                                                            alt={building.name}
-                                                            className="object-cover rounded-lg max-h-[600px] w-full"
-                                                        />
-                                                    </CardContent>
-                                                </Card>
-                                            </CarouselItem>
-                                        </CarouselContent>
-                                    </Carousel>
-                                </div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                                <div className="absolute top-4 right-4 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-                                    {building.status === "active"
-                                        ? "Tersedia"
-                                        : "Tidak Tersedia"}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            {images.map((img, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setActiveImage(i)}
-                                    className={cn(
-                                        "border rounded-lg overflow-hidden w-20 h-20 flex items-center justify-center",
-                                        activeImage === i && "ring-2 ring-black"
-                                    )}
-                                >
-                                    <img
-                                        src={img.url}
-                                        alt={
-                                            img.caption ||
-                                            `Foto gedung ${i + 1}`
-                                        }
-                                        className="object-cover w-full h-full  sm:max-h-[600px]"
-                                    />
-                                </button>
-                            ))}
-                        </div>
+                        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                            <ImageGallery
+                                images={images}
+                                activeImage={activeImage}
+                                setActiveImage={setActiveImage}
+                                serviceName={building.name}
+                                serviceStatus={building.status}
+                            />
+                        </Suspense>
 
                         <div className="bg-white rounded-lg border shadow-lg">
                             <div className="p-6">
@@ -374,7 +308,9 @@ const DetailBuilding = () => {
                                             <span>{building.location}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-slate-600">
-                                            <span className="text-sm font-medium">Oleh: {building.user_name}</span>
+                                            <span className="text-sm font-medium">
+                                                Oleh: {building.user_name}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2 text-slate-600">
                                             <Users className="h-4 w-4" />
@@ -384,13 +320,6 @@ const DetailBuilding = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    {/* {building.rating && (
-                                        <Rating
-                                            value={building.rating}
-                                            size={20}
-                                            showValue={true}
-                                        />
-                                    )} */}
                                 </div>
 
                                 <div className="space-y-6">
@@ -418,18 +347,20 @@ const DetailBuilding = () => {
                                                 loading="lazy"
                                                 referrerPolicy="no-referrer-when-downgrade"
                                                 title={`Lokasi: ${building.name}`}
+                                                sandbox="allow-scripts allow-same-origin allow-popups"
                                             />
                                         </div>
                                     </section>
 
-                                    {/* Review Section */}
                                     <section className="mt-8">
-                                        <ReviewSection
-                                            key={building.id}
-                                            itemType="App\Models\Building"
-                                            itemId={building.id}
-                                            user={user}
-                                        />
+                                        <Suspense fallback={<ReviewSkeleton />}>
+                                            <ReviewSection
+                                                key={building.id}
+                                                itemType="App\Models\Building"
+                                                itemId={building.id}
+                                                user={user}
+                                            />
+                                        </Suspense>
                                     </section>
                                 </div>
                             </div>
@@ -440,20 +371,20 @@ const DetailBuilding = () => {
                         <div className="bg-white rounded-lg shadow-lg border sticky md:top-12">
                             <div className="px-6 pb-6">
                                 <div className="my-6">
-                                    <CustomCalendar
-                                        selected={selectedDate}
-                                        onSelect={setSelectedDate}
-                                        disabled={(date) => date < new Date()}
-                                        bookedDatesWithUser={
-                                            bookedDatesWithUser
-                                        }
-                                        disabledLeaves={disabledLeaves}
-                                        currentUserId={user?.id}
-                                        cartDates={cartDates}
-                                        pendingDates={pendingDates}
-                                        itemId={building.id}
-                                        itemType="building"
-                                    />
+                                    <Suspense fallback={<CalendarSkeleton />}>
+                                        <CustomCalendar
+                                            selected={selectedDate}
+                                            onSelect={setSelectedDate}
+                                            disabled={(date) => date < new Date()}
+                                            bookedDatesWithUser={bookedDatesWithUser}
+                                            disabledLeaves={disabledLeaves}
+                                            currentUserId={user?.id}
+                                            cartDates={cartDates}
+                                            pendingDates={pendingDates}
+                                            itemId={building.id}
+                                            itemType="building"
+                                        />
+                                    </Suspense>
                                 </div>
                                 <div className="text-center my-6">
                                     <div className="text-3xl font-bold text-blue-600">
@@ -462,17 +393,6 @@ const DetailBuilding = () => {
                                     <p className="text-sm text-slate-600 mt-1">
                                         Perhari
                                     </p>
-
-                                    {/* {building.tax_amount > 0 && (
-                                        <div className="text-xs text-slate-500 mt-1">
-                                            Pajak{" "}
-                                            {tax_info?.type === "percent"
-                                                ? `${tax_info?.value}%`
-                                                : formatPrice(
-                                                      tax_info?.value || 0
-                                                  )}
-                                        </div>
-                                    )} */}
                                 </div>
 
                                 <div className="space-y-4">
@@ -501,223 +421,41 @@ const DetailBuilding = () => {
                 </div>
             </div>
 
-            <Sheet open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-                <SheetContent className="md:!max-w-xl w-full flex flex-col max-h-screen">
-                    <SheetHeader className="flex-shrink-0 pb-4 border-b">
-                        <SheetTitle>Sewa Gedung - {building.name}</SheetTitle>
-                        <SheetDescription>
-                            Pilih tanggal untuk penyewaan gedung
-                        </SheetDescription>
-                    </SheetHeader>
+            <Suspense fallback={null}>
+                <BuildingPaymentSheet
+                    isOpen={isPaymentOpen}
+                    onOpenChange={setIsPaymentOpen}
+                    building={building}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    bookedDatesWithUser={bookedDatesWithUser}
+                    disabledLeaves={disabledLeaves}
+                    user={user}
+                    cartDates={cartDates}
+                    pendingDates={pendingDates}
+                    note={note}
+                    setNote={setNote}
+                    handleAddToCart={handleAddToCart}
+                    setIsConfirmOpen={setIsConfirmOpen}
+                    isLoading={isLoading}
+                />
+            </Suspense>
 
-                    <div className="flex-1 overflow-y-auto py-4 space-y-6">
-                        <div className="flex justify-center">
-                            <CustomCalendar
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                disabled={(date) => date < new Date()}
-                                bookedDatesWithUser={bookedDatesWithUser}
-                                disabledLeaves={disabledLeaves}
-                                currentUserId={user?.id}
-                                cartDates={cartDates}
-                                pendingDates={pendingDates}
-                                itemId={building.id}
-                                itemType="building"
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <h1 className="font-semibold text-slate-800">
-                                Lokasi Gedung
-                            </h1>
-                            <div className="border rounded-lg p-4 bg-slate-50">
-                                <div className="flex items-center gap-2 text-slate-700">
-                                    <MapPin className="h-4 w-4" />
-                                    <span className="text-sm">
-                                        {building.location}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label
-                                htmlFor="note"
-                                className="font-semibold text-slate-800"
-                            >
-                                Catatan (Opsional)
-                            </Label>
-                            <Textarea
-                                id="note"
-                                placeholder="Catatan tambahan untuk penyewaan gedung"
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-                    <SheetFooter className="grid grid-cols-10 gap-4 w-full">
-                        <Button
-                            variant="outline"
-                            onClick={() => handleAddToCart()}
-                            className="col-span-1"
-                            disabled={!selectedDate || isLoading.cart}
-                        >
-                            <FaShoppingCart className="w-4 h-4" />
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                setIsPaymentOpen(false);
-                                setIsConfirmOpen(true);
-                            }}
-                            className="col-span-9"
-                        >
-                            Bayar
-                        </Button>
-                    </SheetFooter>
-                </SheetContent>
-            </Sheet>
-
-            <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                <AlertDialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-                    <AlertDialogHeader className="flex-shrink-0">
-                        <AlertDialogTitle>
-                            Konfirmasi Pembayaran
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Pastikan semua data sudah benar sebelum melanjutkan
-                            pembayaran.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <div className="flex-1 overflow-y-auto py-4">
-                        <div className="bg-slate-50 border rounded-md p-5 text-sm space-y-3">
-                            <div className="text-center font-semibold mb-4 tracking-wide">
-                                RINCIAN PENYEWAAN
-                            </div>
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Gedung</span>
-                                <span className="font-medium">
-                                    {building.name}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">
-                                    Kapasitas
-                                </span>
-                                <span className="font-medium">
-                                    {building.capacity} orang
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">
-                                    Harga Dasar
-                                </span>
-                                <span className="font-medium">
-                                    {formatPrice(building.price)} / hari
-                                </span>
-                            </div>
-
-                            {building.tax_amount > 0 && (
-                                <div className="flex justify-between py-2 border-b">
-                                    <span className="text-slate-600">
-                                        Pajak (
-                                        {tax_info?.type === "percent"
-                                            ? `${tax_info?.value}%`
-                                            : "Fixed"}
-                                        )
-                                    </span>
-                                    <span className="font-medium">
-                                        {formatPrice(building.tax_amount)}
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Tanggal</span>
-                                <span className="font-medium">
-                                    {selectedDate ? (
-                                        (() => {
-                                            const d = new Date(selectedDate);
-                                            const hari = d.toLocaleDateString(
-                                                "id-ID",
-                                                { weekday: "long" }
-                                            );
-                                            const tanggal =
-                                                d.toLocaleDateString("id-ID", {
-                                                    day: "numeric",
-                                                    month: "long",
-                                                    year: "numeric",
-                                                });
-                                            return `${tanggal} (${hari})`;
-                                        })()
-                                    ) : (
-                                        <p className="text-sm text-red-600 font-medium">
-                                            Tanggal belum dipilih
-                                        </p>
-                                    )}
-                                </span>
-                            </div>
-
-                            <div className="py-3 border-b">
-                                <span className="block text-slate-600 mb-2">
-                                    Lokasi Gedung
-                                </span>
-                                <p className="text-sm font-medium text-slate-800">
-                                    {building.location}
-                                </p>
-                            </div>
-
-                            {note && (
-                                <div className="py-3 border-b">
-                                    <span className="block text-slate-600 mb-2">
-                                        Catatan
-                                    </span>
-                                    <p className="text-sm text-slate-800">
-                                        {note}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="flex justify-between py-3 mt-2 font-semibold text-base">
-                                <span>Total</span>
-                                <span>
-                                    {formatPrice(
-                                        building.final_price || building.price
-                                    )}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <AlertDialogFooter className="flex-shrink-0 pt-4">
-                        <AlertDialogCancel
-                            onClick={() => {
-                                setIsConfirmOpen(false);
-                                setIsPaymentOpen(true);
-                            }}
-                        >
-                            Batal
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handlePayment}
-                            disabled={!snapLoaded || isLoading.payment}
-                        >
-                            {isLoading.payment ? (
-                                <div className="flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Memproses...
-                                </div>
-                            ) : (
-                                "Bayar"
-                            )}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <Suspense fallback={null}>
+                <BuildingConfirmDialog
+                    isOpen={isConfirmOpen}
+                    onOpenChange={setIsConfirmOpen}
+                    building={building}
+                    selectedDate={selectedDate}
+                    note={note}
+                    tax_info={tax_info}
+                    formatPrice={formatPrice}
+                    handlePayment={handlePayment}
+                    snapLoaded={snapLoaded}
+                    isLoading={isLoading}
+                    setIsPaymentOpen={setIsPaymentOpen}
+                />
+            </Suspense>
 
             {isLoading.payment && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">

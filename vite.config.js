@@ -68,15 +68,13 @@ export default defineConfig({
                         "zod",
                     ],
                     "vendor-charts": ["recharts"],
-                    "vendor-icons": ["lucide-react", "@heroicons/react", "@tabler/icons-react"],
+                    "vendor-icons": ["lucide-react", "@heroicons/react"],
                     "vendor-utils": ["lodash", "date-fns", "moment", "clsx", "tailwind-merge"],
-                    // Split react-icons by library to enable lazy loading
+                    // Split react-icons by library to enable lazy loading (only used libraries)
                     "icons-io5": ["react-icons/io5"],
                     "icons-io": ["react-icons/io"],
                     "icons-fa": ["react-icons/fa"],
                     "icons-fa6": ["react-icons/fa6"],
-                    "icons-gi": ["react-icons/gi"],
-                    "icons-gr": ["react-icons/gr"],
                     "icons-md": ["react-icons/md"],
                     "icons-hi": ["react-icons/hi"],
                     "icons-tb": ["react-icons/tb"],

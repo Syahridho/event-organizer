@@ -73,7 +73,6 @@ const DEFAULT_CONFIG = {
 };
 
 const ItemStatusBadge = ({ status }) => {
-    console.log(status);
     // O(1) lookup for status configuration
     const config = status
         ? STATUS_CONFIG[status] || DEFAULT_CONFIG

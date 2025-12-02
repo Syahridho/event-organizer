@@ -1,30 +1,17 @@
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useRef, useState, useCallback, useMemo } from "react";
 import {
-    LogOut,
-    AlignJustify,
     ChevronRight,
     Star,
 } from "lucide-react";
 
 // Use optimized Icon component instead of direct imports
 import {
-    IoCart,
-    IoPersonCircle,
     IoTicket,
     FaBuilding,
     GiMicrophone,
     GrFanOption,
 } from "@/components/Icon";
-
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
     Card,
     CardContent,
@@ -35,21 +22,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Rating from "react-rating";
-import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import MainLayout from "@/Layouts/Main";
 
 // Import new components
 import CategorySection from "@/Components/Welcome/CategorySection";
-import MobileMenu from "@/Components/Welcome/MobileMenu";
 
 const mobileMenuItems = [
     {
@@ -257,7 +234,6 @@ function TestimonialSection({ testimonials: propTestimonials }) {
 
 export default function Welcome() {
     const {
-        auth,
         ziggy,
         events,
         buildings,
@@ -267,58 +243,11 @@ export default function Welcome() {
         hero,
     } = usePage().props;
     const sheetCloseRef = useRef();
-    const [searchQuery, setSearchQuery] = useState("");
-
-    const handleLogout = useCallback(() => {
-        router.post(
-            "/logout",
-            {},
-            {
-                onSuccess: () => {
-                    sheetCloseRef.current?.click();
-                },
-            }
-        );
-    }, []);
 
     const handleNavigation = useCallback((path) => {
         router.visit(path);
     }, []);
 
-    const MobileSheet = () => (
-        <Sheet>
-            <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon">
-                    <AlignJustify className="w-5 h-5" />
-                </Button>
-            </SheetTrigger>
-            <SheetContent>
-                <SheetHeader>
-                    <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-                
-                {/* Use the new MobileMenu component */}
-                <MobileMenu />
-
-                {auth.user && (
-                    <>
-                        <Separator className="my-4" />
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={handleLogout}
-                        >
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Keluar
-                        </Button>
-                    </>
-                )}
-                <SheetClose asChild>
-                    <button ref={sheetCloseRef} className="hidden" />
-                </SheetClose>
-            </SheetContent>
-        </Sheet>
-    );
 
     return (
         <div className="bg-background min-h-screen">
@@ -358,12 +287,10 @@ export default function Welcome() {
                         {mobileMenuItems.map((item, idx) => {
                             const IconComponent = item.icon;
                             return (
-                                <Card
-                                    key={idx}
-                                    className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border-border/50 overflow-hidden"
-                                    asChild
-                                >
-                                    <Link href={item.href}>
+                                <Link href={item.href} key={idx} className="block h-full">
+                                    <Card
+                                        className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border-border/50 overflow-hidden h-full"
+                                    >
                                         <CardContent className="p-6 text-center space-y-4">
                                             <div className={`bg-gradient-to-br ${item.bgGradient} ${item.hoverBg} w-16 h-16 rounded-2xl mx-auto flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg`}>
                                                 <IconComponent className={`w-8 h-8 ${item.iconColor}`} />
@@ -377,8 +304,8 @@ export default function Welcome() {
                                                 </p>
                                             </div>
                                         </CardContent>
-                                    </Link>
-                                </Card>
+                                    </Card>
+                                </Link>
                             );
                         })}
                     </div>

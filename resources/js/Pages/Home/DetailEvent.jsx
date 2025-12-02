@@ -5,7 +5,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatTanggalIndo } from "@/Utils/formatDateTime";
 import { formatRupiah } from "@/Utils/formatRupiah";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { FaShoppingCart } from "react-icons/fa";
 import axios from "axios";
 import {
     ArrowLeft,
@@ -14,10 +13,10 @@ import {
     Clock,
     User,
     AlertTriangle,
-    RefreshCw,
+    
 } from "lucide-react";
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState, useCallback, useMemo} from "react";
+import { useDispatch } from "react-redux";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import { toast } from "sonner";
 
@@ -230,12 +229,11 @@ const TicketStockBadge = ({ ticket }) => {
 };
 
 export default function ShowEvent() {
-    const { event, auth, ziggy, alreadyRegistered, tax_info, platformTax } =
+    const { event, auth, ziggy, alreadyRegistered, tax_info } =
         usePage().props;
 
-    console.log(event);
 
-    const [latitude, longitude] = event?.pin.split(",");
+    const [latitude, longitude] = event?.pin ? event.pin.split(",") : ["", ""];
 
     const embedSrc = `https://maps.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
 
@@ -518,7 +516,7 @@ export default function ShowEvent() {
                     }
                 );
 
-                const { token: snapToken, order_id } = response.data;
+                const { token: snapToken } = response.data;
 
                 if (!snapToken) {
                     throw new Error("Token pembayaran tidak diterima");
@@ -1007,6 +1005,7 @@ export default function ShowEvent() {
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
                             title={`Lokasi: ${event.name}`}
+                            sandbox="allow-scripts allow-same-origin allow-popups"
                         />
                     </div>
                 </section>

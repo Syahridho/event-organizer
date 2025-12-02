@@ -1,16 +1,3 @@
-/**
- * Wallet.jsx
- * Polished wallet UI for /profile using shadcn-style components (Tailwind + Radix patterns)
- * - Prominent balance card with smooth count-up animation (no external deps)
- * - Scrollable transaction table with subtle fade-in on first load
- * - Badges for type (Credit/Refund vs Debit) and colored amounts
- *
- * This component expects Inertia props:
- *   props.balance: number
- *   props.transactions: Array<{ id, amount, type, description, reference_type, reference_id, created_at }>
- *   props.auth.user: { name, email, avatar }
- */
-
 import React from "react";
 import { Head, usePage, router } from "@inertiajs/react";
 
@@ -19,7 +6,6 @@ import { Alert } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -47,7 +33,9 @@ import formatRupiah, { formatRupiahInput } from "@/Utils/formatRupiah";
 const formatCurrency = (value) => {
   try {
     if (typeof formatRupiah === "function") return formatRupiah(value);
-  } catch (_) {}
+  } catch (error) {
+    // Fallback to default formatting if formatRupiah fails
+  }
   const n = Number(value || 0);
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 };
@@ -115,7 +103,6 @@ const useCountUp = (target = 0, durationMs = 900, deps = []) => {
 
    rafId = requestAnimationFrame(tick);
    return () => cancelAnimationFrame(rafId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps.concat([target, durationMs]));
 
   return display;

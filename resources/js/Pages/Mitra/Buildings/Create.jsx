@@ -55,6 +55,12 @@ export default function BuildingsCreate() {
     };
 
     const handleAddPhoto = () => {
+        // Batasi maksimal 5 gambar
+        if (data.itemPhoto.length >= 5) {
+            toast.error("Maksimal 5 gambar saja yang dapat ditambahkan");
+            return;
+        }
+
         if (data.itemPhoto.length > 0) {
             const lastPhoto = data.itemPhoto[data.itemPhoto.length - 1];
             if (!lastPhoto.photo) {
@@ -227,8 +233,12 @@ export default function BuildingsCreate() {
                             variant="link"
                             onClick={() => handleAddPhoto()}
                             className="text-xs px-0 mx-auto"
+                            disabled={data.itemPhoto.length >= 5}
                         >
-                            Tambahkan lebih banyak foto
+                            {data.itemPhoto.length >= 5 
+                                ? `Maksimal 5 gambar (${data.itemPhoto.length}/5)`
+                                : `Tambahkan lebih banyak foto (${data.itemPhoto.length}/5)`
+                            }
                         </Button>
                     </div>
                     <div className="grid w-full items-center gap-3">

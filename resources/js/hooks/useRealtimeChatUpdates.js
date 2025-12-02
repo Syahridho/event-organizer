@@ -23,12 +23,10 @@ export default function useRealtimeChatUpdates() {
         // This is the precise Soketi/Laravel Echo event handling strategy
         window.Echo.private("message." + auth.user.uuid)
             .listen("NewMessageEvent", (e) => {
-                console.log("New message received, updating chat list");
                 // Trigger the Inertia reload when a new message event is received
                 debouncedReload();
             })
             .listen("ReadMessageEvent", (e) => {
-                console.log("Message read, updating chat list");
                 debouncedReload();
             });
 

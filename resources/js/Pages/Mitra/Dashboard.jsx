@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/table";
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -29,7 +28,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
     Select,
     SelectContent,
@@ -54,7 +52,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import React, { useMemo } from "react";
+import React from "react";
 
 // Custom Tooltip Component
 const CustomTooltip = ({ active, payload, label }) => {
@@ -215,6 +213,11 @@ export default function UserDashboard({
     const handleWithdraw = (e) => {
         e.preventDefault();
 
+        // Cegah submit jika sedang processing
+        if (processing) {
+            return;
+        }
+
         if (parseFloat(data.amount) > totalRevenue) {
             toast.error(
                 "Jumlah penarikan tidak boleh melebihi total pendapatan."
@@ -246,6 +249,7 @@ export default function UserDashboard({
 
         post(route("mitra.withdraw"), {
             data: payload,
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success("Permintaan penarikan berhasil dikirim!");
                 reset();
@@ -671,10 +675,6 @@ export default function UserDashboard({
                             <TableBody>
                                 {transactionItems.data.length > 0 ? (
                                     transactionItems.data.map((item) => {
-                                        const serviceInfo =
-                                            serviceTypes[
-                                                item.item_type.toLowerCase()
-                                            ] || {};
                                         const statusColorClass =
                                             statusColors[item.status] ||
                                             "bg-gray-100 text-gray-800";

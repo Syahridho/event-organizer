@@ -12,21 +12,13 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
-    Edit,
-    Trash2,
-    Eye,
+    
     ImageIcon,
-    MoreHorizontal,
+    
     Search,
     Filter,
     Settings,
 } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
     Table,
     TableBody,
@@ -51,11 +43,10 @@ export default function Index({
     buildings = [],
     propertys = [],
     leaves = [],
-    pagination = {},
+    
 }) {
     const ziggy = { url: "" };
 
-    console.log(propertys);
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat("id-ID", {
@@ -104,27 +95,11 @@ export default function Index({
         );
     };
 
-    const handleEdit = (id) => {
-        toast.success(`Edit service ${id} - This would navigate to edit page`);
-    };
-
-    const handleDelete = (id) => {
-        if (confirm("Apakah Anda yakin ingin menghapus layanan ini?")) {
-            toast.success(`Service ${id} deleted - This would call delete API`);
-        }
-    };
-
-    const handleView = (id) => {
-        toast.success(
-            `View service ${id} - This would navigate to detail page`
-        );
-    };
-
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedItemType, setSelectedItemType] = useState("all"); // all, service, building, rent_property
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
 
     const allItems = useMemo(
         () => [
@@ -156,12 +131,6 @@ export default function Index({
         startIndex,
         startIndex + itemsPerPage
     );
-
-    const getLeavesForItem = (itemId, itemType) => {
-        return leaves.filter(
-            (leave) => leave.item_id === itemId && leave.item_type === itemType
-        );
-    };
 
     const getItemTypeLabel = (itemType) => {
         const labels = {

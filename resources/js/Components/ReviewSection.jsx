@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Star, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/avatar";
 import { cn } from "@/Lib/utils";
 import axios from "axios";
@@ -21,14 +20,10 @@ export default function ReviewSection({
     itemId,
     user,
     className,
-    transactionItemId = null,
 }) {
     const [reviews, setReviews] = useState([]);
     const [stats, setStats] = useState({ average_rating: 0, total_reviews: 0 });
-    const [rating, setRating] = useState(0);
-    const [comment, setComment] = useState("");
     const [isLoading, setIsLoading] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [canReview, setCanReview] = useState(false);
     const [hasPurchased, setHasPurchased] = useState(false);
     const [alreadyReviewed, setAlreadyReviewed] = useState(false);
@@ -49,8 +44,6 @@ export default function ReviewSection({
                         page: page,
                     },
                 });
-                console.log("Full Response:", response);
-                // console.log("Reviews Data:", response?.data);
 
                 // Handle nested data structure from API
                 const apiData = response.data.data || response.data;
@@ -170,7 +163,6 @@ export default function ReviewSection({
     // Review Item Component
     const ReviewItem = ({ review }) => {
         // Debug: log review data
-        console.log("Review Item:", review);
 
         return (
             <div className="space-y-3 pb-4 border-b last:border-b-0">
@@ -179,7 +171,7 @@ export default function ReviewSection({
                         name={review.user?.name || "User"}
                         size="sm"
                         className="flex-shrink-0"
-                        src={review?.user?.profile_photo}
+                        src={review?.user?.profile_photo_url}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-2">

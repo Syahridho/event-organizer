@@ -48,7 +48,6 @@ const ItemSkeleton = () => (
 );
 
 const Profile = ({ mitra, allItems }) => {
-    console.log(mitra, allItems);
     const [filterType, setFilterType] = useState("all");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -98,14 +97,6 @@ const Profile = ({ mitra, allItems }) => {
             currency: "IDR",
             minimumFractionDigits: 0,
         }).format(price);
-    };
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString("id-ID", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
     };
 
     const getItemTypeLabel = (itemType) => {

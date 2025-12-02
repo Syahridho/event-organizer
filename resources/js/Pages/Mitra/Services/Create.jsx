@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import { lazy, Suspense } from "react";
@@ -47,6 +46,12 @@ export default function ServicesCreate() {
     };
 
     const handleAddPhoto = () => {
+        // Batasi maksimal 5 gambar
+        if (data.itemPhoto.length >= 5) {
+            toast.error("Maksimal 5 gambar saja yang dapat ditambahkan");
+            return;
+        }
+
         if (data.itemPhoto.length > 0) {
             const lastPhoto = data.itemPhoto[data.itemPhoto.length - 1];
             if (!lastPhoto.photo) {
@@ -218,8 +223,12 @@ export default function ServicesCreate() {
                             variant="link"
                             onClick={() => handleAddPhoto()}
                             className="text-xs px-0 mx-auto"
+                            disabled={data.itemPhoto.length >= 5}
                         >
-                            Tambahakan lebih banyak foto
+                            {data.itemPhoto.length >= 5 
+                                ? `Maksimal 5 gambar (${data.itemPhoto.length}/5)`
+                                : `Tambahkan lebih banyak foto (${data.itemPhoto.length}/5)`
+                            }
                         </Button>
                     </div>
 

@@ -71,7 +71,6 @@ axios.interceptors.response.use(
                             }
                             // Update axios defaults
                             updateCsrfToken();
-                            console.log("CSRF token refreshed successfully");
                         }
                     })
                     .catch(() => {

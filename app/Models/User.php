@@ -55,6 +55,16 @@ class User extends Authenticatable
         'is_banned' => 'boolean',
     ];
 
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'profile_photo_url',
+        'initials',
+    ];
+
     public function searchableAs(): string
     {
         return 'users_index';

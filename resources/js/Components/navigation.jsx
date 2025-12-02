@@ -26,7 +26,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useTheme } from "next-themes";
 import { useDispatch, useSelector } from "react-redux";
 import {
     setCartItems,
@@ -36,11 +35,8 @@ import {
 
 export default function Navigation() {
     const { auth, ziggy, counts } = usePage().props;
-    console.log(auth);
-    const { setTheme, theme } = useTheme();
     const dispatch = useDispatch();
 
-    console.log(counts);
 
     const cartItemCount = useSelector(selectCartItemCount);
 
@@ -58,16 +54,8 @@ export default function Navigation() {
         const initialCartItems = counts?.cart_items;
 
         if (initialCartItems && initialCartItems.length > 0) {
-            // DEBUG: Log rent_days values saat masuk ke Redux
-            initialCartItems.forEach((item, index) => {
-                if (item.rent_days) {
-                    console.log(`Cart Item ${index} - rent_days:`, {
-                        original: item.rent_days,
-                        type: typeof item.rent_days,
-                        parsed: new Date(item.rent_days).toISOString(),
-                    });
-                }
-            });
+            
+            
 
             dispatch(setCartItems(initialCartItems));
         } else if (initialCartItems && initialCartItems.length === 0) {
@@ -465,7 +453,6 @@ export default function Navigation() {
                                                         variant="ghost"
                                                         className="justify-start w-full text-destructive hover:text-destructive hover:bg-destructive/10"
                                                         onClick={() => {
-                                                            console.log(
                                                                 "Logout clicked - mobile"
                                                             );
                                                             router.post(
@@ -473,13 +460,11 @@ export default function Navigation() {
                                                                 {},
                                                                 {
                                                                     onStart: () => {
-                                                                        console.log(
                                                                             "Logout request started"
                                                                         );
                                                                     },
                                                                     onSuccess:
                                                                         () => {
-                                                                            console.log(
                                                                                 "Logout successful"
                                                                             );
                                                                             window.location.href =

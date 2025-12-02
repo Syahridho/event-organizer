@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Truck, ShoppingBag, CheckCircle2Icon } from "lucide-react";
+import { Truck, ShoppingBag } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -12,7 +12,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert,AlertTitle } from "@/components/ui/alert";
 import { Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -52,13 +52,11 @@ export function TransactionCard({
     onProcess,
     onCompleted,
     onCancel,
-    onChat,
     processing,
     note,
     setNote,
     errors,
 }) {
-    console.log(item);
     const formattedDate = (() => {
         try {
             // Coba format tanggal sewa
@@ -199,7 +197,6 @@ export function TransactionCard({
         // isReadyForAction: true
         // isActionTime: true (jika hari ini 26 atau 27 Oktober)
 
-        console.log(`Ready: ${isReadyForAction}, ActionTime: ${isActionTime}`);
 
         // Logika: Item siap untuk aksi DAN BUKAN di jendela waktu aksi
         return isReadyForAction && !isActionTime;
@@ -620,7 +617,6 @@ export function TransactionCard({
                     )}
 
                     {/* Tombol Selesai (Completed) - Selalu tampil tapi disabled jika belum waktunya */}
-                    {console.log(canComplete)}
                     {(item.status === "work" || 
                       (item.item_type === "building" && item.status === "confirmed")) && (
                         <div className="flex flex-col gap-2">

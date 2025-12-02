@@ -21,7 +21,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import PaymentStatusBadge from "@/components/payment-status-badge";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ItemStatusBadge from "@/components/item-status-badge";
@@ -35,27 +35,16 @@ import {
     CreditCard,
     ShoppingCart,
     CheckCircle2,
-    CheckCircle2Icon,
 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MainLayout from "@/Layouts/Main";
 import axios from "axios";
 
-/**
- * ===================================
- * OPTIMIZED: RATING DIALOG COMPONENT
- * ===================================
- * - Clean shadcn UI design
- * - Improved validation UX
- * - Responsive layout
- */
 const RatingDialog = ({
     transaction,
     item,
     onRatingSubmit,
     isLoading,
     item_type,
-    onClose,
 }) => {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
@@ -65,7 +54,6 @@ const RatingDialog = ({
             toast.error("Silakan berikan bintang rating terlebih dahulu.");
             return;
         }
-        console.log(transaction.id, rating, comment, item_type, item);
         onRatingSubmit(transaction.id, rating, comment, item_type, item);
     }, [rating, comment, transaction.id, item_type, item, onRatingSubmit]);
 
@@ -128,11 +116,9 @@ const TransactionItem = React.memo(
         transaction,
         onPay,
         onRedirectPay,
-        getThumbnail,
         handleCancel,
         handleRating,
         isLoading,
-        isRatingDialogOpen,
         setIsRatingDialogOpen,
         ziggy,
     }) => {
@@ -239,21 +225,6 @@ const TransactionItem = React.memo(
 
                                 // Gunakan fungsi Intl.DateTimeFormat untuk mendapatkan string tanggal WIB
 
-                                const wibDateString = new Intl.DateTimeFormat(
-                                    "en-CA",
-                                    {
-                                        timeZone: "Asia/Jakarta", // Zona Waktu Jakarta (WIB)
-
-                                        year: "numeric",
-
-                                        month: "2-digit",
-
-                                        day: "2-digit",
-                                    }
-                                )
-                                    .format(now)
-                                    .replace(/-/g, "/"); // Format: YYYY/MM/DD
-
                                 const rentDateEnd = new Date(rentDateString);
 
                                 rentDateEnd.setDate(rentDateEnd.getDate() + 1);
@@ -297,7 +268,6 @@ const TransactionItem = React.memo(
                                                     item.item?.name ||
                                                     "Produk"}
                                             </h3>
-                                            {console.log(!isExpired)}
                                             {(() => {
                                                 // Jangan tampilkan badge jika:
                                                 if (isDeliveryFeeOrder)
@@ -733,7 +703,7 @@ const TAB_CONFIG = [
 ];
 
 export default function PurchaseIndex() {
-    const { transactions, ziggy, midtransClientKey, flash } = usePage().props;
+    const { transactions, ziggy} = usePage().props;
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentUrl, setPaymentUrl] = useState("");
     const [allTransactions, setAllTransactions] = useState(transactions);
@@ -894,13 +864,6 @@ export default function PurchaseIndex() {
     // Rating handler
     const handleRating = useCallback(
         (orderId, rating, comment, item_type, item) => {
-            console.log("Rating data:", {
-                orderId,
-                rating,
-                comment,
-                item_type,
-                item,
-            });
             setIsCancelling(true);
             setCancellingOrderId(orderId);
 

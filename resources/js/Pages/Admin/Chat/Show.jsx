@@ -1,6 +1,5 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
-import { Head, usePage, router } from "@inertiajs/react";
-import { Link } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import { debounce } from "lodash";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import ChatLayout from "@/components/ChatLayout.jsx";
@@ -26,7 +25,7 @@ export default function AdminChatShow({
     const scrollRef = useRef(null);
     const [reply, setReply] = useState(null);
     const [isTyping, setIsTyping] = useState(false);
-    const { isUserOnline } = useOnlineStatusContext();
+    // const { isUserOnline } = useOnlineStatusContext();
 
     // Use the custom hook for real-time updates
     // This will handle both chat list and message updates
@@ -49,9 +48,6 @@ export default function AdminChatShow({
                     e.message.sender_id === chatWithUser.id ||
                     e.message.receiver_id === chatWithUser.id
                 ) {
-                    console.log(
-                        "New message for current chat, updating messages"
-                    );
                     debouncedMessageReload();
                 }
             }

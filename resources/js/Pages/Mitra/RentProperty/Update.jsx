@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { formatRupiahInput } from "@/Utils/formatRupiah";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
@@ -23,7 +22,6 @@ const breadcrumbs = [
 
 export default function RentUpdate() {
     const { rent, ziggy } = usePage().props;
-    console.log(rent);
     const { data, setData, processing, post } = useForm({
         name: rent?.name ?? "",
         thumbnail: rent?.thumbnail ?? null,
@@ -38,7 +36,6 @@ export default function RentUpdate() {
         _method: "put",
     });
 
-    console.log(data);
 
     const [uiState, setUiState] = useState({ isLoadingSearch: false });
 

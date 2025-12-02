@@ -64,45 +64,59 @@ class WithDrawController extends Controller
         ]);
 
         
-        // Cek saldo di sini agar pengguna tahu saldo mereka tidak mencukupi saat mengajukan
-        $user = Auth::user();
-        
-        // Pastikan user memiliki wallet, jika belum ada maka buat otomatis
-        $wallet = Wallet::firstOrCreate(
-            ['user_id' => $user->id],
-            ['balance' => 0]
-        );
-
-        // ALGORITMA TERCEPAT: Single aggregate query untuk hitung total pending withdrawals
-        // O(1) time complexity - hanya 1 query dengan SUM aggregate
-        $pendingAmount = Withdraw::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->sum('amount');
-
-        // Hitung saldo yang tersedia (saldo wallet - total pending)
-        $availableBalance = $wallet->balance - $pendingAmount;
-
-        // Validasi 1: Cek apakah saldo tersedia cukup untuk penarikan baru
-        if ($availableBalance < $request->amount) {
-            $errorMessage = $pendingAmount > 0 
-                ? "Saldo tersedia tidak mencukupi. Anda memiliki penarikan pending sebesar " . number_format($pendingAmount, 0, ',', '.') . ". Saldo tersedia: Rp " . number_format($availableBalance, 0, ',', '.')
-                : "Saldo Anda tidak mencukupi untuk melakukan penarikan.";
-            
-            return redirect()->back()->withErrors(['amount' => $errorMessage]);
-        }
-
-        // Validasi 2: Cek apakah total penarikan (pending + request baru) tidak melebihi saldo wallet
-        $totalWithdrawalAmount = $pendingAmount + $request->amount;
-        if ($totalWithdrawalAmount > $wallet->balance) {
-            return redirect()->back()->withErrors([
-                'amount' => "Total penarikan (termasuk yang pending) melebihi saldo Anda. Saldo: Rp " . number_format($wallet->balance, 0, ',', '.') . ", Pending: Rp " . number_format($pendingAmount, 0, ',', '.') . ", Tersedia: Rp " . number_format($availableBalance, 0, ',', '.')
-            ]);
-        }
-
         // Menggunakan transaction untuk memastikan konsistensi data
         DB::beginTransaction();
 
         try {
+            // Cek saldo di sini agar pengguna tahu saldo mereka tidak mencukupi saat mengajukan
+            $user = Auth::user();
+            
+            // CRITICAL FIX: Gunakan lockForUpdate() untuk mencegah race condition
+            // Ini akan mengunci row wallet sampai transaction selesai
+            $wallet = Wallet::where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
+
+            // Jika wallet belum ada, buat dengan lock
+            if (!$wallet) {
+                $wallet = Wallet::create([
+                    'user_id' => $user->id,
+                    'balance' => 0
+                ]);
+            }
+
+            // ALGORITMA TERCEPAT: Single aggregate query untuk hitung total pending withdrawals
+            // O(1) time complexity - hanya 1 query dengan SUM aggregate
+            // CRITICAL FIX: Tambahkan lockForUpdate() untuk mencegah race condition
+            $pendingAmount = Withdraw::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->sum('amount');
+
+            // Hitung saldo yang tersedia (saldo wallet - total pending)
+            $availableBalance = $wallet->balance - $pendingAmount;
+
+            // Validasi 1: Cek apakah saldo tersedia cukup untuk penarikan baru
+            if ($availableBalance < $request->amount) {
+                DB::rollBack();
+                
+                $errorMessage = $pendingAmount > 0 
+                    ? "Saldo tersedia tidak mencukupi. Anda memiliki penarikan pending sebesar " . number_format($pendingAmount, 0, ',', '.') . ". Saldo tersedia: Rp " . number_format($availableBalance, 0, ',', '.')
+                    : "Saldo Anda tidak mencukupi untuk melakukan penarikan.";
+                
+                return redirect()->back()->withErrors(['amount' => $errorMessage]);
+            }
+
+            // Validasi 2: Cek apakah total penarikan (pending + request baru) tidak melebihi saldo wallet
+            $totalWithdrawalAmount = $pendingAmount + $request->amount;
+            if ($totalWithdrawalAmount > $wallet->balance) {
+                DB::rollBack();
+                
+                return redirect()->back()->withErrors([
+                    'amount' => "Total penarikan (termasuk yang pending) melebihi saldo Anda. Saldo: Rp " . number_format($wallet->balance, 0, ',', '.') . ", Pending: Rp " . number_format($pendingAmount, 0, ',', '.') . ", Tersedia: Rp " . number_format($availableBalance, 0, ',', '.')
+                ]);
+            }
+
             // --- KODE YANG SUDAH DIPERBAIKI ---
             // Buat dan simpan data penarikan hanya SATU KALI
             $withdraw = new Withdraw();

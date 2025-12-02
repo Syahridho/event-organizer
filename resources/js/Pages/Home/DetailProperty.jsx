@@ -2,9 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
     ArrowLeft,
     MapPin,
-    Star,
-    Share2,
-    Heart,
     Loader2,
     Home,
     Bed,
@@ -12,7 +9,6 @@ import {
 } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -54,7 +50,6 @@ import { toast } from "sonner";
 import { router } from "@inertiajs/react";
 import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
-import Rating from "@/components/rating";
 import CustomCalendar from "@/components/custom-calendar";
 import { getBookedDatesWithUser } from "@/Utils/bookedDates";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
@@ -76,9 +71,6 @@ const DetailProperty = () => {
         pendingDates,
     } = usePage().props;
 
-    console.log("Property Data:", property);
-    console.log("Picked Up:", property.picked_up, "Type:", typeof property.picked_up);
-    console.log("Delivered:", property.delivered, "Type:", typeof property.delivered);
 
 
     const dispatch = useDispatch();
@@ -91,10 +83,10 @@ const DetailProperty = () => {
         [property.id, property.price]
     );
     const {
-        itemCounts,
-        selectedDates,
-        handleChangeSelectedDate,
-        totalHarga,
+        // itemCounts,
+        // selectedDates,
+        // handleChangeSelectedDate,
+        // totalHarga,
         handleChangeItem,
     } = useSelected(items);
 
@@ -234,8 +226,8 @@ const DetailProperty = () => {
                         },
                     }
                 );
-
-                const { token: snapToken, order_id } = response.data;
+                // order_id
+                const { token: snapToken, } = response.data;
 
                 if (!snapToken) {
                     throw new Error("Token pembayaran tidak diterima");
@@ -548,6 +540,7 @@ const DetailProperty = () => {
                                                 loading="lazy"
                                                 referrerPolicy="no-referrer-when-downgrade"
                                                 title={`Lokasi: ${property?.name}`}
+                                                sandbox="allow-scripts allow-same-origin allow-popups"
                                             />
                                         </div>
                                     </section>
@@ -702,7 +695,7 @@ const DetailProperty = () => {
                                         <div className="border rounded-lg p-4 bg-slate-50">
                                             <div className="flex items-center gap-2 text-slate-700">
                                                 <span className="font-medium">Diantar ke Alamat</span>
-                                                <span className="text-xs text-slate-500">(Satu-satunya opsi)</span>
+                                                <span className="text-xs text-slate-500">(Satu-satunya opsi, <span className="text-red-500">Ada biaya tambahakn untuk pengataran)</span></span>
                                             </div>
                                         </div>
                                     );
@@ -725,7 +718,7 @@ const DetailProperty = () => {
                                             )}
                                             {hasDelivery && (
                                                 <SelectItem value="delivery">
-                                                    Diantar ke Alamat
+                                                    Diantar ke Alamat, <span className="text-red-500">Ada biaya tambahan untuk pengantaran</span>
                                                 </SelectItem>
                                             )}
                                         </SelectContent>
