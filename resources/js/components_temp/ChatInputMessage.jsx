@@ -41,7 +41,10 @@ export default function ChatInputMessage(props) {
         post(route(routeName, chatWithUser.uuid), {
             onStart: () => {
                 reset();
-                e.target.style.height = "auto";
+                // Note: e.target refer to form here, ensure textarea resizing logic is handled if needed
+                if(e.target.querySelector('textarea')) {
+                     e.target.querySelector('textarea').style.height = "auto";
+                }
                 props.setReply(null);
                 props.setIsTyping(false);
             },
@@ -51,9 +54,12 @@ export default function ChatInputMessage(props) {
 
     const onTyping = () => {
         setTimeout(() => {
-            Echo.private(`message.${chatWithUser.uuid}`).whisper("typing", {
-                name: chatWithUser.name,
-            });
+            // PERBAIKAN DI SINI: Tambahkan window.
+            if (typeof window !== 'undefined' && window.Echo) {
+                window.Echo.private(`message.${chatWithUser.uuid}`).whisper("typing", {
+                    name: chatWithUser.name,
+                });
+            }
         }, 300);
     };
 
