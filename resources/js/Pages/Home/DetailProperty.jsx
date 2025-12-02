@@ -8,15 +8,15 @@ import {
     Bath,
 } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button.jsx";
+import { Label } from "@/components/ui/label.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 import {
     Sheet,
     SheetContent,
@@ -24,7 +24,7 @@ import {
     SheetTitle,
     SheetDescription,
     SheetFooter,
-} from "@/components/ui/sheet";
+} from "@/components/ui/sheet.jsx";
 import {
     AlertDialog,
     AlertDialogContent,
@@ -34,15 +34,15 @@ import {
     AlertDialogFooter,
     AlertDialogCancel,
     AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog.jsx";
 import {
     Carousel,
     CarouselContent,
     CarouselItem,
-} from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
+} from "@/components/ui/carousel.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
 import { cn } from "@/Lib/utils";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea.jsx";
 import { FaShoppingCart, FaMapMarkerAlt } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { useSelected } from "@/hooks/useSelection";
@@ -50,13 +50,13 @@ import { toast } from "sonner";
 import { router } from "@inertiajs/react";
 import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
-import CustomCalendar from "@/Components/custom-calendar";
-import { getBookedDatesWithUser } from "@/Utils/bookedDates";
+import CustomCalendar from "@/Components/custom-calendar.jsx";
+import { getBookedDatesWithUser } from "@/Utils/bookedDates.jsx";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
-import AddressManager from "@/Components/address-manager";
-import MainLayout from "@/Layouts/Main";
-import ReviewSection from "@/Components/ReviewSection";
-import { createPaymentPayload } from "@/Utils/PaymentHelper";
+import AddressManager from "@/Components/address-manager.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
+import ReviewSection from "@/Components/ReviewSection.jsx";
+import { createPaymentPayload } from "@/Utils/PaymentHelper.jsx";
 
 const DetailProperty = () => {
     const {

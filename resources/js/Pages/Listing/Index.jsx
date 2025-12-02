@@ -12,20 +12,20 @@ import {
     CardContent,
     CardFooter,
     CardHeader,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/card.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import MainLayout from "@/Layouts/Main";
-import { formatRupiah } from "@/Utils/formatRupiah";
+} from "@/components/ui/select.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 
 // LazyImage Component
 const LazyImage = ({ src, alt, className, ...props }) => {

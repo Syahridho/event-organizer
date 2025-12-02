@@ -8,7 +8,7 @@ import {
     AlertDialogFooter,
     AlertDialogCancel,
     AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog.jsx";
 import { Loader2 } from "lucide-react";
 
 const ConfirmDialog = ({

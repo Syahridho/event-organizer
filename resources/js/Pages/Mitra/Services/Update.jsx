@@ -1,9 +1,9 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "sonner";

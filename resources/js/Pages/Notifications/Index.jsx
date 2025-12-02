@@ -25,7 +25,7 @@ import {
     Info
 } from "lucide-react";
 import { useState } from "react";
-import MainLayout from "@/Layouts/Main";
+import MainLayout from "@/Layouts/Main.jsx";
 
 export default function NotificationsIndex() {
     const { notifications } = usePage().props;

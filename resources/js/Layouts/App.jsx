@@ -3,8 +3,8 @@ import SearchChatBar from "@/Components/SearchChatBar.jsx";
 import ChatListUser from "@/Components/ChatListUser.jsx";
 import { router, usePage } from "@inertiajs/react";
 import { debounce } from "lodash";
-import Navigation from "@/Components/navigation";
-import Footer from "@/Components/footer";
+import Navigation from "@/Components/navigation.jsx";
+import Footer from "@/Components/footer.jsx";
 import { initializeEcho } from "@/bootstrap";
 
 export default function AppChat({ children }) {

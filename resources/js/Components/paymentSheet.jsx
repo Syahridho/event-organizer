@@ -6,12 +6,12 @@
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/ui/sheet.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
 import { Loader2 } from "lucide-react";
 import { FaCartPlus } from "react-icons/fa";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 import { TicketItem } from "@/Components/ticketItem";
 import { PaymentSummary } from "@/Components/paymentSummary";
 

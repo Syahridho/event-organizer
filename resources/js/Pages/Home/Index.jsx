@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Tickets, MicVocal, Package, Building } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/components/ui/card.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
 
-import MainLayout from "@/Layouts/Main";
-import ItemCard from "@/Components/ItemCard";
-import { Skeleton } from "@/components/ui/skeleton";
+import MainLayout from "@/Layouts/Main.jsx";
+import ItemCard from "@/Components/ItemCard.jsx";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 
 // Skeleton Loading Component
 const ItemSkeleton = () => (

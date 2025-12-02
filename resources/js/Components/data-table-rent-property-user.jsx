@@ -44,7 +44,7 @@ import {
     XCircleIcon,
     Ban,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
 
 import { toast } from "sonner";
 import { z } from "zod";
@@ -53,16 +53,16 @@ import {
     formatTanggalIndo,
     getDayName,
     getJamMenit,
-} from "@/Utils/formatDateTime";
+} from "@/Utils/formatDateTime.jsx";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
-} from "@/components/ui/chart";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@/components/ui/chart.jsx";
+import { Checkbox } from "@/components/ui/checkbox.jsx";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -70,8 +70,8 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+} from "@/components/ui/dropdown-menu.jsx";
+import { Input } from "@/components/ui/input.jsx";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -82,16 +82,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/alert-dialog.jsx";
+import { Label } from "@/components/ui/label.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/ui/select.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
 import {
     Sheet,
     SheetClose,
@@ -101,7 +101,7 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@/components/ui/sheet.jsx";
 import {
     Table,
     TableBody,
@@ -109,10 +109,10 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/components/ui/table.jsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
 import { router, usePage } from "@inertiajs/react";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 
 export const schema = z.object({
     id: z.number(),

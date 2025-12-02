@@ -1,15 +1,15 @@
 ﻿import { usePage, router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog.jsx";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -20,12 +20,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/alert-dialog.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Textarea } from "@/components/ui/textarea.jsx";
+import { Checkbox } from "@/components/ui/checkbox.jsx";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 import { toast } from "sonner";
 import {
     FaArrowLeft,

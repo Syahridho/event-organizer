@@ -1,14 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import PaymentStatusBadge from "@/Components/payment-status-badge";
-import formatDateIndo from "@/Utils/formatDateIndo";
-import { formatRupiah } from "@/Utils/formatRupiah";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
+import PaymentStatusBadge from "@/Components/payment-status-badge.jsx";
+import formatDateIndo from "@/Utils/formatDateIndo.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { ArrowLeft } from "lucide-react";
-import MainLayout from "@/Layouts/Main";
-import Countdown from "@/Utils/CountDown";
+import MainLayout from "@/Layouts/Main.jsx";
+import Countdown from "@/Utils/CountDown.jsx";
 import { useCallback } from "react";
 
 export default function Show({ transaction }) {

@@ -1,18 +1,18 @@
 ﻿import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button.jsx";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 import { toast } from "sonner";
 import { router } from "@inertiajs/react";
 import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 import { useSelected } from "@/hooks/useSelection";
 import { useDispatch } from "react-redux";
-import { getBookedDatesWithUser } from "@/Utils/bookedDates";
+import { getBookedDatesWithUser } from "@/Utils/bookedDates.jsx";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
-import { createPaymentPayload } from "@/Utils/PaymentHelper";
-import MainLayout from "@/Layouts/Main";
+import { createPaymentPayload } from "@/Utils/PaymentHelper.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
 
 // Lazy load heavy components
 const CustomCalendar = lazy(() => import("@/components/custom-calendar"));

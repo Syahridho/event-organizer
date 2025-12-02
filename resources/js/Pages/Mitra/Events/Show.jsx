@@ -1,11 +1,11 @@
 // /* eslint-disable @typescript-eslint/no-explicit-any */
-// import { Badge } from "@/components/ui/badge";
-// import { Button } from "@/components/ui/button";
-// import { Separator } from "@/components/ui/separator";
-// import { Skeleton } from "@/components/ui/skeleton";
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// import { Badge } from "@/components/ui/badge.jsx";
+// import { Button } from "@/components/ui/button.jsx";
+// import { Separator } from "@/components/ui/separator.jsx";
+// import { Skeleton } from "@/components/ui/skeleton.jsx";
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
 // import { formatDateTime } from "@/utils/formatDate";
-// import { formatRupiah } from "@/Utils/formatRupiah";
+// import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 // import { Head, usePage } from "@inertiajs/react";
 // import { ArrowLeft } from "lucide-react";
 // import { useState } from "react";

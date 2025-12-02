@@ -3,16 +3,16 @@
 import * as React from "react";
 import { ChevronDownIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
+import { Label } from "@/components/ui/label.jsx";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover.jsx";
 import { Calendar } from "./ui/calendar";
-import { combineDateAndTimeToSQL } from "@/Utils/formatDateTime";
+import { combineDateAndTimeToSQL } from "@/Utils/formatDateTime.jsx";
 
 export default function CalendarWithTime({
     className,

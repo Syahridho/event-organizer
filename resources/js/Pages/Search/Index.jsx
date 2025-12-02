@@ -1,10 +1,10 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import MainLayout from "@/Layouts/Main";
+import { Badge } from "@/components/ui/badge.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import { Filter } from "lucide-react";
-import ItemCard from "@/Components/ItemCard";
+import ItemCard from "@/Components/ItemCard.jsx";
 
 // Component for User/Mitra cards (different from ItemCard)
 const UserCard = ({ user, baseUrl }) => {

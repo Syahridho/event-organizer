@@ -7,7 +7,7 @@ import { router, usePage, Head } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Form,
     FormControl,
@@ -16,12 +16,12 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form.jsx";
 import {
     InputOTP,
     InputOTPGroup,
     InputOTPSlot,
-} from "@/components/ui/input-otp";
+} from "@/components/ui/input-otp.jsx";
 import { Loader2 } from "lucide-react";
 
 const FormSchema = z.object({

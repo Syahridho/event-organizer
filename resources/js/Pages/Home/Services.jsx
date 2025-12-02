@@ -4,15 +4,15 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
 import {
     Card,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 
 // Icons
 import {
@@ -29,8 +29,8 @@ import {
 } from "lucide-react";
 
 // Utils & Layouts
-import { formatTanggalIndo, getJamMenit } from "@/Utils/formatDateTime";
-import MainLayout from "@/Layouts/Main";
+import { formatTanggalIndo, getJamMenit } from "@/Utils/formatDateTime.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
 
 // Skeleton Loading Component
 const ItemSkeleton = () => (

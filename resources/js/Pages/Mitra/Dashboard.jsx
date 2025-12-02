@@ -6,7 +6,7 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import {
     Table,
     TableBody,
@@ -14,7 +14,7 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table.jsx";
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -24,10 +24,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/alert-dialog.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Select,
     SelectContent,
@@ -36,13 +36,13 @@ import {
     SelectValue,
     SelectGroup,
     SelectLabel,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 import { CheckCircle, Package, MinusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah";
+import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah.jsx";
 import {
     BarChart,
     Bar,

@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "@/Lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 
 /**
  * Avatar Component with fallback to initials

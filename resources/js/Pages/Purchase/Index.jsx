@@ -1,15 +1,15 @@
 ﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { usePage, Link, Head, router } from "@inertiajs/react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 import {
     formatDateWithShortDay,
     formatCompactDateTime,
-} from "@/Utils/formatDateTime";
-import Countdown from "@/Utils/CountDown";
-import { Button } from "@/components/ui/button";
+} from "@/Utils/formatDateTime.jsx";
+import Countdown from "@/Utils/CountDown.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Dialog,
     DialogClose,
@@ -19,12 +19,12 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from "@/components/ui/dialog";
-import PaymentStatusBadge from "@/Components/payment-status-badge";
+} from "@/components/ui/dialog.jsx";
+import PaymentStatusBadge from "@/Components/payment-status-badge.jsx";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import ItemStatusBadge from "@/Components/item-status-badge";
+import { Label } from "@/components/ui/label.jsx";
+import { Textarea } from "@/components/ui/textarea.jsx";
+import ItemStatusBadge from "@/Components/item-status-badge.jsx";
 import Rating from "react-rating";
 import { IoStar, IoStarOutline } from "react-icons/io5";
 import {
@@ -36,7 +36,7 @@ import {
     ShoppingCart,
     CheckCircle2,
 } from "lucide-react";
-import MainLayout from "@/Layouts/Main";
+import MainLayout from "@/Layouts/Main.jsx";
 import axios from "axios";
 
 const RatingDialog = ({

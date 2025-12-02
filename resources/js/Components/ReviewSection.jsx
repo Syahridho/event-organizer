@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
 import { Star, Loader2, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar } from "@/Components/avatar";
+import { Button } from "@/components/ui/button.jsx";
+import { Avatar } from "@/Components/avatar.jsx";
 import { cn } from "@/Lib/utils";
 import axios from "axios";
 import { toast } from "sonner";

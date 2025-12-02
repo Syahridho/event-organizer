@@ -8,7 +8,7 @@ import {
     useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
-import { loadLeafletCSS } from "@/Utils/loadCSS";
+import { loadLeafletCSS } from "@/Utils/loadCSS.jsx";
 
 // Fix untuk ikon Leaflet - gunakan CDN yang lebih stabil
 delete L.Icon.Default.prototype._getIconUrl;

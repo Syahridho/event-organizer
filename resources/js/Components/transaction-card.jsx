@@ -1,5 +1,5 @@
-﻿import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+﻿import { Card, CardContent } from "@/components/ui/card.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { Truck, ShoppingBag } from "lucide-react";
 import {
     AlertDialog,
@@ -11,16 +11,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Alert,AlertTitle } from "@/components/ui/alert";
+} from "@/components/ui/alert-dialog.jsx";
+import { Alert,AlertTitle } from "@/components/ui/alert.jsx";
 import { Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Link } from "@inertiajs/react";
-import Avatar from "@/Components/avatar";
+import Avatar from "@/Components/avatar.jsx";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
-import { formatRupiahInput } from "@/Utils/formatRupiah";
+import { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { useMemo } from "react";

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge.jsx";
 
 export default function Countdown({ expired_at, onExpired }) {
     // Tampilkan error jika tidak ada atau format waktu invalid

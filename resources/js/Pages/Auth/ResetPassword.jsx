@@ -1,17 +1,17 @@
 import { useEffect } from "react";
-import GuestLayout from "@/Layouts/GuestLayout";
-import InputError from "@/Components/InputError";
+import GuestLayout from "@/Layouts/GuestLayout.jsx";
+import InputError from "@/Components/InputError.jsx";
 import { Head, useForm } from "@inertiajs/react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import { LoaderCircle } from "lucide-react";
 import { useCsrfToken } from "@/hooks/useCsrfToken";
 

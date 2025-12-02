@@ -8,13 +8,13 @@ import {
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/sidebar.jsx";
 import { ChevronRight } from "lucide-react";
 import {
     Collapsible,
     CollapsibleTrigger,
     CollapsibleContent,
-} from "@/components/ui/collapsible";
+} from "@/components/ui/collapsible.jsx";
 
 export function NavMain({ items }) {
     const { url } = usePage();

@@ -1,13 +1,13 @@
 import React from "react";
 import { Link } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 
 export default function Error({ status, message }) {

@@ -1,11 +1,11 @@
 ﻿import { useState, lazy, Suspense } from "react";
-import LocationInputWithMap from "@/Components/location-input-with-map";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import LocationInputWithMap from "@/Components/location-input-with-map.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Checkbox } from "@/components/ui/checkbox.jsx";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import { formatRupiahInput } from "@/Utils/formatRupiah";
+import { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";

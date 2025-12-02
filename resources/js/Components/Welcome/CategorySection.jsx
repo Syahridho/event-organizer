@@ -1,9 +1,9 @@
 import { Link } from "@inertiajs/react";
 import { ChevronRight } from "lucide-react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import ItemCard from "@/Components/ItemCard";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import ItemCard from "@/Components/ItemCard.jsx";
 
 const CategorySection = ({ title, items, type, baseUrl, id, subtitle }) => {
     return (

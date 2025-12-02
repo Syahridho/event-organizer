@@ -18,8 +18,8 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+} from "@/components/ui/dropdown-menu.jsx";
+import { Input } from "@/components/ui/input.jsx";
 import {
     Table,
     TableBody,
@@ -27,15 +27,15 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/table.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
 import { cn } from "@/Lib/utils";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog.jsx";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -45,14 +45,14 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
 

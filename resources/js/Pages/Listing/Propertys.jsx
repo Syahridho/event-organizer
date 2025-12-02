@@ -1,7 +1,7 @@
 import { Head, usePage } from "@inertiajs/react";
-import MainLayout from "@/Layouts/Main";
-import ItemCard from "@/Components/ItemCard";
-import { Separator } from "@/components/ui/separator";
+import MainLayout from "@/Layouts/Main.jsx";
+import ItemCard from "@/Components/ItemCard.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
 
 export default function PropertysListing() {
     const { propertys, ziggy } = usePage().props;

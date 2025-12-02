@@ -12,9 +12,9 @@ import {
     Trash2,
 } from "lucide-react";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Input } from "@/components/ui/input.jsx";
 import {
     Card,
     CardContent,
@@ -22,14 +22,14 @@ import {
     CardHeader,
     CardTitle,
     CardFooter,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 import {
     Dialog,
     DialogClose,
@@ -39,10 +39,10 @@ import {
     DialogFooter,
     DialogTitle,
     DialogTrigger,
-} from "@/components/ui/dialog";
-import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+} from "@/components/ui/dialog.jsx";
+import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import { Textarea } from "@/components/ui/textarea.jsx";
+import { Switch } from "@/components/ui/switch.jsx";
 import { toast } from "sonner";
 
 const breadcrumbs = [
@@ -477,12 +477,10 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                     </Dialog>
                                 </CardTitle>
                                 <CardDescription>
-                                    {setting?.tax_type === "percent"
-                                        ? `${setting?.tax_value}%`
-                                        : `Rp. ${formatRupiah(
-                                              setting?.tax_value || 0
-                                          )}` || "Rp. 0"}
-                                </CardDescription>
+  {setting?.tax_type === "percent"
+    ? `${setting?.tax_value}%`
+    : `Rp. ${formatRupiah(setting?.tax_value || 0)}`}
+</CardDescription>
                             </CardHeader>
                         </Card>
                     </div>

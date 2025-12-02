@@ -1,7 +1,7 @@
 import * as React from "react";
 import { usePage, Link } from "@inertiajs/react";
-import { NavMain } from "@/Components/nav-main";
-import { NavUser } from "@/Components/nav-user";
+import { NavMain } from "@/Components/nav-main.jsx";
+import { NavUser } from "@/Components/nav-user.jsx";
 import {
     Sidebar,
     SidebarContent,
@@ -10,7 +10,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/sidebar.jsx";
 
 export function AppSidebar({ items, ...props }) {
     const { auth } = usePage().props;

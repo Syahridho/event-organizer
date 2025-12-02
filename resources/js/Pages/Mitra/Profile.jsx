@@ -1,8 +1,8 @@
 ﻿import React, { useState, useMemo } from "react";
 import { Head, Link } from "@inertiajs/react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Card,
     CardContent,
@@ -10,16 +10,16 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import MainLayout from "@/Layouts/Main";
+} from "@/components/ui/select.jsx";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
 
 // Skeleton component for item cards
 const ItemSkeleton = () => (

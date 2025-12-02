@@ -1,7 +1,7 @@
 // components/transaction-card-skeleton.jsx
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card.jsx";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 
 // Skeleton loading card for transactions
 export function TransactionCardSkeleton() {

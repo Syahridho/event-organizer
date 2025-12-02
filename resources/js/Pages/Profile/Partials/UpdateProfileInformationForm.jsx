@@ -1,8 +1,8 @@
-import InputError from "@/Components/InputError";
-import InputLabel from "@/Components/InputLabel";
-import PrimaryButton from "@/Components/PrimaryButton";
-import TextInput from "@/Components/TextInput";
-import Avatar from "@/Components/avatar";
+import InputError from "@/Components/InputError.jsx";
+import InputLabel from "@/Components/InputLabel.jsx";
+import PrimaryButton from "@/Components/PrimaryButton.jsx";
+import TextInput from "@/Components/TextInput.jsx";
+import Avatar from "@/Components/avatar.jsx";
 import { Link, useForm, usePage, router } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
 import { useState, useRef } from "react";

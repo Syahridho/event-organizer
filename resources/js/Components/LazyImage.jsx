@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 
 const LazyImage = ({ src, alt, className, onLoad, onError, ...props }) => {
     const [loaded, setLoaded] = useState(false);

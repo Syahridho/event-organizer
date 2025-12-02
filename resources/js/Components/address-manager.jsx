@@ -6,7 +6,7 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog.jsx";
 import {
     AlertDialog,
     AlertDialogTrigger,
@@ -17,13 +17,13 @@ import {
     AlertDialogFooter,
     AlertDialogCancel,
     AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/alert-dialog.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import axios from "axios";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Textarea } from "@/components/ui/textarea.jsx";
 import { toast } from "sonner";
 
 const AddressManager = ({

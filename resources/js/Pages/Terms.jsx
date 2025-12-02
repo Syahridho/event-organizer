@@ -5,8 +5,8 @@ import {
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
-} from "@/components/ui/accordion";
-import MainLayout from "@/Layouts/Main";
+} from "@/components/ui/accordion.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
 
 export default function Terms() {
     return (

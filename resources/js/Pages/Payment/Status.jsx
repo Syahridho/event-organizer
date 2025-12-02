@@ -1,7 +1,7 @@
 import { Head, Link } from "@inertiajs/react";
-import MainLayout from "@/Layouts/Main";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import MainLayout from "@/Layouts/Main.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
 import {
     CheckCircle2,
     XCircle,

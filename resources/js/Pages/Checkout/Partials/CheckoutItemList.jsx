@@ -1,6 +1,6 @@
 ﻿import React, { memo } from "react";
-import { Button } from "@/components/ui/button";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { Button } from "@/components/ui/button.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 import {
     FaTicketAlt,
     FaCalendarAlt,

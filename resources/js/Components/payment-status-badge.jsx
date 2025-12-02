@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge.jsx";
 
 /**
  * OPTIMIZED: Payment Status Badge with O(1) lookup

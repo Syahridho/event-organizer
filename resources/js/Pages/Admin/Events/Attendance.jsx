@@ -1,13 +1,13 @@
 import React from "react";
 import { Head, Link } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import {
     Table,
     TableBody,
@@ -15,8 +15,8 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/table.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
 import { FileText, Download, Users } from "lucide-react";
 import { usePage } from "@inertiajs/react";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";

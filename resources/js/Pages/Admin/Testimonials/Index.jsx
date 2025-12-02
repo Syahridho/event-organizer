@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Head, usePage, router } from "@inertiajs/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.jsx";
 import {
     Table,
     TableBody,
@@ -8,8 +8,8 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/table.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -20,13 +20,13 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from "@/components/ui/alert-dialog.jsx";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
 import { Plus, Edit, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import TestimonialForm from "./TestimonialForm";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/components/ui/switch.jsx";
 
 const breadcrumbs = [
     {

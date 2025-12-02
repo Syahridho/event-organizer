@@ -1,11 +1,11 @@
 import { Link } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     IoTicket,
     FaBuilding,
     GiMicrophone,
     GrFanOption,
-} from "@/Components/Icon";
+} from "@/Components/Icon.jsx";
 
 const mobileMenuItems = [
     {

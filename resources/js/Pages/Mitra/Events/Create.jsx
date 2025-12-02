@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import {
@@ -18,8 +18,8 @@ import {
     getImageUrl,
     handleImageError,
 } from "@/features/randomImage";
-import { Textarea } from "@/components/ui/textarea";
-import CalendarWithTime from "@/Components/CalenderWithTime";
+import { Textarea } from "@/components/ui/textarea.jsx";
+import CalendarWithTime from "@/Components/CalenderWithTime.jsx";
 import {
     Select,
     SelectContent,
@@ -28,21 +28,21 @@ import {
     SelectLabel,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import Modal from "@/Components/Modal";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import useDebounce from "@/Utils/useDebounce";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@/components/ui/select.jsx";
+import Modal from "@/Components/Modal.jsx";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card.jsx";
+import useDebounce from "@/Utils/useDebounce.jsx";
+import { Switch } from "@/components/ui/switch.jsx";
+import { Checkbox } from "@/components/ui/checkbox.jsx";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import LocationInputWithMap from "@/Components/location-input-with-map";
-import { formatRupiahInput } from "@/Utils/formatRupiah";
+} from "@/components/ui/tooltip.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
+import LocationInputWithMap from "@/Components/location-input-with-map.jsx";
+import { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
 import { useCsrfToken } from "@/hooks/useCsrfToken";
 import "react-quill/dist/quill.snow.css";
 

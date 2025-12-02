@@ -1,20 +1,20 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head, router, Link } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import {
     BarChart,
     Bar,
@@ -36,7 +36,7 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table.jsx";
 import { TrendingUp, Calendar, DollarSign, Activity } from "lucide-react";
 import React, { useMemo } from "react";
 

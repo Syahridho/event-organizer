@@ -1,18 +1,18 @@
 import { usePage } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/card.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
 
-import Checkbox from "@/Components/Checkbox";
-import GuestLayout from "@/Layouts/GuestLayout";
-import InputError from "@/Components/InputError";
+import Checkbox from "@/Components/Checkbox.jsx";
+import GuestLayout from "@/Layouts/GuestLayout.jsx";
+import InputError from "@/Components/InputError.jsx";
 import { Head, Link, useForm, router } from "@inertiajs/react";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";

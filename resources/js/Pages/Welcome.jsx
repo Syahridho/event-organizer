@@ -11,19 +11,19 @@ import {
     FaBuilding,
     GiMicrophone,
     GrFanOption,
-} from "@/Components/Icon";
+} from "@/Components/Icon.jsx";
 import {
     Card,
     CardContent,
     CardFooter,
     CardHeader,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+} from "@/components/ui/card.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.jsx";
 import Rating from "react-rating";
-import { Button } from "@/components/ui/button";
-import MainLayout from "@/Layouts/Main";
+import { Button } from "@/components/ui/button.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
 
 // Import new components
 import CategorySection from "@/Components/Welcome/CategorySection";

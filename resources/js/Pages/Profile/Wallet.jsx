@@ -2,8 +2,8 @@
 import { Head, usePage, router } from "@inertiajs/react";
 
 // shadcn/ui primitives
-import { Alert } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert } from "@/components/ui/alert.jsx";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -13,10 +13,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/alert-dialog.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
   Select,
   SelectContent,
@@ -25,10 +25,10 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 
 // Currency helper
-import formatRupiah, { formatRupiahInput } from "@/Utils/formatRupiah";
+import formatRupiah, { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
 
 const formatCurrency = (value) => {
   try {

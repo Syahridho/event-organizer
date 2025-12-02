@@ -18,19 +18,19 @@ import {
     MapPin,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Textarea } from "@/components/ui/textarea.jsx";
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
-import { Stepper } from "@/Components/stepper";
-import GuestLayout from "@/Layouts/GuestLayout";
+} from "@/components/ui/card.jsx";
+import { Stepper } from "@/Components/stepper.jsx";
+import GuestLayout from "@/Layouts/GuestLayout.jsx";
 
 export default function PartnerRegistration({ existingMitra }) {
     const { props } = usePage();

@@ -9,9 +9,9 @@ import React, {
     Suspense,
     lazy,
 } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button.jsx";
+import { Card, CardContent, CardHeader } from "@/components/ui/card.jsx";
+import { Checkbox } from "@/components/ui/checkbox.jsx";
 import {  XCircle, ChevronLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -22,7 +22,7 @@ import {
     selectCartItems,
 } from "@/Store/cartSlice";
 import { ErrorBoundary } from "react-error-boundary";
-import MainLayout from "@/Layouts/Main";
+import MainLayout from "@/Layouts/Main.jsx";
 import { toast } from "sonner";
 import { checkItemStatus } from "@/Utils/cartUtils.jsx";
 import CartSkeleton from "./Partials/CartSkeleton";

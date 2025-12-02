@@ -1,16 +1,16 @@
 ﻿import React, { memo } from "react";
 import { Link } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
+import { Checkbox } from "@/components/ui/checkbox.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 import {
     Trash2,
     Calendar,
@@ -18,7 +18,7 @@ import {
     Plus,
     Clock,
 } from "lucide-react";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 import {
     checkItemStatus,
     getSeverityColors,

@@ -15,8 +15,8 @@ import {
     Bell,
     LayoutDashboardIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,8 +24,8 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+} from "@/components/ui/dropdown-menu.jsx";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
     setCartItems,

@@ -3,8 +3,8 @@ import {
     Carousel,
     CarouselContent,
     CarouselItem,
-} from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
+} from "@/components/ui/carousel.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
 import { cn } from "@/Lib/utils";
 
 const ImageGallery = ({ images, activeImage, setActiveImage, serviceName, serviceStatus }) => {

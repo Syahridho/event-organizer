@@ -1,9 +1,9 @@
 ﻿import React, { memo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button.jsx";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.jsx";
+import { Separator } from "@/components/ui/separator.jsx";
 import { ShoppingCart } from "lucide-react";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 
 const CartSummary = memo(({
     selectedCount,

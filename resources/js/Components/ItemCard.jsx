@@ -1,10 +1,10 @@
 import { useCallback } from "react";
 import { Link } from "@inertiajs/react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
 import { MapPin, ChevronRight } from "lucide-react";
-import LazyImage from "@/Components/LazyImage";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import LazyImage from "@/Components/LazyImage.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 
 const ItemCard = ({ item, type, baseUrl }) => {
     const getImageUrl = useCallback(() => {

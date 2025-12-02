@@ -1,9 +1,9 @@
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.jsx";
 import DeleteUserForm from "./Partials/DeleteUserForm";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
 import UpdateProfileInformationForm from "./Partials/UpdateProfileInformationForm";
 import { Head } from "@inertiajs/react";
-import MainLayout from "@/Layouts/Main";
+import MainLayout from "@/Layouts/Main.jsx";
 import Wallet from "./Wallet";
 
 export default function Edit({ auth, mustVerifyEmail, status }) {

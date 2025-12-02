@@ -6,11 +6,11 @@ import {
     SheetTitle,
     SheetDescription,
     SheetFooter,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/sheet.jsx";
+import { Button } from "@/components/ui/button.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Textarea } from "@/components/ui/textarea.jsx";
+import { Skeleton } from "@/components/ui/skeleton.jsx";
 import { FaShoppingCart } from "react-icons/fa";
 import { MapPin, Loader2 } from "lucide-react";
 

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { formatRupiah } from "@/Utils/formatRupiah";
+import { formatRupiah } from "@/Utils/formatRupiah.jsx";
 
 export const PaymentSummary = ({ tickets, ticketCounts }) => {
     const summaryItems = useMemo(() => {

@@ -11,10 +11,10 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
-import { TransactionCard } from "@/Components/transaction-card";
-import { TransactionCardSkeleton } from "@/Components/transaction-card-skeleton";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/card.jsx";
+import { TransactionCard } from "@/Components/transaction-card.jsx";
+import { TransactionCardSkeleton } from "@/Components/transaction-card-skeleton.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Dialog,
   
@@ -23,7 +23,7 @@ import {
     DialogTitle,
     DialogFooter,
     DialogClose,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog.jsx";
 import { toast } from "sonner";
 import {
     Select,
@@ -31,7 +31,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select.jsx";
 import axios from "axios";
 
 const breadcrumbs = [

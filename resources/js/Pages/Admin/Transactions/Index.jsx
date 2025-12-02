@@ -6,7 +6,7 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 import {
     Table,
     TableBody,
@@ -14,8 +14,8 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/table.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 

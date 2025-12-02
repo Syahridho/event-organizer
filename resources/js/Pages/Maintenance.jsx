@@ -2,14 +2,14 @@ import * as React from "react";
 import { Head } from "@inertiajs/react";
 import { Wrench, Clock } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.jsx";
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card.jsx";
 
 export default function Maintenance() {
     return (

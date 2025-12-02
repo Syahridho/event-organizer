@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button.jsx";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Label } from "@/components/ui/label.jsx";
 import { useEffect, useState } from "react";
-import GuestLayout from "@/Layouts/GuestLayout";
-import InputError from "@/Components/InputError";
+import GuestLayout from "@/Layouts/GuestLayout.jsx";
+import InputError from "@/Components/InputError.jsx";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
 import { useCsrfToken } from "@/hooks/useCsrfToken";

@@ -1,5 +1,5 @@
-import GuestLayout from "@/Layouts/GuestLayout";
-import InputError from "@/Components/InputError";
+import GuestLayout from "@/Layouts/GuestLayout.jsx";
+import InputError from "@/Components/InputError.jsx";
 import { Head, useForm, Link } from "@inertiajs/react";
 import {
     Card,
@@ -7,10 +7,10 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/card.jsx";
+import { Label } from "@/components/ui/label.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { LoaderCircle } from "lucide-react";
 import { useCsrfToken } from "@/hooks/useCsrfToken";
 import { useEffect } from "react";
