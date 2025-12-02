@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button.jsx";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import { formatRupiahInput } from "@/Utils/formatRupiah.js";
 import { lazy, Suspense } from "react";
 import "react-quill/dist/quill.snow.css";
 

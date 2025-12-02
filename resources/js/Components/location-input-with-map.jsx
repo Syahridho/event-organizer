@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { LoaderCircle } from "lucide-react";
 import LocationPickerMap from "@/Components/location-picker-map.jsx";
-import useDebounce from "@/Utils/useDebounce.jsx";
+import useDebounce from "@/Utils/useDebounce.js";
 
 export default function LocationInputWithMap({
     isEditing,

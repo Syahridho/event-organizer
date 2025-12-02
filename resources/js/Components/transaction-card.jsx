@@ -20,7 +20,7 @@ import { Link } from "@inertiajs/react";
 import Avatar from "@/Components/avatar.jsx";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
-import { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import { formatRupiahInput } from "@/Utils/formatRupiah.js";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { useMemo } from "react";

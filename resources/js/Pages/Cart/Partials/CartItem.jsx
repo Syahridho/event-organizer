@@ -18,7 +18,7 @@ import {
     Plus,
     Clock,
 } from "lucide-react";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 import {
     checkItemStatus,
     getSeverityColors,

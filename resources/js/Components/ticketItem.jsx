@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Minus, Plus } from "lucide-react";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 
 export const TicketItem = ({ ticket, count, onCountChange, disabled }) => {
     return (

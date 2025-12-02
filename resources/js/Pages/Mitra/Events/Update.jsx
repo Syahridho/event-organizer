@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select.jsx";
 import Modal from "@/Components/Modal.jsx";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card.jsx";
-import useDebounce from "@/Utils/useDebounce.jsx";
+import useDebounce from "@/Utils/useDebounce.js";
 import { Switch } from "@/components/ui/switch.jsx";
 import { Checkbox } from "@/components/ui/checkbox.jsx";
 import {
@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/tooltip.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
 import LocationInputWithMap from "@/Components/location-input-with-map.jsx";
-import { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import { formatRupiahInput } from "@/Utils/formatRupiah.js";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = lazy(() => import("react-quill"));

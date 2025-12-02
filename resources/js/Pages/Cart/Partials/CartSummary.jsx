@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import { ShoppingCart } from "lucide-react";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 
 const CartSummary = memo(({
     selectedCount,

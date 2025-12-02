@@ -5,7 +5,7 @@
 // import { Skeleton } from "@/components/ui/skeleton.jsx";
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
 // import { formatDateTime } from "@/utils/formatDate";
-// import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+// import { formatRupiah } from "@/Utils/formatRupiah.js";
 // import { Head, usePage } from "@inertiajs/react";
 // import { ArrowLeft } from "lucide-react";
 // import { useState } from "react";

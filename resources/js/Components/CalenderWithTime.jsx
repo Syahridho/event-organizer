@@ -5,14 +5,13 @@ import { ChevronDownIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
-import { Label } from "@/components/ui/label.jsx";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover.jsx";
 import { Calendar } from "./ui/calendar";
-import { combineDateAndTimeToSQL } from "@/Utils/formatDateTime.jsx";
+import { combineDateAndTimeToSQL } from "@/Utils/formatDateTime.js";
 
 export default function CalendarWithTime({
     className,

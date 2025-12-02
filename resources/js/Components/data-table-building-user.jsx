@@ -63,7 +63,7 @@ import {
     formatTanggalIndo,
     getDayName,
     getJamMenit,
-} from "@/Utils/formatDateTime.jsx";
+} from "@/Utils/formatDateTime.js";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -111,7 +111,7 @@ import {
 } from "@/components/ui/table.jsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
 import { router, usePage } from "@inertiajs/react";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 
 export const schema = z.object({
     id: z.number(),

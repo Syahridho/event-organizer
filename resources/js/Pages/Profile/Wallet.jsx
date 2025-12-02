@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select.jsx";
 
 // Currency helper
-import formatRupiah, { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import formatRupiah, { formatRupiahInput } from "@/Utils/formatRupiah.js";
 
 const formatCurrency = (value) => {
   try {

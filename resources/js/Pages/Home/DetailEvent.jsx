@@ -2,8 +2,8 @@
 import { Button } from "@/components/ui/button.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.jsx";
-import { formatTanggalIndo } from "@/Utils/formatDateTime.jsx";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatTanggalIndo } from "@/Utils/formatDateTime.js";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import axios from "axios";
 import {
@@ -26,7 +26,7 @@ import { PaymentSheet } from "@/Components/paymentSheet";
 import { Skeleton } from "@/components/ui/skeleton.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
 import ReviewSection from "@/Components/ReviewSection.jsx";
-import { createPaymentPayload } from "@/Utils/PaymentHelper.jsx";
+import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 
 const getEventStatus = (eventData) => {
     const now = new Date();

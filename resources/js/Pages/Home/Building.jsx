@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 
 // Utils & Layouts
-import { formatTanggalIndo, getJamMenit } from "@/Utils/formatDateTime.jsx";
+import { formatTanggalIndo, getJamMenit } from "@/Utils/formatDateTime.js";
 import MainLayout from "@/Layouts/Main.jsx";
 
 // Skeleton Loading Component

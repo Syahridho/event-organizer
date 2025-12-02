@@ -1,6 +1,6 @@
 ﻿import { usePage, router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button.jsx";
 import {

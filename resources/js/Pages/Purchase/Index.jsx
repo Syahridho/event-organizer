@@ -3,11 +3,11 @@ import { usePage, Link, Head, router } from "@inertiajs/react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 import {
     formatDateWithShortDay,
     formatCompactDateTime,
-} from "@/Utils/formatDateTime.jsx";
+} from "@/Utils/formatDateTime.js";
 import Countdown from "@/Utils/CountDown.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import {

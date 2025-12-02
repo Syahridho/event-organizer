@@ -40,7 +40,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog.jsx";
-import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah.js";
 import { Textarea } from "@/components/ui/textarea.jsx";
 import { Switch } from "@/components/ui/switch.jsx";
 import { toast } from "sonner";

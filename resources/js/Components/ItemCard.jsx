@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card.
 import { Badge } from "@/components/ui/badge.jsx";
 import { MapPin, ChevronRight } from "lucide-react";
 import LazyImage from "@/Components/LazyImage.jsx";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 
 const ItemCard = ({ item, type, baseUrl }) => {
     const getImageUrl = useCallback(() => {

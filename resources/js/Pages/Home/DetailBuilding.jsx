@@ -9,9 +9,9 @@ import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 import { useSelected } from "@/hooks/useSelection";
 import { useDispatch } from "react-redux";
-import { getBookedDatesWithUser } from "@/Utils/bookedDates.jsx";
+import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
-import { createPaymentPayload } from "@/Utils/PaymentHelper.jsx";
+import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 import MainLayout from "@/Layouts/Main.jsx";
 
 // Lazy load components

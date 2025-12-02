@@ -1,6 +1,6 @@
 ﻿import React, { memo } from "react";
 import { Button } from "@/components/ui/button.jsx";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 import { FaCreditCard } from "react-icons/fa";
 
 const CheckoutSummary = memo(({

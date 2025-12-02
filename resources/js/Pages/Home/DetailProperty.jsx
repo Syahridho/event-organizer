@@ -51,12 +51,12 @@ import { router } from "@inertiajs/react";
 import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 import CustomCalendar from "@/Components/custom-calendar.jsx";
-import { getBookedDatesWithUser } from "@/Utils/bookedDates.jsx";
+import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import AddressManager from "@/Components/address-manager.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
 import ReviewSection from "@/Components/ReviewSection.jsx";
-import { createPaymentPayload } from "@/Utils/PaymentHelper.jsx";
+import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 
 const DetailProperty = () => {
     const {

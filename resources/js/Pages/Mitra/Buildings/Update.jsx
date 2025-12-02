@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import { formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import { formatRupiahInput } from "@/Utils/formatRupiah.js";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import clsx from "clsx";

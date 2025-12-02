@@ -54,7 +54,7 @@ import {
     User,
     XCircleIcon,
 } from "lucide-react";
-import { formatTanggalIndo } from "@/Utils/formatDateTime.jsx";
+import { formatTanggalIndo } from "@/Utils/formatDateTime.js";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/admin/dashboard" },

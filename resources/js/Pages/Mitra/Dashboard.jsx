@@ -42,7 +42,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah.js";
 import {
     BarChart,
     Bar,

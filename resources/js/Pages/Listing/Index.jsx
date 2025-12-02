@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
-import { formatRupiah } from "@/Utils/formatRupiah.jsx";
+import { formatRupiah } from "@/Utils/formatRupiah.js";
 
 // LazyImage Component
 const LazyImage = ({ src, alt, className, ...props }) => {
