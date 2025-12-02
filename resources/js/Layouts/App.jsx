@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
-import SearchChatBar from "@/components/SearchChatBar.jsx";
-import ChatListUser from "@/components/ChatListUser.jsx";
+import SearchChatBar from "@/Components/SearchChatBar.jsx";
+import ChatListUser from "@/Components/ChatListUser.jsx";
 import { router, usePage } from "@inertiajs/react";
 import { debounce } from "lodash";
-import Navigation from "@/components/navigation";
-import Footer from "@/components/footer";
+import Navigation from "@/Components/navigation";
+import Footer from "@/Components/footer";
 import { initializeEcho } from "@/bootstrap";
 
 export default function AppChat({ children }) {

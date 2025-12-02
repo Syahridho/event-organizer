@@ -1,6 +1,6 @@
 import { usePage } from "@inertiajs/react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
+import { AppSidebar } from "@/Components/app-sidebar";
+import { SiteHeader } from "@/Components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import {
     LayoutDashboardIcon,

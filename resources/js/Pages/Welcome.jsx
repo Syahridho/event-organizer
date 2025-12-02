@@ -1,4 +1,4 @@
-import { Head, Link, usePage, router } from "@inertiajs/react";
+﻿import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useRef, useState, useCallback, useMemo } from "react";
 import {
     ChevronRight,
@@ -11,7 +11,7 @@ import {
     FaBuilding,
     GiMicrophone,
     GrFanOption,
-} from "@/components/Icon";
+} from "@/Components/Icon";
 import {
     Card,
     CardContent,

@@ -1,7 +1,7 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import ChatLayout from "@/components/ChatLayout.jsx";
+import ChatLayout from "@/Components/ChatLayout.jsx";
 import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
 
 const breadcrumbs = [

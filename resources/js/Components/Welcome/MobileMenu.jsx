@@ -5,7 +5,7 @@ import {
     FaBuilding,
     GiMicrophone,
     GrFanOption,
-} from "@/components/Icon";
+} from "@/Components/Icon";
 
 const mobileMenuItems = [
     {

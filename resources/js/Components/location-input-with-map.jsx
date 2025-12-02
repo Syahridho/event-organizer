@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoaderCircle } from "lucide-react";
-import LocationPickerMap from "@/components/location-picker-map";
+import LocationPickerMap from "@/Components/location-picker-map";
 import useDebounce from "@/Utils/useDebounce";
 
 export default function LocationInputWithMap({

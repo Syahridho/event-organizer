@@ -1,4 +1,4 @@
-import { Head, useForm, router, Link } from "@inertiajs/react";
+﻿import { Head, useForm, router, Link } from "@inertiajs/react";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import {
     Card,

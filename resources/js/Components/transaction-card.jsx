@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+﻿import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Truck, ShoppingBag } from "lucide-react";
 import {
@@ -17,7 +17,7 @@ import { Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Link } from "@inertiajs/react";
-import Avatar from "@/components/avatar";
+import Avatar from "@/Components/avatar";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
 import { formatRupiahInput } from "@/Utils/formatRupiah";

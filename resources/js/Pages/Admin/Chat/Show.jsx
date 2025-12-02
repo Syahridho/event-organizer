@@ -1,10 +1,10 @@
-import React, { Fragment, useEffect, useRef, useState } from "react";
+﻿import React, { Fragment, useEffect, useRef, useState } from "react";
 import { Head, router } from "@inertiajs/react";
 import { debounce } from "lodash";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import ChatLayout from "@/components/ChatLayout.jsx";
+import ChatLayout from "@/Components/ChatLayout.jsx";
 import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
-import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
+import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
 
 const breadcrumbs = [
     {

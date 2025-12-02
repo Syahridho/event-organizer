@@ -1,8 +1,8 @@
-import React from "react";
+﻿import React from "react";
 import { usePage, router } from "@inertiajs/react";
-import ProfilePictureOnChat from "@/components/ProfilePictureOnChat.jsx";
+import ProfilePictureOnChat from "@/Components/ProfilePictureOnChat.jsx";
 import clsx from "clsx";
-import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
+import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
 import {
     getUserStatusIndo,
     formatRelativeTime,

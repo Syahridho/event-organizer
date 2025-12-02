@@ -3,7 +3,7 @@
  * Lazy loads react-icons to reduce initial bundle size
  * 
  * Usage:
- * import Icon from '@/components/IconWrapper';
+ * import Icon from '@/Components/IconWrapper';
  * <Icon name="IoCart" library="io5" className="w-5 h-5" />
  */
 

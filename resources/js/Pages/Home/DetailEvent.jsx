@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+﻿import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 import { useTicketSelection } from "@/hooks/useTicketSelection";
-import { PaymentSheet } from "@/components/paymentSheet";
+import { PaymentSheet } from "@/Components/paymentSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import MainLayout from "@/Layouts/Main";
 import ReviewSection from "@/Components/ReviewSection";

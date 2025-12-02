@@ -1,4 +1,4 @@
-import { usePage, router, Head, Link } from "@inertiajs/react";
+﻿import { usePage, router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import { formatRupiah } from "@/Utils/formatRupiah";
 import { useCallback, useEffect, useState, useMemo } from "react";

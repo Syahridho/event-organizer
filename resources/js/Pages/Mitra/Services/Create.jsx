@@ -1,4 +1,4 @@
-import AppLayout from "@/Layouts/App/AppSidebarLayout";
+﻿import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 
 import { Input } from "@/components/ui/input";

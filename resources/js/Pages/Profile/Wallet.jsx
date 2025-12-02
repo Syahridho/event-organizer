@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Head, usePage, router } from "@inertiajs/react";
 
 // shadcn/ui primitives

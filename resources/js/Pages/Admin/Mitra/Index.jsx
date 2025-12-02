@@ -1,7 +1,7 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head } from "@inertiajs/react";
 // Sesuaikan path import komponen DataTable Anda
-import { MitraDataTable } from "@/components/MitraDataTable";
+import { MitraDataTable } from "@/Components/MitraDataTable";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },

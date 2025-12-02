@@ -1,8 +1,8 @@
 import React from "react";
 import { Link, usePage } from "@inertiajs/react";
-import ProfilePictureOnChat from "@/components/ProfilePictureOnChat.jsx";
+import ProfilePictureOnChat from "@/Components/ProfilePictureOnChat.jsx";
 import clsx from "clsx";
-import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
+import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
 import {
     getUserStatusIndo,
     formatRelativeTime,
@@ -67,7 +67,7 @@ export default function MitraChatListUser() {
                                         : ""}
                                     {/* Online status indicator */}
                                     <div className="ml-2">
-                                        {userIsOnline ? (
+                                        {isUserOnline ? (
                                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                         ) : (
                                             <span className="text-xs text-gray-400 hidden sm:block">

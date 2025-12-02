@@ -1,12 +1,12 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import AppChat from "@/Layouts/App.jsx";
 import { Head, usePage } from "@inertiajs/react";
-import HeaderUserChatBox from "@/components/HeaderUserChatBox.jsx";
-import ChatInputMessage from "@/components/ChatInputMessage.jsx";
-import DateChatIndicator from "@/components/DateChatIndicator.jsx";
-import LeftSideBoxChat from "@/components/LeftSideBoxChat.jsx";
-import RightSideBoxChat from "@/components/RightSideBoxChat.jsx";
-import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
+import HeaderUserChatBox from "@/Components/HeaderUserChatBox.jsx";
+import ChatInputMessage from "@/Components/ChatInputMessage.jsx";
+import DateChatIndicator from "@/Components/DateChatIndicator.jsx";
+import LeftSideBoxChat from "@/Components/LeftSideBoxChat.jsx";
+import RightSideBoxChat from "@/Components/RightSideBoxChat.jsx";
+import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
 
 export default function Show() {
     const { auth, chat_with: chatWithUser, messages } = usePage().props;
@@ -24,13 +24,24 @@ export default function Show() {
         scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
     }, [messages, reply]);
 
-    Echo.private("message." + auth.user.uuid).listenForWhisper("typing", () => {
-        setIsTyping(true);
+    useEffect(() => {
+        // Echo is a global variable provided by Laravel Echo
+        /* global Echo */
+        const channel = Echo.private("message." + auth.user.uuid);
+        
+        channel.listenForWhisper("typing", () => {
+            setIsTyping(true);
 
-        setTimeout(() => {
-            setIsTyping(false);
-        }, 2000);
-    });
+            setTimeout(() => {
+                setIsTyping(false);
+            }, 2000);
+        });
+
+        // Cleanup function to stop listening when component unmounts
+        return () => {
+            channel.stopListeningForWhisper("typing");
+        };
+    }, [auth.user.uuid]);
 
     const renderMessage = (messages, auth) => {
         return messages?.map((date) => (

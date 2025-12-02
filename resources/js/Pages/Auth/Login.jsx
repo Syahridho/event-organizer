@@ -10,9 +10,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import Checkbox from "@/components/Checkbox";
+import Checkbox from "@/Components/Checkbox";
 import GuestLayout from "@/Layouts/GuestLayout";
-import InputError from "@/components/InputError";
+import InputError from "@/Components/InputError";
 import { Head, Link, useForm, router } from "@inertiajs/react";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";

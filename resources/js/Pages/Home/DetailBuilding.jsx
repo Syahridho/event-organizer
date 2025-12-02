@@ -1,4 +1,4 @@
-import React, { useState,  useMemo, useCallback, lazy, Suspense } from "react";
+﻿import React, { useState,  useMemo, useCallback, lazy, Suspense } from "react";
 import { ArrowLeft, MapPin, Users, Loader2 } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useForm, Head, Link, router } from "@inertiajs/react";
@@ -12,8 +12,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { TransactionCard } from "@/components/transaction-card";
-import { TransactionCardSkeleton } from "@/components/transaction-card-skeleton";
+import { TransactionCard } from "@/Components/transaction-card";
+import { TransactionCardSkeleton } from "@/Components/transaction-card-skeleton";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,

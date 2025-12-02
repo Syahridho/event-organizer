@@ -1,4 +1,4 @@
-import {
+﻿import {
     Sheet,
     SheetContent,
     SheetDescription,
@@ -12,8 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { FaCartPlus } from "react-icons/fa";
 import { formatRupiah } from "@/Utils/formatRupiah";
-import { TicketItem } from "@/components/ticketItem";
-import { PaymentSummary } from "@/components/paymentSummary";
+import { TicketItem } from "@/Components/ticketItem";
+import { PaymentSummary } from "@/Components/paymentSummary";
 
 export const PaymentSheet = ({
     tickets,

@@ -1,5 +1,5 @@
 import { Head } from "@inertiajs/react";
-import { DataTable } from "@/components/table-events-admin.jsx";
+import { DataTable } from "@/Components/table-events-admin.jsx";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { usePage } from "@inertiajs/react";
 

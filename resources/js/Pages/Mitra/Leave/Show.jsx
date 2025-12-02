@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import HolidayCalendar from "@/components/holiday-calendar";
+import HolidayCalendar from "@/Components/holiday-calendar";
 import { Calendar, ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";

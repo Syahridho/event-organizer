@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { usePage, Link, Head, router } from "@inertiajs/react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,11 +20,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import PaymentStatusBadge from "@/components/payment-status-badge";
+import PaymentStatusBadge from "@/Components/payment-status-badge";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import ItemStatusBadge from "@/components/item-status-badge";
+import ItemStatusBadge from "@/Components/item-status-badge";
 import Rating from "react-rating";
 import { IoStar, IoStarOutline } from "react-icons/io5";
 import {

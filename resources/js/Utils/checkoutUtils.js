@@ -1,4 +1,4 @@
-export const mapItemType = (frontendType) => {
+﻿export const mapItemType = (frontendType) => {
     const typeMapping = {
         ticket: "ticket",
         service: "service",
