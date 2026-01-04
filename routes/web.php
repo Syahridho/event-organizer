@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\WithdrawController as AdminWithdrawController;
 use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\AdminReportController;
 
 use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\Mitra\MitraTransactionController;
@@ -230,6 +231,10 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::post('/admin/users/{id}/ban', [UserManagementController::class, 'ban'])->name('admin.users.ban');
         Route::post('/admin/users/{id}/unban', [UserManagementController::class, 'unban'])->name('admin.users.unban');
 
+        // Report Management routes
+        Route::get('/admin/dashboard/report', [AdminReportController::class, 'index'])->name('admin.reports.index');
+        Route::patch('/admin/dashboard/report/{id}/ban', [AdminReportController::class, 'toggleBan'])->name('admin.reports.ban');
+
         // Admin dashboard chat routes (alternative paths)
         Route::get('/admin/dashboard/{uuid}', [ChatController::class, 'adminShow'])->name('admin.dashboard.chat.show');
         Route::post('/admin/dashboard/{uuid}', [ChatController::class, 'chat'])->name('admin.dashboard.chat.store');
@@ -315,6 +320,13 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::post('/{user:uuid}', 'chat')->name('store');
         Route::delete('/delete/{chat}', 'destroy')->name('destroy');
     });
+
+    // Report listing
+    Route::post('/report', [\App\Http\Controllers\ReportController::class, 'store'])->name('report.store');
 });
+
+// Google OAuth routes
+Route::get('/auth/google', [\App\Http\Controllers\Auth\SocialLoginController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\SocialLoginController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
 require __DIR__.'/auth.php';

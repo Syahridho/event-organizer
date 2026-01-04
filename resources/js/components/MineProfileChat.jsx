@@ -1,5 +1,5 @@
 import React from "react";
-import ProfilePictureOnChat from "@/Components/ProfilePictureOnChat.jsx";
+import ProfilePictureOnChat from "@/components/ProfilePictureOnChat.jsx";
 import { Link } from "@inertiajs/react";
 
 export default function MineProfileChat({ auth }) {

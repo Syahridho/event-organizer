@@ -1,6 +1,6 @@
 import { usePage } from "@inertiajs/react";
 
-export default function Guest({ children }) {
+export default function Guest({ children, centered = true }) {
     const { auth } = usePage().props;
     const isAuthenticated = auth?.user;
 
@@ -14,9 +14,18 @@ export default function Guest({ children }) {
     }
 
     // Jika user belum login, gunakan layout dengan centering untuk login/register
+    if (centered) {
+        return (
+            <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 p-3 sm:p-4 md:p-6 lg:p-8">
+                <div className="w-full max-w-md sm:max-w-sm">{children}</div>
+            </div>
+        );
+    }
+
+    // Non-centered layout (for split-screen login/register)
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 p-3 sm:p-4 md:p-6 lg:p-8">
-            <div className="w-full max-w-md sm:max-w-sm">{children}</div>
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-100">
+            {children}
         </div>
     );
 }

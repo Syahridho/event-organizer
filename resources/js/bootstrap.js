@@ -132,12 +132,12 @@ export async function initializeEcho() {
         broadcaster: "pusher",
         key: import.meta.env.VITE_PUSHER_APP_KEY,
         cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? "mt1",
-        wsHost: import.meta.env.VITE_PUSHER_HOST
-            ? import.meta.env.VITE_PUSHER_HOST
-            : `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusher.com`,
-        wsPort: import.meta.env.VITE_PUSHER_PORT ?? 80,
-        wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
-        forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? "https") === "https",
+        wsHost: import.meta.env.VITE_PUSHER_HOST ?? "127.0.0.1",
+        wsPort: import.meta.env.VITE_PUSHER_PORT ?? 6001,
+        wssPort: import.meta.env.VITE_PUSHER_PORT ?? 6001,
+        forceTLS: false,
+        encrypted: false,
+        disableStats: true,
         enabledTransports: ["ws", "wss"],
     });
 
@@ -146,13 +146,12 @@ export async function initializeEcho() {
 }
 
 // Initialize Echo on user interaction or after page load
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
     // Defer initialization until page is fully loaded
-    window.addEventListener('load', () => {
+    window.addEventListener("load", () => {
         // Initialize after a short delay to prioritize critical resources
         setTimeout(() => {
             initializeEcho().catch(console.error);
         }, 2000);
     });
 }
-

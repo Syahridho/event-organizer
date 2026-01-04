@@ -3,7 +3,7 @@ import { Link } from "@inertiajs/react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
 import { MapPin, ChevronRight } from "lucide-react";
-import LazyImage from "@/Components/LazyImage.jsx";
+import LazyImage from "@/components/LazyImage.jsx";
 import { formatRupiah } from "@/Utils/formatRupiah.js";
 
 const ItemCard = ({ item, type, baseUrl }) => {

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
-import ChatSidebar from "@/Components/ChatSidebar.jsx";
-import HeaderUserChatBox from "@/Components/HeaderUserChatBox.jsx";
-import ChatInputMessage from "@/Components/ChatInputMessage.jsx";
-import DateChatIndicator from "@/Components/DateChatIndicator.jsx";
-import LeftSideBoxChat from "@/Components/LeftSideBoxChat.jsx";
-import RightSideBoxChat from "@/Components/RightSideBoxChat.jsx";
-import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
+import ChatSidebar from "@/components/ChatSidebar.jsx";
+import HeaderUserChatBox from "@/components/HeaderUserChatBox.jsx";
+import ChatInputMessage from "@/components/ChatInputMessage.jsx";
+import DateChatIndicator from "@/components/DateChatIndicator.jsx";
+import LeftSideBoxChat from "@/components/LeftSideBoxChat.jsx";
+import RightSideBoxChat from "@/components/RightSideBoxChat.jsx";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
 
 export default function ChatLayout({
     showBackButton = false,

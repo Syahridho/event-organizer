@@ -1,7 +1,7 @@
 import * as React from "react";
 import { usePage, Link } from "@inertiajs/react";
-import { NavMain } from "@/Components/nav-main.jsx";
-import { NavUser } from "@/Components/nav-user.jsx";
+import { NavMain } from "@/components/nav-main.jsx";
+import { NavUser } from "@/components/nav-user.jsx";
 import {
     Sidebar,
     SidebarContent,

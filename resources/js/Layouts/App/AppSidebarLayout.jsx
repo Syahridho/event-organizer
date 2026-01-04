@@ -11,6 +11,7 @@ import {
     Building,
     Fan,
     Settings,
+    Flag,
 } from "lucide-react";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { IoMdNotificationsOutline } from "react-icons/io";
@@ -72,6 +73,11 @@ const admin = [
         title: "Penarikan Mitra",
         url: "/admin/withdraw",
         icon: FaMoneyBillTransfer,
+    },
+    {
+        title: "Laporan",
+        url: "/admin/dashboard/report",
+        icon: Flag,
     },
     {
         title: "Kustom Testimoni",

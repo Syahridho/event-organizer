@@ -13,9 +13,8 @@ import {
     Clock,
     User,
     AlertTriangle,
-    
 } from "lucide-react";
-import { useEffect, useState, useCallback, useMemo} from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import { toast } from "sonner";
@@ -27,6 +26,8 @@ import { Skeleton } from "@/components/ui/skeleton.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
 import ReviewSection from "@/Components/ReviewSection.jsx";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
+import ReportModal from "@/Components/ReportModal.jsx";
+import { Flag } from "lucide-react";
 
 const getEventStatus = (eventData) => {
     const now = new Date();
@@ -229,9 +230,7 @@ const TicketStockBadge = ({ ticket }) => {
 };
 
 export default function ShowEvent() {
-    const { event, auth, ziggy, alreadyRegistered, tax_info } =
-        usePage().props;
-
+    const { event, auth, ziggy, alreadyRegistered, tax_info } = usePage().props;
 
     const [latitude, longitude] = event?.pin ? event.pin.split(",") : ["", ""];
 
@@ -251,6 +250,7 @@ export default function ShowEvent() {
         return now >= saleStart;
     });
     const isEventBanned = event.status === "banned";
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
     const {
@@ -953,6 +953,18 @@ export default function ShowEvent() {
                                     </Button>
                                 </Link>
                             )}
+
+                            {auth.user && auth.user.id !== event.user.id && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowReportModal(true)}
+                                    className="mt-4 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                    <Flag className="h-4 w-4 mr-2" />
+                                    Laporkan
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1032,6 +1044,13 @@ export default function ShowEvent() {
                         </div>
                     </div>
                 )}
+
+                <ReportModal
+                    open={showReportModal}
+                    onOpenChange={setShowReportModal}
+                    type="event"
+                    id={event.id}
+                />
             </div>
         </>
     );

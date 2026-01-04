@@ -352,6 +352,86 @@ Add to crontab for scheduled tasks:
 * * * * * cd /var/www/event-organizer && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+## 📚 Deployment Documentation
+
+### Quick Links
+
+- **[📖 Full Deployment Guide](DEPLOYMENT.md)** - Comprehensive deployment documentation
+- **[🚨 Quick Fix Guide](QUICK_FIX.md)** - Fix Vite manifest error
+- **[✅ Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Step-by-step checklist
+- **[🔧 Nginx Configuration](nginx.conf.example)** - Production Nginx config
+- **[⚙️ Queue Worker Service](queue-worker.service.example)** - Systemd service
+- **[🌍 Production Environment](.env.production.example)** - Production .env template
+
+### ⚠️ Important: Vite Manifest Error Fix
+
+If you encounter **"Unable to locate file in Vite manifest: resources/js/Pages/Welcome.jsx"** error in production:
+
+**Quick Fix:**
+
+1. Update `resources/views/app.blade.php` line 31:
+   ```blade
+   <!-- Before (causes error) -->
+   @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+   
+   <!-- After (fixed) -->
+   @vite(['resources/js/app.jsx'])
+   ```
+
+2. Rebuild assets:
+   ```bash
+   npm run build
+   ```
+
+3. Upload to server and clear cache:
+   ```bash
+   php artisan optimize:clear
+   php artisan config:cache
+   sudo systemctl restart php8.2-fpm nginx
+   ```
+
+**Why this fixes the error:**
+- Vite only builds `app.jsx` as entry point (defined in `vite.config.js`)
+- Page components are loaded automatically via Inertia.js code splitting
+- More efficient with lazy loading and smaller initial bundle size
+
+For detailed explanation, see [QUICK_FIX.md](QUICK_FIX.md)
+
+### 🚀 Automated Deployment
+
+Use the deployment script for automated deployment:
+
+```bash
+# Upload script to server
+scp deploy.sh user@server:/var/www/event-organizer/
+
+# SSH to server and run
+cd /var/www/event-organizer
+chmod +x deploy.sh
+./deploy.sh
+
+# Options:
+# ./deploy.sh --skip-build     # Skip npm build
+# ./deploy.sh --skip-migrate   # Skip migrations
+```
+
+### 📋 Pre-Deployment Checklist
+
+Before deploying to production:
+
+- [ ] Fix applied: `app.blade.php` updated
+- [ ] Assets built: `npm run build` successful
+- [ ] Manifest exists: `public/build/manifest.json`
+- [ ] Environment: `APP_ENV=production`, `APP_DEBUG=false`
+- [ ] Database: Credentials configured
+- [ ] Midtrans: Production keys set
+- [ ] Mail: SMTP configured
+- [ ] SSL: Certificate installed
+- [ ] Permissions: `storage/` and `bootstrap/cache/` writable
+- [ ] Backup: Database and files backed up
+
+See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for complete checklist.
+
 ## 🐛 Troubleshooting
 
 ### Permission Issues

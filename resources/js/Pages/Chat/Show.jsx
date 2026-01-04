@@ -27,8 +27,14 @@ export default function Show() {
     useEffect(() => {
         // Echo is a global variable provided by Laravel Echo
         /* global Echo */
-        const channel = Echo.private("message." + auth.user.uuid);
-        
+        if (!window.Echo) {
+            console.error(
+                "Echo is not initialized yet. Ensure bootstrap.js has loaded."
+            );
+            return;
+        }
+        const channel = window.Echo.private("message." + auth.user.uuid);
+
         channel.listenForWhisper("typing", () => {
             setIsTyping(true);
 

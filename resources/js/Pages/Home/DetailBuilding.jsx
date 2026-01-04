@@ -1,5 +1,5 @@
-﻿import React, { useState,  useMemo, useCallback, lazy, Suspense } from "react";
-import { ArrowLeft, MapPin, Users, Loader2 } from "lucide-react";
+﻿import React, { useState, useMemo, useCallback, lazy, Suspense } from "react";
+import { ArrowLeft, MapPin, Users, Loader2, Flag } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button.jsx";
 import { Skeleton } from "@/components/ui/skeleton.jsx";
@@ -13,12 +13,17 @@ import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 import MainLayout from "@/Layouts/Main.jsx";
+import ReportModal from "@/Components/ReportModal.jsx";
 
 // Lazy load components
 const CustomCalendar = lazy(() => import("@/components/custom-calendar"));
 const ReviewSection = lazy(() => import("@/components/ReviewSection"));
-const BuildingPaymentSheet = lazy(() => import("@/Components/DetailPage/BuildingPaymentSheet"));
-const BuildingConfirmDialog = lazy(() => import("@/Components/DetailPage/BuildingConfirmDialog"));
+const BuildingPaymentSheet = lazy(() =>
+    import("@/Components/DetailPage/BuildingPaymentSheet")
+);
+const BuildingConfirmDialog = lazy(() =>
+    import("@/Components/DetailPage/BuildingConfirmDialog")
+);
 const ImageGallery = lazy(() => import("@/Components/DetailPage/ImageGallery"));
 
 // Skeleton components
@@ -60,7 +65,7 @@ const DetailBuilding = () => {
         () => [{ id: building.id, price: building.price }],
         [building.id, building.price]
     );
-    
+
     const {
         // itemCounts,
         // selectedDates,
@@ -80,6 +85,7 @@ const DetailBuilding = () => {
         cart: false,
     });
     const { snapLoaded, paymentError, setPaymentError } = useMidtrans();
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const bookedDatesWithUser = useMemo(() => {
         return getBookedDatesWithUser(transaction, user?.id);
@@ -94,17 +100,20 @@ const DetailBuilding = () => {
         }));
     }, [leaves]);
 
-    const images = useMemo(() => [
-        {
-            url: `${ziggy.url}/storage/thumbnails/${building.thumbnail}`,
-            type: "thumbnail",
-        },
-        ...(photos?.map((p) => ({
-            url: `${ziggy.url}/storage/item-photos/${p.photo}`,
-            type: "photo",
-            caption: p.caption,
-        })) || []),
-    ], [ziggy.url, building.thumbnail, photos]);
+    const images = useMemo(
+        () => [
+            {
+                url: `${ziggy.url}/storage/thumbnails/${building.thumbnail}`,
+                type: "thumbnail",
+            },
+            ...(photos?.map((p) => ({
+                url: `${ziggy.url}/storage/item-photos/${p.photo}`,
+                type: "photo",
+                caption: p.caption,
+            })) || []),
+        ],
+        [ziggy.url, building.thumbnail, photos]
+    );
 
     const handleAddToCart = useCallback(async () => {
         if (!selectedDate) {
@@ -283,10 +292,12 @@ const DetailBuilding = () => {
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                 </Button>
-                
+
                 <div className="grid lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-7 space-y-6">
-                        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                        <Suspense
+                            fallback={<Skeleton className="h-96 w-full" />}
+                        >
                             <ImageGallery
                                 images={images}
                                 activeImage={activeImage}
@@ -319,6 +330,20 @@ const DetailBuilding = () => {
                                                 orang
                                             </span>
                                         </div>
+                                        {user &&
+                                            user.id !== building.user_id && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setShowReportModal(true)
+                                                    }
+                                                    className="mt-4"
+                                                >
+                                                    <Flag className="h-4 w-4 mr-2" />
+                                                    Laporkan Listing
+                                                </Button>
+                                            )}
                                     </div>
                                 </div>
 
@@ -375,8 +400,12 @@ const DetailBuilding = () => {
                                         <CustomCalendar
                                             selected={selectedDate}
                                             onSelect={setSelectedDate}
-                                            disabled={(date) => date < new Date()}
-                                            bookedDatesWithUser={bookedDatesWithUser}
+                                            disabled={(date) =>
+                                                date < new Date()
+                                            }
+                                            bookedDatesWithUser={
+                                                bookedDatesWithUser
+                                            }
                                             disabledLeaves={disabledLeaves}
                                             currentUserId={user?.id}
                                             cartDates={cartDates}
@@ -470,6 +499,13 @@ const DetailBuilding = () => {
                     </div>
                 </div>
             )}
+
+            <ReportModal
+                open={showReportModal}
+                onOpenChange={setShowReportModal}
+                type="building"
+                id={building.id}
+            />
         </div>
     );
 };

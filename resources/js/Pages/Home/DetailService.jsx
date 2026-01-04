@@ -1,5 +1,12 @@
-﻿import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
-import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
+﻿import React, {
+    useState,
+    useEffect,
+    useMemo,
+    useCallback,
+    lazy,
+    Suspense,
+} from "react";
+import { ArrowLeft, MapPin, Loader2, Flag } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button.jsx";
 import { Skeleton } from "@/components/ui/skeleton.jsx";
@@ -13,13 +20,16 @@ import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 import MainLayout from "@/Layouts/Main.jsx";
+import ReportModal from "@/Components/ReportModal.jsx";
 
 // Lazy load heavy components
 const CustomCalendar = lazy(() => import("@/components/custom-calendar"));
 const ReviewSection = lazy(() => import("@/components/ReviewSection"));
 const AddressManager = lazy(() => import("@/components/address-manager"));
 const PaymentSheet = lazy(() => import("@/Components/DetailPage/PaymentSheet"));
-const ConfirmDialog = lazy(() => import("@/Components/DetailPage/ConfirmDialog"));
+const ConfirmDialog = lazy(() =>
+    import("@/Components/DetailPage/ConfirmDialog")
+);
 const ImageGallery = lazy(() => import("@/Components/DetailPage/ImageGallery"));
 
 // Skeleton components
@@ -56,7 +66,7 @@ const DetailService = () => {
         () => [{ id: service.id, price: service.price }],
         [service.id, service.price]
     );
-    
+
     const {
         // itemCounts,
         // selectedDates,
@@ -81,6 +91,7 @@ const DetailService = () => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const bookedDatesWithUser = useMemo(() => {
         return getBookedDatesWithUser(transaction, user?.id);
@@ -95,16 +106,19 @@ const DetailService = () => {
         }));
     }, [leaves]);
 
-    const images = useMemo(() => [
-        {
-            url: `${ziggy.url}/storage/thumbnails/${service.thumbnail}`,
-            type: "thumbnail",
-        },
-        ...(photos?.map((p) => ({
-            url: `${ziggy.url}/storage/item-photos/${p.photo}`,
-            type: "photo",
-        })) || []),
-    ], [ziggy.url, service.thumbnail, photos]);
+    const images = useMemo(
+        () => [
+            {
+                url: `${ziggy.url}/storage/thumbnails/${service.thumbnail}`,
+                type: "thumbnail",
+            },
+            ...(photos?.map((p) => ({
+                url: `${ziggy.url}/storage/item-photos/${p.photo}`,
+                type: "photo",
+            })) || []),
+        ],
+        [ziggy.url, service.thumbnail, photos]
+    );
 
     const selectedAddress = useMemo(() => {
         return addresses.find((addr) => addr.id === selectedAddressId);
@@ -269,7 +283,15 @@ const DetailService = () => {
                 setIsLoading((prev) => ({ ...prev, payment: false }));
             }
         },
-        [snapLoaded, selectedAddress, selectedDate, service, user, note, setPaymentError]
+        [
+            snapLoaded,
+            selectedAddress,
+            selectedDate,
+            service,
+            user,
+            note,
+            setPaymentError,
+        ]
     );
 
     const formatPrice = useCallback((price) => {
@@ -321,7 +343,9 @@ const DetailService = () => {
 
                 <div className="grid lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-7 space-y-6">
-                        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                        <Suspense
+                            fallback={<Skeleton className="h-96 w-full" />}
+                        >
                             <ImageGallery
                                 images={images}
                                 activeImage={activeImage}
@@ -347,6 +371,20 @@ const DetailService = () => {
                                                 Oleh: {service.user_name}
                                             </span>
                                         </div>
+                                        {user &&
+                                            user.id !== service.user_id && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setShowReportModal(true)
+                                                    }
+                                                    className="mt-4"
+                                                >
+                                                    <Flag className="h-4 w-4 mr-2" />
+                                                    Laporkan Listing
+                                                </Button>
+                                            )}
                                     </div>
                                 </div>
 
@@ -386,8 +424,12 @@ const DetailService = () => {
                                         <CustomCalendar
                                             selected={selectedDate}
                                             onSelect={setSelectedDate}
-                                            disabled={(date) => date < new Date()}
-                                            bookedDatesWithUser={bookedDatesWithUser}
+                                            disabled={(date) =>
+                                                date < new Date()
+                                            }
+                                            bookedDatesWithUser={
+                                                bookedDatesWithUser
+                                            }
                                             disabledLeaves={disabledLeaves}
                                             currentUserId={user?.id}
                                             cartDates={cartDates}
@@ -500,6 +542,13 @@ const DetailService = () => {
                     </div>
                 </div>
             )}
+
+            <ReportModal
+                open={showReportModal}
+                onOpenChange={setShowReportModal}
+                type="service"
+                id={service.id}
+            />
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
-import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
 import { getUserStatusIndo } from "@/Utils/Formatters.js";
 
 export default function HeaderUserChatBox({ user, isOnline, isTyping }) {

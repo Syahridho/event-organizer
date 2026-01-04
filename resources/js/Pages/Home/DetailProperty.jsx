@@ -6,6 +6,7 @@ import {
     Home,
     Bed,
     Bath,
+    Flag,
 } from "lucide-react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button.jsx";
@@ -57,6 +58,7 @@ import AddressManager from "@/Components/address-manager.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
 import ReviewSection from "@/Components/ReviewSection.jsx";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
+import ReportModal from "@/Components/ReportModal.jsx";
 
 const DetailProperty = () => {
     const {
@@ -70,8 +72,6 @@ const DetailProperty = () => {
         cartDates,
         pendingDates,
     } = usePage().props;
-
-
 
     const dispatch = useDispatch();
     const [latitude, longitude] =
@@ -108,6 +108,7 @@ const DetailProperty = () => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const bookedDatesWithUser = useMemo(() => {
         return getBookedDatesWithUser(transaction, user?.id);
@@ -227,7 +228,7 @@ const DetailProperty = () => {
                     }
                 );
                 // order_id
-                const { token: snapToken, } = response.data;
+                const { token: snapToken } = response.data;
 
                 if (!snapToken) {
                     throw new Error("Token pembayaran tidak diterima");
@@ -352,9 +353,11 @@ const DetailProperty = () => {
 
     // Set default delivery option based on property settings
     useEffect(() => {
-        const hasPickup = property.picked_up === 1 || property.picked_up === true;
-        const hasDelivery = property.delivered === 1 || property.delivered === true;
-        
+        const hasPickup =
+            property.picked_up === 1 || property.picked_up === true;
+        const hasDelivery =
+            property.delivered === 1 || property.delivered === true;
+
         // Set default based on available options
         if (hasPickup && !hasDelivery) {
             setDeliveryOption("pickup");
@@ -454,7 +457,9 @@ const DetailProperty = () => {
                                             <span>{property.location}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-slate-600">
-                                            <span className="text-sm font-medium">Oleh: {property.user_name}</span>
+                                            <span className="text-sm font-medium">
+                                                Oleh: {property.user_name}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-4 text-slate-600">
                                             {property.bedrooms && (
@@ -484,6 +489,20 @@ const DetailProperty = () => {
                                                 </div>
                                             )}
                                         </div>
+                                        {user &&
+                                            user.id !== property.user_id && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setShowReportModal(true)
+                                                    }
+                                                    className="mt-4"
+                                                >
+                                                    <Flag className="h-4 w-4 mr-2" />
+                                                    Laporkan Listing
+                                                </Button>
+                                            )}
                                     </div>
                                     {/* {property.rating && (
                                         <Rating
@@ -663,44 +682,61 @@ const DetailProperty = () => {
                             >
                                 Metode Penyewaan
                             </Label>
-                            
+
                             {/* Show available options based on property settings */}
                             {(() => {
-                                const hasPickup = property.picked_up === 1 || property.picked_up === true;
-                                const hasDelivery = property.delivered === 1 || property.delivered === true;
-                                
+                                const hasPickup =
+                                    property.picked_up === 1 ||
+                                    property.picked_up === true;
+                                const hasDelivery =
+                                    property.delivered === 1 ||
+                                    property.delivered === true;
+
                                 // If no options available, show message
                                 if (!hasPickup && !hasDelivery) {
                                     return (
                                         <div className="border rounded-lg p-4 bg-yellow-50 text-yellow-800 text-sm">
-                                            Metode penyewaan belum ditentukan oleh pemilik
+                                            Metode penyewaan belum ditentukan
+                                            oleh pemilik
                                         </div>
                                     );
                                 }
-                                
+
                                 // If only one option, show it as disabled select (informational)
                                 if (hasPickup && !hasDelivery) {
                                     return (
                                         <div className="border rounded-lg p-4 bg-slate-50">
                                             <div className="flex items-center gap-2 text-slate-700">
-                                                <span className="font-medium">Ambil di Lokasi</span>
-                                                <span className="text-xs text-slate-500">(Satu-satunya opsi)</span>
+                                                <span className="font-medium">
+                                                    Ambil di Lokasi
+                                                </span>
+                                                <span className="text-xs text-slate-500">
+                                                    (Satu-satunya opsi)
+                                                </span>
                                             </div>
                                         </div>
                                     );
                                 }
-                                
+
                                 if (!hasPickup && hasDelivery) {
                                     return (
                                         <div className="border rounded-lg p-4 bg-slate-50">
                                             <div className="flex items-center gap-2 text-slate-700">
-                                                <span className="font-medium">Diantar ke Alamat</span>
-                                                <span className="text-xs text-slate-500">(Satu-satunya opsi, <span className="text-red-500">Ada biaya tambahakn untuk pengataran)</span></span>
+                                                <span className="font-medium">
+                                                    Diantar ke Alamat
+                                                </span>
+                                                <span className="text-xs text-slate-500">
+                                                    (Satu-satunya opsi,{" "}
+                                                    <span className="text-red-500">
+                                                        Ada biaya tambahakn
+                                                        untuk pengataran)
+                                                    </span>
+                                                </span>
                                             </div>
                                         </div>
                                     );
                                 }
-                                
+
                                 // Both options available - show dropdown
                                 return (
                                     <Select
@@ -718,7 +754,11 @@ const DetailProperty = () => {
                                             )}
                                             {hasDelivery && (
                                                 <SelectItem value="delivery">
-                                                    Diantar ke Alamat, <span className="text-red-500">Ada biaya tambahan untuk pengantaran</span>
+                                                    Diantar ke Alamat,{" "}
+                                                    <span className="text-red-500">
+                                                        Ada biaya tambahan untuk
+                                                        pengantaran
+                                                    </span>
                                                 </SelectItem>
                                             )}
                                         </SelectContent>
@@ -1035,6 +1075,13 @@ const DetailProperty = () => {
                     </div>
                 </div>
             )}
+
+            <ReportModal
+                open={showReportModal}
+                onOpenChange={setShowReportModal}
+                type="property"
+                id={property.id}
+            />
         </div>
     );
 };

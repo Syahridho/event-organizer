@@ -10,14 +10,14 @@
         @else
                     <link rel="icon" href="{{ asset('favicon.ico') }}">
         @endif
-
-        <title inertia>{{ $adminSetting->seo_title }}</title>
-        <meta name="csrf-token" content="{{ csrf_token() }}">
         
-        <!-- SEO Meta Tags -->
-        @if($adminSetting && $adminSetting->seo_description)
-        <meta name="description" content="{{ $adminSetting->seo_description }}">
-        @endif
+                <title inertia>{{ $adminSetting ? $adminSetting->seo_title : config('app.name', 'Event Organizers') }}</title>
+                <meta name="csrf-token" content="{{ csrf_token() }}">
+                
+                <!-- SEO Meta Tags -->
+                @if($adminSetting && $adminSetting->seo_description)
+                <meta name="description" content="{{ $adminSetting->seo_description }}">
+                @endif
         <meta name="theme-color" content="#ffffff">
         
         <!-- Optimized Font Loading -->
@@ -28,7 +28,7 @@
         <!-- Scripts -->
         @routes
         @viteReactRefresh
-            @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+        @vite(['resources/js/app.jsx'])
         @inertiaHead
     </head>
     <body class="font-sans antialiased">
