@@ -57,7 +57,7 @@ export default function Footer() {
                                 <a
                                     href={`mailto:${
                                         adminSettings?.contact_email ||
-                                        "eventplannusantara@gmail.com"
+                                        "eventnusaindonesia@gmail.com"
                                     }`}
                                     className="hover:underline flex items-center gap-2"
                                 >

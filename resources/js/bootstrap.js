@@ -1,18 +1,11 @@
-﻿/**
- * We'll load the axios HTTP library which allows us to easily issue requests
- * to our Laravel back-end. This library automatically handles sending the
- * CSRF token as a header based on the value of the "XSRF" token cookie.
- */
-
-import axios from "axios";
+﻿import axios from "axios";
 window.axios = axios;
 
-// Function to update CSRF token
 function updateCsrfToken() {
     const token = document.head.querySelector('meta[name="csrf-token"]');
     if (token) {
         window.axios.defaults.headers.common["X-CSRF-TOKEN"] = token.content;
-        // Also update XSRF token for cookie-based verification
+
         const xsrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
         if (xsrfToken) {
             window.axios.defaults.headers.common["X-XSRF-TOKEN"] =
@@ -25,13 +18,10 @@ function updateCsrfToken() {
     }
 }
 
-// Initialize CSRF token
 updateCsrfToken();
 
-// Update CSRF token before each request
 axios.interceptors.request.use(
     (config) => {
-        // Refresh CSRF token before each request
         updateCsrfToken();
         return config;
     },
@@ -42,16 +32,12 @@ axios.interceptors.request.use(
 
 axios.interceptors.response.use(
     (response) => {
-        // Update CSRF token after successful response
         updateCsrfToken();
         return response;
     },
     (error) => {
-        // Jika error adalah 419 (Session Expired / CSRF Mismatch)
         if (error.response?.status === 419) {
-            // Check if the response contains our custom csrf_refresh flag
             if (error.response.data?.csrf_refresh) {
-                // Try to refresh the CSRF token without full page reload
                 fetch("/csrf-token", {
                     method: "GET",
                     headers: {
@@ -62,26 +48,22 @@ axios.interceptors.response.use(
                     .then((response) => response.json())
                     .then((data) => {
                         if (data.token) {
-                            // Update the meta tag
                             const metaTag = document.head.querySelector(
                                 'meta[name="csrf-token"]'
                             );
                             if (metaTag) {
                                 metaTag.setAttribute("content", data.token);
                             }
-                            // Update axios defaults
                             updateCsrfToken();
                         }
                     })
                     .catch(() => {
-                        // If token refresh fails, fall back to page reload
                         console.warn(
                             "Failed to refresh CSRF token, reloading page..."
                         );
                         window.location.reload();
                     });
             } else {
-                // For other 419 errors, reload the page
                 window.location.reload();
             }
         }
@@ -92,7 +74,6 @@ axios.interceptors.response.use(
 
 window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 
-// Listen for visibility change to refresh token when tab becomes active again
 document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
         updateCsrfToken();
