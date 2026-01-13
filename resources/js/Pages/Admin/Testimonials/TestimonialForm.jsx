@@ -76,15 +76,15 @@ export default function TestimonialForm({
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditing ? "Edit Testimonial" : "Add New Testimonial"}
+                        {isEditing ? "Edit Testimoni" : "Tambahakan Testimoni"}
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <Label htmlFor="author_name">Author Name</Label>
+                        <Label htmlFor="author_name">Nama</Label>
                         <Input
                             id="author_name"
-                            placeholder="Enter author name"
+                            placeholder="Enter name"
                             value={data.author_name}
                             onChange={(e) =>
                                 setData("author_name", e.target.value)
@@ -99,10 +99,10 @@ export default function TestimonialForm({
                     </div>
 
                     <div>
-                        <Label htmlFor="author_title">Author Title</Label>
+                        <Label htmlFor="author_title">Pangkat</Label>
                         <Input
                             id="author_title"
-                            placeholder="Enter author title"
+                            placeholder="Enter pangkat"
                             value={data.author_title}
                             onChange={(e) =>
                                 setData("author_title", e.target.value)
@@ -117,10 +117,10 @@ export default function TestimonialForm({
                     </div>
 
                     <div>
-                        <Label htmlFor="quote">Quote</Label>
+                        <Label htmlFor="quote">Kata-kata</Label>
                         <Textarea
                             id="quote"
-                            placeholder="Enter testimonial quote"
+                            placeholder="Enter kata-kata testimonial "
                             value={data.quote}
                             onChange={(e) => setData("quote", e.target.value)}
                             rows={3}
@@ -134,7 +134,7 @@ export default function TestimonialForm({
                     </div>
 
                     <div>
-                        <Label htmlFor="star_rating">Star Rating</Label>
+                        <Label htmlFor="star_rating">Bintang Rating</Label>
                         <select
                             id="star_rating"
                             value={data.star_rating}
@@ -158,9 +158,7 @@ export default function TestimonialForm({
                     </div>
 
                     <div>
-                        <Label htmlFor="author_image">
-                            Author Image (Optional)
-                        </Label>
+                        <Label htmlFor="author_image">Foto (Optional)</Label>
                         <Input
                             id="author_image"
                             type="file"
@@ -183,14 +181,14 @@ export default function TestimonialForm({
                             onClick={handleClose}
                             disabled={processing}
                         >
-                            Cancel
+                            Batal
                         </Button>
                         <Button type="submit" disabled={processing}>
                             {processing
-                                ? "Saving..."
+                                ? "Menyimpan..."
                                 : isEditing
-                                ? "Update"
-                                : "Create"}
+                                ? "Perbarui"
+                                : "Buat"}
                         </Button>
                     </div>
                 </form>

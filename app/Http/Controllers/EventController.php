@@ -71,7 +71,6 @@ class EventController extends Controller
 
             $event = Event::create($data);
 
-
             if (!empty($data['speakers']) && is_array($data['speakers'])) {
                 foreach ($data['speakers'] as $index => $speakerData) {
                     $photoSpeaker = '';
@@ -156,8 +155,6 @@ class EventController extends Controller
     public function update(EventUpdateRequest $request, Event $event)
     {
         try {
-            // dd($request, $event);
-            // === VALIDASI BARU ===
             // Cek otorisasi
             if ($event->user_id !== Auth::id()) {
                 abort(403);
@@ -200,55 +197,41 @@ class EventController extends Controller
             }
     
             
-            // Handle thumbnail
             $thumbnail = $data['thumbnail'] ?? null;
 
-            // dd($thumbnail); 
-                        
             if ($thumbnail) {
-                if (!is_string($thumbnail)) {
-                    // New file uploaded - delete old thumbnail if it's user-uploaded
+                // Cek apakah thumbnail yang dikirim sama dengan thumbnail yang sudah ada di database
+                if (is_string($thumbnail) && $thumbnail === $event->thumbnail) {
+                    // Tidak ada perubahan - jangan update thumbnail
+                    unset($data['thumbnail']);
+                } 
+                // Cek apakah ini adalah file upload baru (bukan string, tapi object file)
+                elseif (!is_string($thumbnail)) {
+                    // Hapus thumbnail lama jika itu adalah file upload user (bukan default image)
                     if ($event->thumbnail && !str_contains($event->thumbnail, 'default-event-images')) {
                         Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
                     }
+                    // Simpan file baru ke storage
                     $path = $thumbnail->store('thumbnails', 'public');
-                    $data['thumbnail'] = str_replace('thumbnails/', '', $path);
-                } elseif (str_contains($thumbnail, 'default-event-images')) {
-                    // Switching to default/random image: DELETE the old user-uploaded thumbnail
-                    
-                    // Cek apakah thumbnail lama adalah user-uploaded, jika ya, hapus.
-                    if (
-                        $event->thumbnail && 
-                        !str_contains($event->thumbnail, 'default-event-images')
-                    ) {
-                        // **INI BLOK YANG AKAN MENGHAPUS FILE LAMA**
+                    // Simpan hanya nama file (tanpa path 'thumbnails/')
+                    $data['thumbnail'] = basename($path);
+                } 
+                // User mengganti ke gambar yang berbeda (berupa string path)
+                else {
+                    // Hapus thumbnail lama jika itu adalah file upload user (bukan default image)
+                    if ($event->thumbnail && !str_contains($event->thumbnail, 'default-event-images')) {
                         Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
                     }
                     
-                    // Store the default/random image path as-is
-                    // Hati-hati dengan str_replace, pastikan Anda hanya menyimpan nama filenya saja (tanpa path storage)
-                    $data['thumbnail'] = str_replace(['/default-event-images/'], '', $thumbnail);
-                    
-                } else {
-                    // Regular thumbnail path (from storage) - artinya pengguna tidak upload/tidak ganti
-                    // Di sini kita asumsikan thumbnail yang dikirim adalah nama filenya
-                    // Jika Anda mengirimnya dengan path penuh (misal: /storage/thumbnails/...)
-                    $data['thumbnail'] = str_replace('/storage/thumbnails/', '', $thumbnail);
+                    // Bersihkan path - simpan hanya path relatif dari folder 'thumbnails/'
+                    $data['thumbnail'] = str_replace(['/storage/thumbnails/', 'thumbnails/'], '', $thumbnail);
                 }
             } else {
-                // Jika $thumbnail adalah null (tidak ada input file baru atau string path), 
-                // JANGAN unset. Pertahankan nilai thumbnail yang sudah ada ($event->thumbnail) 
-                // jika Anda ingin memastikan gambarnya tidak terhapus.
-                // Namun, karena Anda menggunakan $event->update($data), jika $data['thumbnail'] tidak ada,
-                // maka kolom thumbnail di DB tidak akan di-update (ini asumsi default Laravel/Eloquent).
-                
-                // Dalam kasus Anda: karena data request tidak memiliki 'thumbnail', dan Anda meng-unset-nya.
-                // Jika Anda TIDAK mengirim input field 'thumbnail' di form (walaupun hidden),
-                // maka tidak ada data 'thumbnail' di $data, dan Eloquent akan membiarkannya.
-                // Karena Anda tidak mengirimkan nilai di Request, biarkan kode Anda:
+                // Tidak ada thumbnail yang dikirim - jangan update field thumbnail
                 unset($data['thumbnail']);
             }
-                
+
+            // Update data event ke database
             $event->update($data);
     
             // Process speakers

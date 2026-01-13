@@ -1,5 +1,5 @@
 ﻿import React, { Fragment, useEffect, useRef, useState } from "react";
-import { Head,  router } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import { debounce } from "lodash";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import ChatLayout from "@/Components/ChatLayout.jsx";
@@ -7,7 +7,6 @@ import DateChatIndicator from "@/Components/DateChatIndicator.jsx";
 import LeftSideBoxChat from "@/Components/LeftSideBoxChat.jsx";
 import RightSideBoxChat from "@/Components/RightSideBoxChat.jsx";
 import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
-
 
 const breadcrumbs = [
     {
@@ -34,6 +33,12 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
 
     // Additional effect for message-specific updates
     useEffect(() => {
+        // Check if Echo is initialized
+        if (!window.Echo) {
+            console.warn("Echo is not initialized yet");
+            return;
+        }
+
         const debouncedMessageReload = debounce(() => {
             router.reload({
                 preserveScroll: true,
@@ -41,23 +46,22 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
             });
         }, 350);
 
-        window.Echo.private("message." + auth.user.uuid).listen(
-            "NewMessageEvent",
-            (e) => {
-                // Check if the message is for the current chat
-                if (
-                    e.message.sender_id === chatWithUser.id ||
-                    e.message.receiver_id === chatWithUser.id
-                ) {
-                    debouncedMessageReload();
-                }
+        const channel = window.Echo.private("message." + auth.user.uuid);
+
+        channel.listen("NewMessageEvent", (e) => {
+            // Check if the message is for the current chat
+            if (
+                e.message.sender_id === chatWithUser.id ||
+                e.message.receiver_id === chatWithUser.id
+            ) {
+                debouncedMessageReload();
             }
-        );
+        });
 
         return () => {
-            window.Echo.private("message." + auth.user.uuid).stopListening(
-                "NewMessageEvent"
-            );
+            if (window.Echo) {
+                channel.stopListening("NewMessageEvent");
+            }
         };
     }, [auth.user.uuid, chatWithUser.id]);
 
@@ -69,17 +73,30 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
         scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
     }, [messages, reply]);
 
-    window.Echo.private("message." + auth.user.uuid).listenForWhisper(
-        "typing",
-        () => {
+    // Setup typing listener
+    useEffect(() => {
+        // Check if Echo is initialized
+        if (!window.Echo) {
+            console.warn("Echo is not initialized yet");
+            return;
+        }
+
+        const channel = window.Echo.private("message." + auth.user.uuid);
+
+        channel.listenForWhisper("typing", () => {
             setIsTyping(true);
 
             setTimeout(() => {
                 setIsTyping(false);
             }, 2000);
-        }
-    );
+        });
 
+        return () => {
+            if (window.Echo) {
+                channel.stopListeningForWhisper("typing");
+            }
+        };
+    }, [auth.user.uuid]);
 
     return (
         <>

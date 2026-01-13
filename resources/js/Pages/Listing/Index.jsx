@@ -115,7 +115,7 @@ const ItemCard = ({ item, baseUrl, viewMode }) => {
                                 className="w-full h-full object-cover sm:rounded-l-lg"
                             />
                             <Badge
-                                variant={badge.variant}
+                                variant="secondary"
                                 className="absolute top-3 right-3 font-medium"
                             >
                                 {badge.label}
@@ -126,9 +126,9 @@ const ItemCard = ({ item, baseUrl, viewMode }) => {
                                 <h3 className="font-bold text-xl line-clamp-2 capitalize text-card-foreground group-hover:text-primary transition-colors">
                                     {item.name}
                                 </h3>
-                                <p className="text-muted-foreground text-sm line-clamp-2">
+                                {/* <p className="text-muted-foreground text-sm line-clamp-2">
                                     {item.description}
-                                </p>
+                                </p> */}
                                 <div className="flex items-center text-muted-foreground text-sm">
                                     <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
                                     <span className="line-clamp-1">
@@ -169,7 +169,7 @@ const ItemCard = ({ item, baseUrl, viewMode }) => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <Badge
-                            variant={badge.variant}
+                            variant="secondary"
                             className="absolute top-3 right-3 font-medium"
                         >
                             {badge.label}
@@ -177,12 +177,12 @@ const ItemCard = ({ item, baseUrl, viewMode }) => {
                     </div>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
-                    <h3 className="font-semibold text-lg line-clamp-2 capitalize text-card-foreground group-hover:text-primary transition-colors min-h-[3.5rem]">
+                    <h3 className="font-semibold text-lg line-clamp-2 capitalize text-card-foreground group-hover:text-primary transition-colors ">
                         {item.name}
                     </h3>
-                    <p className="text-muted-foreground text-sm line-clamp-2 min-h-[2.5rem]">
+                    {/* <p className="text-muted-foreground text-sm line-clamp-2 min-h-[2.5rem]">
                         {item.description}
-                    </p>
+                    </p> */}
                     <div className="flex items-center text-muted-foreground text-sm">
                         <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
                         <span className="truncate">{item.location}</span>

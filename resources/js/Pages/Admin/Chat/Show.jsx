@@ -33,6 +33,12 @@ export default function AdminChatShow({
 
     // Additional effect for message-specific updates
     useEffect(() => {
+        // Check if Echo is initialized
+        if (!window.Echo) {
+            console.warn("Echo is not initialized yet");
+            return;
+        }
+
         const debouncedMessageReload = debounce(() => {
             router.reload({
                 preserveScroll: true,
@@ -40,23 +46,22 @@ export default function AdminChatShow({
             });
         }, 350);
 
-        window.Echo.private("message." + auth.user.uuid).listen(
-            "NewMessageEvent",
-            (e) => {
-                // Check if the message is for the current chat
-                if (
-                    e.message.sender_id === chatWithUser.id ||
-                    e.message.receiver_id === chatWithUser.id
-                ) {
-                    debouncedMessageReload();
-                }
+        const channel = window.Echo.private("message." + auth.user.uuid);
+
+        channel.listen("NewMessageEvent", (e) => {
+            // Check if the message is for the current chat
+            if (
+                e.message.sender_id === chatWithUser.id ||
+                e.message.receiver_id === chatWithUser.id
+            ) {
+                debouncedMessageReload();
             }
-        );
+        });
 
         return () => {
-            window.Echo.private("message." + auth.user.uuid).stopListening(
-                "NewMessageEvent"
-            );
+            if (window.Echo) {
+                channel.stopListening("NewMessageEvent");
+            }
         };
     }, [auth.user.uuid, chatWithUser.id]);
 
@@ -64,16 +69,30 @@ export default function AdminChatShow({
         scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
     }, [messages, reply]);
 
-    window.Echo.private("message." + auth.user.uuid).listenForWhisper(
-        "typing",
-        () => {
+    // Setup typing listener
+    useEffect(() => {
+        // Check if Echo is initialized
+        if (!window.Echo) {
+            console.warn("Echo is not initialized yet");
+            return;
+        }
+
+        const channel = window.Echo.private("message." + auth.user.uuid);
+
+        channel.listenForWhisper("typing", () => {
             setIsTyping(true);
 
             setTimeout(() => {
                 setIsTyping(false);
             }, 2000);
-        }
-    );
+        });
+
+        return () => {
+            if (window.Echo) {
+                channel.stopListeningForWhisper("typing");
+            }
+        };
+    }, [auth.user.uuid]);
 
     return (
         <>

@@ -1,8 +1,8 @@
 import { usePage, router, Head } from "@inertiajs/react";
-import { 
-    Bell, 
-    CheckCircle, 
-    XCircle, 
+import {
+    Bell,
+    CheckCircle,
+    XCircle,
     Calendar,
     ShoppingCart,
     Package,
@@ -22,7 +22,7 @@ import {
     Zap,
     Heart,
     ThumbsUp,
-    Info
+    Info,
 } from "lucide-react";
 import { useState } from "react";
 import MainLayout from "@/Layouts/Main.jsx";
@@ -86,7 +86,7 @@ export default function NotificationsIndex() {
                         <XCircle className="w-5 h-5 text-primary-foreground" />
                     </div>
                 );
-            
+
             // Pembayaran & Keuangan
             case "pembayaran_berhasil":
                 return (
@@ -118,7 +118,7 @@ export default function NotificationsIndex() {
                         <Clock className="w-5 h-5 text-primary-foreground" />
                     </div>
                 );
-            
+
             // Mitra
             case "mitra_diterima":
                 return (
@@ -139,7 +139,7 @@ export default function NotificationsIndex() {
                         <Clock className="w-5 h-5 text-primary-foreground" />
                     </div>
                 );
-            
+
             // Review & Rating
             case "review_baru":
                 return (
@@ -153,7 +153,7 @@ export default function NotificationsIndex() {
                         <MessageSquare className="w-5 h-5 text-primary-foreground" />
                     </div>
                 );
-            
+
             // Promosi & Reward
             case "promo_baru":
             case "diskon_tersedia":
@@ -169,7 +169,7 @@ export default function NotificationsIndex() {
                         <Award className="w-5 h-5 text-primary-foreground" />
                     </div>
                 );
-            
+
             // Aktivitas & Update
             case "produk_favorit":
                 return (
@@ -215,7 +215,7 @@ export default function NotificationsIndex() {
                         <Zap className="w-5 h-5 text-primary-foreground" />
                     </div>
                 );
-            
+
             // Default
             default:
                 return (
@@ -227,9 +227,9 @@ export default function NotificationsIndex() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-white">
             <Head title="Notifikasi" />
-            
+
             {/* Header Section */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
                 <div className="flex items-center justify-between mb-8">
@@ -254,7 +254,9 @@ export default function NotificationsIndex() {
                             className="group flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <CheckCircle className="w-4 h-4" />
-                            <span className="text-sm font-medium">Tandai Semua Dibaca</span>
+                            <span className="text-sm font-medium">
+                                Tandai Semua Dibaca
+                            </span>
                         </button>
                     )}
                 </div>
@@ -273,7 +275,8 @@ export default function NotificationsIndex() {
                             Tidak ada notifikasi
                         </h3>
                         <p className="text-muted-foreground">
-                            Anda akan menerima notifikasi di sini ketika ada aktivitas baru
+                            Anda akan menerima notifikasi di sini ketika ada
+                            aktivitas baru
                         </p>
                     </div>
                 ) : (
@@ -288,14 +291,14 @@ export default function NotificationsIndex() {
                                 } transform hover:-translate-y-1`}
                                 style={{
                                     animationDelay: `${index * 50}ms`,
-                                    animation: 'slideIn 0.3s ease-out forwards'
+                                    animation: "slideIn 0.3s ease-out forwards",
                                 }}
                             >
                                 {/* Unread indicator */}
                                 {!notification.read_at && (
                                     <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
                                 )}
-                                
+
                                 <div className="flex items-start gap-4 p-5">
                                     {/* Icon */}
                                     <div className="flex-shrink-0 transform group-hover:scale-110 transition-transform duration-300">
@@ -304,27 +307,33 @@ export default function NotificationsIndex() {
 
                                     {/* Content */}
                                     <div className="flex-1 min-w-0">
-                                        <p className={`text-sm leading-relaxed ${
-                                            notification.read_at 
-                                                ? "text-muted-foreground" 
-                                                : "text-foreground font-medium"
-                                        }`}>
+                                        <p
+                                            className={`text-sm leading-relaxed ${
+                                                notification.read_at
+                                                    ? "text-muted-foreground"
+                                                    : "text-foreground font-medium"
+                                            }`}
+                                        >
                                             {notification.message}
                                         </p>
-                                        
+
                                         {/* Additional Info */}
                                         <div className="mt-2 space-y-1">
                                             {notification.pembelian_id && (
                                                 <div className="flex items-center gap-2">
                                                     <div className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-xs font-medium">
-                                                        ID: {notification.pembelian_id}
+                                                        ID:{" "}
+                                                        {
+                                                            notification.pembelian_id
+                                                        }
                                                     </div>
                                                 </div>
                                             )}
                                             {notification.jumlah && (
                                                 <div className="flex items-center gap-2">
                                                     <div className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-xs font-medium">
-                                                        Jumlah: {notification.jumlah}
+                                                        Jumlah:{" "}
+                                                        {notification.jumlah}
                                                     </div>
                                                 </div>
                                             )}
@@ -342,7 +351,9 @@ export default function NotificationsIndex() {
                                     {/* Action Button */}
                                     {!notification.read_at && (
                                         <button
-                                            onClick={() => markAsRead(notification.id)}
+                                            onClick={() =>
+                                                markAsRead(notification.id)
+                                            }
                                             disabled={isLoading}
                                             className="flex-shrink-0 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                                         >

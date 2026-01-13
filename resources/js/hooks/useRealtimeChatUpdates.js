@@ -10,6 +10,12 @@ export default function useRealtimeChatUpdates() {
     const { auth } = usePage().props;
 
     useEffect(() => {
+        // Check if Echo is initialized
+        if (!window.Echo) {
+            console.warn("Echo is not initialized yet");
+            return;
+        }
+
         // Create a debounced reload function to prevent excessive server requests
         // This is the key Inertia method for partial page updates without full refresh
         const debouncedReload = debounce(() => {
@@ -21,7 +27,9 @@ export default function useRealtimeChatUpdates() {
 
         // Listen for new message events specifically for partners
         // This is the precise Soketi/Laravel Echo event handling strategy
-        window.Echo.private("message." + auth.user.uuid)
+        const channel = window.Echo.private("message." + auth.user.uuid);
+
+        channel
             .listen("NewMessageEvent", (e) => {
                 // Trigger the Inertia reload when a new message event is received
                 debouncedReload();
@@ -32,9 +40,11 @@ export default function useRealtimeChatUpdates() {
 
         // Cleanup function to remove listeners when component unmounts
         return () => {
-            window.Echo.private("message." + auth.user.uuid)
-                .stopListening("NewMessageEvent")
-                .stopListening("ReadMessageEvent");
+            if (window.Echo) {
+                channel
+                    .stopListening("NewMessageEvent")
+                    .stopListening("ReadMessageEvent");
+            }
         };
     }, [auth.user.uuid]);
 }

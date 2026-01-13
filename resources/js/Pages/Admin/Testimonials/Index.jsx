@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { Head, usePage, router } from "@inertiajs/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.jsx";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card.jsx";
 import {
     Table,
     TableBody,
@@ -21,7 +26,11 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog.jsx";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar.jsx";
 import { Plus, Edit, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
@@ -43,6 +52,9 @@ export default function Index() {
     const { auth, testimonials } = usePage().props;
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingTestimonial, setEditingTestimonial] = useState(null);
+
+    // LOGIC TAMBAHAN: Hitung jumlah yang aktif
+    const activeCount = testimonials.filter((t) => t.is_featured).length;
 
     const handleDelete = (testimonial) => {
         router.delete(route("admin.testimonials.destroy", testimonial.id), {
@@ -71,15 +83,25 @@ export default function Index() {
     };
 
     const handleToggleFeatured = (testimonial) => {
-        router.patch(route("admin.testimonials.toggle-featured", testimonial.id), {}, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success("Status featured berhasil diperbarui");
-            },
-            onError: (errors) => {
-                toast.error(errors.error || "Gagal memperbarui status");
-            },
-        });
+        // LOGIC TAMBAHAN: Cegah jika limit penuh dan mencoba mengaktifkan yang baru
+        if (activeCount >= 3 && !testimonial.is_featured) {
+            toast.error("Maksimal hanya 3 testimoni yang dapat ditampilkan.");
+            return;
+        }
+
+        router.patch(
+            route("admin.testimonials.toggle-featured", testimonial.id),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success("Status featured berhasil diperbarui");
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || "Gagal memperbarui status");
+                },
+            }
+        );
     };
 
     const renderStars = (rating) => {
@@ -107,23 +129,25 @@ export default function Index() {
                         </h1>
                         <Button onClick={() => setDialogOpen(true)}>
                             <Plus className="w-4 h-4 mr-2" />
-                            Add Testimonial
+                            Tambahkan Testimonial
                         </Button>
                     </div>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>All Testimonials</CardTitle>
+                            <CardTitle>Semua Testimonials</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Author</TableHead>
-                                        <TableHead>Quote</TableHead>
+                                        <TableHead>Nama</TableHead>
+                                        <TableHead>Kata-Kata</TableHead>
                                         <TableHead>Rating</TableHead>
-                                        <TableHead className="text-center">Featured</TableHead>
-                                        <TableHead>Actions</TableHead>
+                                        <TableHead className="text-center">
+                                            Tampilkan
+                                        </TableHead>
+                                        <TableHead>Aksi</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -169,8 +193,25 @@ export default function Index() {
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <Switch
-                                                    checked={testimonial.is_featured}
-                                                    onCheckedChange={() => handleToggleFeatured(testimonial)}
+                                                    checked={
+                                                        testimonial.is_featured
+                                                    }
+                                                    onCheckedChange={() =>
+                                                        handleToggleFeatured(
+                                                            testimonial
+                                                        )
+                                                    }
+                                                    // LOGIC TAMBAHAN: Disable jika limit >= 3 DAN item ini sedang tidak aktif
+                                                    disabled={
+                                                        activeCount >= 3 &&
+                                                        !testimonial.is_featured
+                                                    }
+                                                    className={
+                                                        activeCount >= 3 &&
+                                                        !testimonial.is_featured
+                                                            ? "opacity-50 cursor-not-allowed"
+                                                            : ""
+                                                    }
                                                 />
                                             </TableCell>
                                             <TableCell>

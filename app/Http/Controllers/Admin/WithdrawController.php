@@ -79,7 +79,7 @@ class WithdrawController extends Controller
                     'type'           => 'DEBIT',
                     'reference_type' => 'withdraw',
                     'reference_id'   => $withdraw->id,
-                    'description'    => 'Withdrawal completed #' . $withdraw->id,
+                    'description'    => 'Withdrawal Berhasil #' . $withdraw->id,
                 ]);
 
                 $user->notify(new WithdrawalStatusNotification($withdraw, 'completed'));

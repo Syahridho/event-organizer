@@ -455,6 +455,12 @@ export default function CreateEvent() {
                                     <span className="flex items-center gap-2">
                                         <Notebook /> Deskripsi
                                     </span>
+                                    <p
+                                        className="overflow-hidden line-clamp-1 whitespace-pre-wrap"
+                                        dangerouslySetInnerHTML={{
+                                            __html: data?.description,
+                                        }}
+                                    />
                                 </Button>
 
                                 {uiState.checkDescription && (
@@ -494,27 +500,34 @@ export default function CreateEvent() {
                                                         </Button>
                                                     </div>
 
-                                                        <div className="mt-4 space-y-4">
-                                                            <div className="h-80">
-                                                                <Suspense fallback={<div className="p-4 text-center">Loading editor...</div>}>
-                                                                    <ReactQuill
-                                                                        theme="snow"
-                                                                        value={
-                                                                            data.description
-                                                                        }
-                                                                        onChange={(
+                                                    <div className="mt-4 space-y-4">
+                                                        <div className="h-80">
+                                                            <Suspense
+                                                                fallback={
+                                                                    <div className="p-4 text-center">
+                                                                        Loading
+                                                                        editor...
+                                                                    </div>
+                                                                }
+                                                            >
+                                                                <ReactQuill
+                                                                    theme="snow"
+                                                                    value={
+                                                                        data.description
+                                                                    }
+                                                                    onChange={(
+                                                                        content
+                                                                    ) =>
+                                                                        setData(
+                                                                            "description",
                                                                             content
-                                                                        ) =>
-                                                                            setData(
-                                                                                "description",
-                                                                                content
-                                                                            )
-                                                                        }
-                                                                        placeholder="Masukkan deskripsi..."
-                                                                        className="h-64"
-                                                                    />
-                                                                </Suspense>
-                                                            </div>
+                                                                        )
+                                                                    }
+                                                                    placeholder="Masukkan deskripsi..."
+                                                                    className="h-64"
+                                                                />
+                                                            </Suspense>
+                                                        </div>
 
                                                         <div className="flex justify-end gap-2">
                                                             <Button
@@ -969,7 +982,6 @@ export default function CreateEvent() {
                                                                             >
                                                                                 Jumlah
                                                                                 Tiket
-                                                                                
                                                                             </Label>
                                                                             <Input
                                                                                 id={`quota-${ticketName}`}

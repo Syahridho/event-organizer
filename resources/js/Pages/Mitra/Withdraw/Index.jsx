@@ -1,6 +1,6 @@
 ﻿import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head, usePage, router, useForm } from "@inertiajs/react";
-import { useState} from "react";
+import { useState } from "react";
 import moment from "moment";
 import { toast } from "sonner";
 import {
@@ -39,6 +39,7 @@ import {
     DialogFooter,
 } from "@/Components/ui/dialog";
 import { HiEye } from "react-icons/hi"; // Impor icon mata
+import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
@@ -46,7 +47,8 @@ const breadcrumbs = [
 ];
 
 export default function MitraWithdrawDashboard() {
-    const { withdrawals, ziggy } = usePage().props;
+    const { withdrawals, walletBalance, ziggy } = usePage().props;
+    console.log(walletBalance);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showProofModal, setShowProofModal] = useState(false);
     const [withdrawToCancel, setWithdrawToCancel] = useState(null);
@@ -126,7 +128,6 @@ export default function MitraWithdrawDashboard() {
     const handleWithdrawSubmit = (e) => {
         e.preventDefault();
 
-        // Cegah submit jika sedang processing
         if (processing) {
             return;
         }
@@ -156,8 +157,6 @@ export default function MitraWithdrawDashboard() {
             },
         });
     };
-
-    // ... (useEffect for flash messages remains the same)
 
     const handleOpenCancelModal = (withdraw) => {
         setWithdrawToCancel(withdraw);
@@ -303,7 +302,10 @@ export default function MitraWithdrawDashboard() {
                         <DialogTitle>Ajukan Penarikan Dana</DialogTitle>
                         <DialogDescription>
                             Masukkan jumlah dana dan pilih metode penarikan.
-                            Proses akan diverifikasi oleh admin.
+                            Proses akan diverifikasi oleh admin.{" "}
+                            <span className="text-red-500">
+                                Saldo Rp. {formatRupiah(walletBalance)}
+                            </span>
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleWithdrawSubmit}>
@@ -314,7 +316,7 @@ export default function MitraWithdrawDashboard() {
                                     id="amount"
                                     type="text"
                                     placeholder="Contoh: 50.000"
-                                    value={data.amount}
+                                    value={formatRupiahInput(data.amount)}
                                     onChange={handleAmountChange}
                                 />
                                 {errors.amount && (

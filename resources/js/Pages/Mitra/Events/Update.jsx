@@ -476,9 +476,12 @@ export default function UpdateEvent() {
                                     <span className="flex items-center gap-2">
                                         <Notebook /> Deskripsi
                                     </span>
-                                    <p className="overflow-hidden line-clamp-1 whitespace-pre-wrap">
-                                        {data?.description}
-                                    </p>
+                                    <p
+                                        className="overflow-hidden line-clamp-1 whitespace-pre-wrap"
+                                        dangerouslySetInnerHTML={{
+                                            __html: data?.description,
+                                        }}
+                                    />
                                 </Button>
                                 <Modal
                                     show={uiState.checkDescription}
@@ -500,11 +503,22 @@ export default function UpdateEvent() {
 
                                             <div className="mt-4 space-y-4">
                                                 <div className="h-80">
-                                                    <Suspense fallback={<div className="p-4 text-center">Loading editor...</div>}>
+                                                    <Suspense
+                                                        fallback={
+                                                            <div className="p-4 text-center">
+                                                                Loading
+                                                                editor...
+                                                            </div>
+                                                        }
+                                                    >
                                                         <ReactQuill
                                                             theme="snow"
-                                                            value={data.description}
-                                                            onChange={(content) =>
+                                                            value={
+                                                                data.description
+                                                            }
+                                                            onChange={(
+                                                                content
+                                                            ) =>
                                                                 setData(
                                                                     "description",
                                                                     content

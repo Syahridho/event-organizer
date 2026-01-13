@@ -42,7 +42,7 @@ class ReportController extends Controller
             ->exists();
 
         if ($existingReport) {
-            return redirect()->back()->withErrors(['reason' => 'Anda sudah pernah melaporkan listing ini sebelumnya.']);
+            return redirect()->back()->withErrors(['reason' => 'Anda sudah pernah melaporkan ini sebelumnya.']);
         }
 
         $report = Report::create([

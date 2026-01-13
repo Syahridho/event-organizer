@@ -86,11 +86,9 @@ export default function ReportModal({ open, onOpenChange, type, id }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader className="text-center">
-                    <DialogTitle className="text-xl">
-                        Laporkan Listing
-                    </DialogTitle>
+                    <DialogTitle className="text-xl">Laporkan</DialogTitle>
                     <DialogDescription className="text-sm text-muted-foreground">
-                        Kenapa Anda melaporkan listing ini?
+                        Kenapa Anda melaporkan ini?
                     </DialogDescription>
                 </DialogHeader>
 

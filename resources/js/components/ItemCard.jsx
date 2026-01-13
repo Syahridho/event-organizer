@@ -1,6 +1,11 @@
 import { useCallback } from "react";
 import { Link } from "@inertiajs/react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card.jsx";
+import {
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+} from "@/components/ui/card.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
 import { MapPin, ChevronRight } from "lucide-react";
 import LazyImage from "@/components/LazyImage.jsx";
@@ -13,15 +18,23 @@ const ItemCard = ({ item, type, baseUrl }) => {
         }
 
         // If thumbnail already contains full path (starts with /storage or http)
-        if (item.thumbnail.startsWith('/storage') || item.thumbnail.startsWith('http')) {
-            return item.thumbnail.startsWith('http') 
-                ? item.thumbnail 
+        if (
+            item.thumbnail.startsWith("/storage") ||
+            item.thumbnail.startsWith("http")
+        ) {
+            return item.thumbnail.startsWith("http")
+                ? item.thumbnail
                 : `${baseUrl}${item.thumbnail}`;
         }
 
         // For events, check if it's a default image
-        if (type === "events" && item.thumbnail.includes("default-event-images")) {
-            return `${baseUrl}/storage/default-event-images/${item.thumbnail.split('/').pop()}`;
+        if (
+            type === "events" &&
+            item.thumbnail.includes("default-event-images")
+        ) {
+            return `${baseUrl}/storage/default-event-images/${item.thumbnail
+                .split("/")
+                .pop()}`;
         }
 
         // For all types, add /storage/thumbnails/ prefix if not already present
@@ -56,21 +69,31 @@ const ItemCard = ({ item, type, baseUrl }) => {
 
     const getTitle = useCallback(() => {
         switch (type) {
-            case "events": return "Event";
-            case "services": return "Jasa";
-            case "buildings": return "Gedung";
-            case "propertys": return "Property";
-            default: return "Event";
+            case "events":
+                return "Event";
+            case "services":
+                return "Jasa";
+            case "buildings":
+                return "Gedung";
+            case "propertys":
+                return "Property";
+            default:
+                return "Event";
         }
     }, [type]);
 
     const getBadgeColor = useCallback(() => {
         switch (type) {
-            case "events": return "bg-blue-500 hover:bg-blue-600";
-            case "services": return "bg-purple-500 hover:bg-purple-600";
-            case "buildings": return "bg-orange-500 hover:bg-orange-600";
-            case "propertys": return "bg-green-500 hover:bg-green-600";
-            default: return "bg-primary";
+            case "events":
+                return "bg-blue-500 hover:bg-blue-600";
+            case "services":
+                return "bg-purple-500 hover:bg-purple-600";
+            case "buildings":
+                return "bg-orange-500 hover:bg-orange-600";
+            case "propertys":
+                return "bg-green-500 hover:bg-green-600";
+            default:
+                return "bg-primary";
         }
     }, [type]);
 
@@ -85,8 +108,8 @@ const ItemCard = ({ item, type, baseUrl }) => {
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
-                        
-                        <Badge 
+
+                        <Badge
                             className={`absolute top-3 right-3 capitalize font-medium text-white border-0 shadow-lg ${getBadgeColor()}`}
                         >
                             {getTitle()}
@@ -100,14 +123,18 @@ const ItemCard = ({ item, type, baseUrl }) => {
                     {item.location && (
                         <div className="flex items-start text-muted-foreground text-sm">
                             <MapPin className="w-4 h-4 mr-1.5 mt-0.5 flex-shrink-0 text-primary/70" />
-                            <span className="line-clamp-1">{item.location}</span>
+                            <span className="line-clamp-1">
+                                {item.location}
+                            </span>
                         </div>
                     )}
                 </CardContent>
                 <CardFooter className="p-4 pt-0 mt-auto border-t border-border/50 bg-muted/20">
                     <div className="flex items-center justify-between w-full pt-3">
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Harga</span>
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                                Harga
+                            </span>
                             <span className="font-bold text-lg text-primary">
                                 {getPriceDisplay()}
                             </span>

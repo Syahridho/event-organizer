@@ -44,6 +44,7 @@ class ProfileController extends Controller
                 ];
             });
 
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
@@ -132,25 +133,49 @@ class ProfileController extends Controller
             ['balance' => 0]
         );
 
-        // Fetch recent transactions (latest first)
-        $transactions = \App\Models\WalletTransaction::where('user_id', $user->id)
-            ->orderByDesc('id')
-            ->limit(100)
+        // Hitung total penarikan yang masih pending
+        $pendingAmount = \App\Models\Withdraw::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->sum('amount');
+
+        // Saldo yang tersedia untuk ditarik (saldo wallet - total pending)
+        $availableBalance = $wallet->balance - $pendingAmount;
+        
+        $completedTransactions = \App\Models\WalletTransaction::where('user_id', $user->id) 
+            ->orderByDesc('created_at')
             ->get()
             ->map(function ($tx) {
                 return [
-                    'id' => $tx->id,
-                    'amount' => (float) $tx->amount,
-                    'type' => $tx->type,
-                    'description' => $tx->description,
-                    'reference_type' => $tx->reference_type,
-                    'reference_id' => $tx->reference_id,
-                    'created_at' => $tx->created_at?->toDateTimeString(),
+                    'type_data'      => 'wallet', // Penanda
+                    'amount'         => (float) $tx->amount,
+                    'type'           => $tx->type, // CREDIT/DEBIT
+                    'status'         => 'completed', // Pasti completed karena sudah masuk wallet
+                    'description'    => $tx->description,
+                    'created_at'     => $tx->created_at,
                 ];
             });
 
+        $pendingWithdraws = \App\Models\Withdraw::where('user_id', $user->id)
+            ->where('status', '!=', 'completed')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($tx) {
+                return [
+                    'type_data'      => 'withdraw',
+                    'amount'         => (float) $tx->amount,
+                    'type'           => 'DEBIT',
+                    'status'         => $tx->status, 
+                    'description'    => 'Permintaan Withdraw via ' . $tx->method,
+                    'created_at'     => $tx->created_at,
+                ];
+            });
+
+        $transactions = $completedTransactions->concat($pendingWithdraws)->sortByDesc('created_at');
+        
         return Inertia::render('Profile/Wallet', [
-            'balance' => (float) $wallet->balance,
+            'balance' => $wallet->balance,
+            'pendingAmount' => $pendingAmount,
+            'availableBalance' => $availableBalance,
             'transactions' => $transactions,
         ]);
     }

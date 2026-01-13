@@ -6,6 +6,12 @@ export default function useOnlineStatus() {
     const { auth } = usePage().props;
 
     useEffect(() => {
+        // Check if Echo is initialized
+        if (!window.Echo) {
+            console.warn("Echo is not initialized yet");
+            return;
+        }
+
         // Join presence channel to track online users
         const presence = window.Echo.join("online-users");
 
@@ -21,7 +27,9 @@ export default function useOnlineStatus() {
             });
 
         return () => {
-            presence.leave();
+            if (presence) {
+                presence.leave();
+            }
         };
     }, []);
 

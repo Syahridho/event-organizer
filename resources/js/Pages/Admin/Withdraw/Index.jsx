@@ -30,12 +30,11 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
-// Import the Eye icon from lucide-react
 import { Eye } from "lucide-react";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
-    { title: "Penarikan Mitra", href: "/admin/withdraw" },
+    { title: "Penarikan", href: "/admin/withdraw" },
 ];
 
 export default function AdminWithdraw() {

@@ -1,6 +1,11 @@
 ﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { usePage, Link, Head, router } from "@inertiajs/react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.jsx";
+import {
+    Tabs,
+    TabsList,
+    TabsTrigger,
+    TabsContent,
+} from "@/components/ui/tabs.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import { formatRupiah } from "@/Utils/formatRupiah.js";
@@ -286,7 +291,10 @@ const TransactionItem = React.memo(
 
                                                 // Tampilkan badge untuk semua item yang memiliki status
                                                 // Ini termasuk pending_admin, shipping, work, otw, dll
-                                                if (item?.status) {
+                                                if (
+                                                    item?.status &&
+                                                    item?.item_type !== "ticket"
+                                                ) {
                                                     return (
                                                         <ItemStatusBadge
                                                             status={item.status}
@@ -669,18 +677,6 @@ const TransactionItem = React.memo(
     }
 );
 
-/**
- * ===================================
- * OPTIMIZED: MAIN PURCHASE INDEX COMPONENT
- * ===================================
- * - O(1) status mapping with constant object
- * - Improved responsive tabs design
- * - Enhanced UI with shadcn components
- * - Optimized rendering with useMemo and useCallback
- * - Better mobile experience
- */
-
-// OPTIMIZED: O(1) status mapping lookup
 const STATUS_MAPPING = {
     pending: "unpaid",
     settlement: "paid",
@@ -691,7 +687,6 @@ const STATUS_MAPPING = {
     pending_admin: "pending_admin",
 };
 
-// OPTIMIZED: Tab configuration array for easy maintenance
 const TAB_CONFIG = [
     { key: "all", label: "Semua", icon: ShoppingCart },
     { key: "unpaid", label: "Belum Bayar", icon: Clock },
@@ -703,7 +698,7 @@ const TAB_CONFIG = [
 ];
 
 export default function PurchaseIndex() {
-    const { transactions, ziggy} = usePage().props;
+    const { transactions, ziggy } = usePage().props;
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentUrl, setPaymentUrl] = useState("");
     const [allTransactions, setAllTransactions] = useState(transactions);
@@ -714,7 +709,6 @@ export default function PurchaseIndex() {
     const searchParams = new URLSearchParams(window.location.search);
     const currentTab = searchParams.get("tab") || "all";
 
-    // OPTIMIZED: Memoized getThumbnail function
     const getThumbnail = useCallback(
         (item) => {
             const thumb =
@@ -729,17 +723,15 @@ export default function PurchaseIndex() {
         [ziggy.url]
     );
 
-    // OPTIMIZED: Memoized filtered transactions with O(1) status lookup
-    // Updated to check BOTH transaction status AND item status
     const filteredTransactions = useMemo(() => {
         if (currentTab === "all") return allTransactions;
-        
+
         return allTransactions.filter((trx) => {
             // First check transaction-level status
             if (STATUS_MAPPING[trx.status] === currentTab) {
                 return true;
             }
-            
+
             // Then check if ANY item has the matching status
             // This handles cases like "pending_admin" and "shipping" which are item-level statuses
             if (trx.items && Array.isArray(trx.items)) {
@@ -752,11 +744,11 @@ export default function PurchaseIndex() {
                         work: "shipped",
                         completed: "completed",
                     };
-                    
+
                     return itemStatusMap[item.status] === currentTab;
                 });
             }
-            
+
             return false;
         });
     }, [allTransactions, currentTab]);

@@ -70,7 +70,7 @@ const admin = [
         icon: Users,
     },
     {
-        title: "Penarikan Mitra",
+        title: "Penarikan Uang Pengguna",
         url: "/admin/withdraw",
         icon: FaMoneyBillTransfer,
     },

@@ -43,7 +43,6 @@ import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 
 export default function CheckoutPage() {
     const { checkoutData, ziggy, user, taxInfo } = usePage().props;
-    console.log("CheckoutData from server:", checkoutData);
 
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [addresses, setAddresses] = useState([]);
@@ -145,7 +144,6 @@ export default function CheckoutPage() {
     }, [taxInfo, subtotal]);
 
     const totalWithTax = useMemo(() => {
-        console.log(subtotal, taxAmount);
         // Pastikan keduanya integer sebelum dijumlahkan
         return parseInt(subtotal) + parseInt(taxAmount);
     }, [subtotal, taxAmount]);
@@ -351,9 +349,6 @@ export default function CheckoutPage() {
         async (e) => {
             if (e) e.preventDefault();
 
-            console.log("=== PAYMENT HANDLER START ===");
-            console.log("Current itemNotes:", itemNotes);
-
             // Validate address requirement
             if (isAddressRequired && !selectedAddressId) {
                 toast.error(
@@ -380,12 +375,6 @@ export default function CheckoutPage() {
                 // Build common payload base with notes
                 const baseItems = checkoutData.items.map((item) => {
                     const itemNote = itemNotes[item.cart_id] || null;
-                    console.log(`Building item ${item.cart_id}:`, {
-                        id: item.id,
-                        cart_id: item.cart_id,
-                        note: itemNote,
-                        noteExists: !!itemNote,
-                    });
 
                     return {
                         id: parseInt(item.id),
@@ -398,8 +387,6 @@ export default function CheckoutPage() {
                         note: itemNote,
                     };
                 });
-
-                console.log("Final baseItems with notes:", baseItems);
 
                 const paymentData = {
                     items: baseItems,
@@ -419,12 +406,6 @@ export default function CheckoutPage() {
                         postal_code: selectedAddress.postal_code,
                     };
                 }
-
-                console.log(
-                    "Payment data being sent:",
-                    JSON.stringify(paymentData, null, 2)
-                );
-
                 // FREE FLOW
                 if (parseInt(subtotal) <= 0) {
                     try {
@@ -441,8 +422,6 @@ export default function CheckoutPage() {
                             name: user.name,
                             email: user.email,
                         };
-
-                        console.log("Free payload:", freePayload);
 
                         const freeResponse = await axios.post(
                             "/event/free",
@@ -646,11 +625,6 @@ export default function CheckoutPage() {
             router.visit("/cart");
         }
     }, [checkoutData]);
-
-    // Debug log for itemNotes changes
-    useEffect(() => {
-        console.log("ItemNotes state updated:", itemNotes);
-    }, [itemNotes]);
 
     if (!checkoutData) {
         return (
@@ -1049,16 +1023,6 @@ export default function CheckoutPage() {
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => {
-                                                        console.log(
-                                                            "Opening note modal for cart_id:",
-                                                            item.cart_id
-                                                        );
-                                                        console.log(
-                                                            "Current note:",
-                                                            itemNotes[
-                                                                item.cart_id
-                                                            ]
-                                                        );
                                                         setTempNoteValue(
                                                             itemNotes[
                                                                 item.cart_id
@@ -1462,10 +1426,6 @@ export default function CheckoutPage() {
                             onClick={() => {
                                 if (editingItemNote) {
                                     const trimmedNote = tempNoteValue.trim();
-                                    console.log(
-                                        `Saving note for cart_id ${editingItemNote.cart_id}:`,
-                                        trimmedNote
-                                    );
 
                                     setItemNotes((prev) => {
                                         const updated = {
@@ -1473,10 +1433,6 @@ export default function CheckoutPage() {
                                             [editingItemNote.cart_id]:
                                                 trimmedNote || null,
                                         };
-                                        console.log(
-                                            "Updated itemNotes state:",
-                                            updated
-                                        );
                                         return updated;
                                     });
 

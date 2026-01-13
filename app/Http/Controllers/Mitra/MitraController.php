@@ -231,8 +231,4 @@ class MitraController extends Controller
         ]);
     }
 
-    public function withdraw(Request $request)
-    {
-        // ... (kode withdraw Anda di sini)
-    }
 }
