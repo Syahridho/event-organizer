@@ -59,10 +59,13 @@ export default function ChatInputMessage(props) {
 
         typingTimeoutRef.current = setTimeout(() => {
             if (window.Echo) {
-                window.Echo.private(`chat.${props.chatId}`) // Pastikan channel ID sama dengan yang di-listen
-                    .whisper("typing", {
-                        name: usePage().props.auth.user.name, // Kirim nama KAMU, bukan nama lawan
-                    });
+                // Use the same channel name as the listener in Chat component
+                window.Echo.private(`message.${chatWithUser.uuid}`).whisper(
+                    "typing",
+                    {
+                        name: usePage().props.auth.user.name,
+                    }
+                );
             }
         }, 500);
     };

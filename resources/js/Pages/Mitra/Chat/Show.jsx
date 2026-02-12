@@ -25,11 +25,17 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
     const scrollRef = useRef(null);
     const [reply, setReply] = useState(null);
     const [isTyping, setIsTyping] = useState(false);
+    const [localMessages, setLocalMessages] = useState(messages);
     // const { isUserOnline } = useOnlineStatusContext();
 
     // Use the custom hook for real-time updates
     // This will handle both chat list and message updates
     useRealtimeChatUpdates();
+
+    // Update local messages when props change
+    useEffect(() => {
+        setLocalMessages(messages);
+    }, [messages]);
 
     // Additional effect for message-specific updates
     useEffect(() => {
@@ -39,13 +45,6 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
             return;
         }
 
-        const debouncedMessageReload = debounce(() => {
-            router.reload({
-                preserveScroll: true,
-                only: ["messages"], // Only reload messages
-            });
-        }, 350);
-
         const channel = window.Echo.private("message." + auth.user.uuid);
 
         channel.listen("NewMessageEvent", (e) => {
@@ -54,7 +53,17 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
                 e.message.sender_id === chatWithUser.id ||
                 e.message.receiver_id === chatWithUser.id
             ) {
-                debouncedMessageReload();
+                // Update messages state locally instead of reloading
+                setLocalMessages((prevMessages) => {
+                    // Check if message already exists to avoid duplicates
+                    const messageExists = prevMessages.some(
+                        (msg) => msg.id === e.message.id
+                    );
+                    if (!messageExists) {
+                        return [...prevMessages, e.message];
+                    }
+                    return prevMessages;
+                });
             }
         });
 
@@ -71,7 +80,7 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
 
     useEffect(() => {
         scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
-    }, [messages, reply]);
+    }, [localMessages, reply]);
 
     // Setup typing listener
     useEffect(() => {
@@ -106,7 +115,7 @@ export default function Show({ auth, chat_with: chatWithUser, messages }) {
                 showBackButton={true}
                 backUrl={route("mitra.chat")}
                 currentUser={chatWithUser}
-                messages={messages}
+                messages={localMessages}
                 onlineUsers={[]}
                 isTyping={isTyping}
                 reply={reply}
