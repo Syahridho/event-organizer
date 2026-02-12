@@ -32,6 +32,7 @@ export default function useRealtimeChatUpdates() {
         channel
             .listen("NewMessageEvent", (e) => {
                 // Trigger the Inertia reload when a new message event is received
+                console.log("Event diterima!", e);
                 debouncedReload();
             })
             .listen("ReadMessageEvent", (e) => {
