@@ -14,5 +14,6 @@ use Illuminate\Support\Facades\Broadcast;
 */
 
 Broadcast::channel('message.{uuid}', function ($user, $uuid) {
-    return Auth::check();
+        // return Auth::check();
+    return (string) $user->uuid === (string) $uuid;
 });
