@@ -1,75 +1,55 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    useRef,
+} from "react";
 
 const OnlineStatusContext = createContext();
 
-export const useOnlineStatusContext = () => {
-    return useContext(OnlineStatusContext);
-};
+export const useOnlineStatusContext = () => useContext(OnlineStatusContext);
 
 const OnlineStatusProvider = ({ children }) => {
     const [onlineUsers, setOnlineUsers] = useState([]);
-    const [isInitialized, setIsInitialized] = useState(false);
+    const isSubscribed = useRef(false); // Gunakan ref agar tidak memicu re-render berlebih
 
-    // useEffect(() => {
-    //     // Only initialize if Echo is available
-    //     if (!window.Echo || isInitialized) {
-    //         return;
-    //     }
+    useEffect(() => {
+        if (!window.Echo || isSubscribed.current) return;
 
-    //     try {
-    //         Join presence channel to track online users across all routes
-    //         const presence = window.Echo.join("online-users");
+        const channel = window.Echo.join("online-users");
+        isSubscribed.current = true;
 
-    //         presence
-    //             .here((users) => {
-    //                 setOnlineUsers(users);
-    //                 setIsInitialized(true);
-    //             })
-    //             .joining((user) => {
-    //                 setOnlineUsers((prev) => {
-    //                     // Avoid duplicates
-    //                     if (prev.some((u) => u.id === user.id)) {
-    //                         return prev;
-    //                     }
-    //                     return [...prev, user];
-    //                 });
-    //             })
-    //             .leaving((user) => {
-    //                 setOnlineUsers((prev) =>
-    //                     prev.filter((u) => u.id !== user.id)
-    //                 );
-    //             })
-    //             .error((error) => {
-    //                 setIsInitialized(false);
-    //             });
+        channel
+            .here((users) => {
+                setOnlineUsers(users);
+            })
+            .joining((user) => {
+                setOnlineUsers((prev) => {
+                    if (prev.some((u) => u.id === user.id)) return prev;
+                    return [...prev, user];
+                });
+            })
+            .leaving((user) => {
+                setOnlineUsers((prev) => prev.filter((u) => u.id !== user.id));
+            })
+            .error((error) => {
+                console.error("Presence Channel Error:", error);
+                isSubscribed.current = false;
+            });
 
-    //         return () => {
-    //             try {
-    //                 // Leave the presence channel properly
-    //                 if (window.Echo) {
-    //                     window.Echo.leave("online-users");
-    //                 }
-    //             } catch (error) {
-    //                 console.error("Error leaving presence channel:", error);
-    //             }
-    //             setIsInitialized(false);
-    //         };
-    //     } catch (error) {
-    //         setIsInitialized(false);
-    //     }
-    // }, [isInitialized]);
+        return () => {
+            window.Echo.leave("online-users");
+            isSubscribed.current = false;
+        };
+    }, []); // Kosongkan dependency agar hanya jalan sekali saat aplikasi buka
 
-    // Check if a specific user is online (optimized for array of IDs)
-
+    // Perbaikan logika cek online (asumsi user adalah object)
     const isUserOnline = (userId) => {
-        return onlineUsers.includes(userId);
+        return onlineUsers.some((u) => u.id === parseInt(userId));
     };
 
-    const value = {
-        onlineUsers, // Array of user IDs who are online
-        isUserOnline, // Optimized function to check if user is online
-        //isInitialized, // Track initialization state
-    };
+    const value = { onlineUsers, isUserOnline };
 
     return (
         <OnlineStatusContext.Provider value={value}>

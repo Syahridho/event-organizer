@@ -36,4 +36,8 @@ class NewMessageEvent implements ShouldBroadcastNow
             new PrivateChannel('message.' . $this->message->receiver->uuid),
         ];
     }
+    public function broadcastAs(): string
+    {
+        return 'NewMessageEvent';
+    }
 }

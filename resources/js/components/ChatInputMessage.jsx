@@ -42,8 +42,8 @@ export default function ChatInputMessage(props) {
             onStart: () => {
                 reset();
                 // Note: e.target refer to form here, ensure textarea resizing logic is handled if needed
-                if(e.target.querySelector('textarea')) {
-                     e.target.querySelector('textarea').style.height = "auto";
+                if (e.target.querySelector("textarea")) {
+                    e.target.querySelector("textarea").style.height = "auto";
                 }
                 props.setReply(null);
                 props.setIsTyping(false);
@@ -52,15 +52,19 @@ export default function ChatInputMessage(props) {
         });
     };
 
+    const typingTimeoutRef = React.useRef(null);
+
     const onTyping = () => {
-        setTimeout(() => {
-            // PERBAIKAN DI SINI: Tambahkan window.
-            if (typeof window !== 'undefined' && window.Echo) {
-                window.Echo.private(`message.${chatWithUser.uuid}`).whisper("typing", {
-                    name: chatWithUser.name,
-                });
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+        typingTimeoutRef.current = setTimeout(() => {
+            if (window.Echo) {
+                window.Echo.private(`chat.${props.chatId}`) // Pastikan channel ID sama dengan yang di-listen
+                    .whisper("typing", {
+                        name: usePage().props.auth.user.name, // Kirim nama KAMU, bukan nama lawan
+                    });
             }
-        }, 300);
+        }, 500);
     };
 
     return (
