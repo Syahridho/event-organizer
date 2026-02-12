@@ -8,7 +8,16 @@ import React, {
 
 const OnlineStatusContext = createContext();
 
-export const useOnlineStatusContext = () => useContext(OnlineStatusContext);
+export const useOnlineStatusContext = () => {
+    const context = useContext(OnlineStatusContext);
+    if (context === undefined) {
+        // Ini akan membantu kita melacak jika hook dipanggil di luar provider
+        console.error(
+            "useOnlineStatusContext must be used within an OnlineStatusProvider"
+        );
+    }
+    return context;
+};
 
 const OnlineStatusProvider = ({ children }) => {
     const [onlineUsers, setOnlineUsers] = useState([]);
