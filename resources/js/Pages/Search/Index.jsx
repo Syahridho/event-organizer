@@ -4,7 +4,7 @@ import MainLayout from "@/Layouts/Main.jsx";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import { Filter } from "lucide-react";
-import ItemCard from "@/Components/ItemCard.jsx";
+import ItemCard from "@/components/ItemCard.jsx";
 
 // Component for User/Mitra cards (different from ItemCard)
 const UserCard = ({ user, baseUrl }) => {
@@ -120,7 +120,7 @@ export default function SearchPage({ products, keyword, type }) {
     return (
         <div className="min-h-screen mx-auto xl:max-w-[1200px] p-4 md:p-6 mb-20 md:mb-0">
             <Head title="Pencarian" />
-            
+
             {/* Header */}
             <div className="mb-6">
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">

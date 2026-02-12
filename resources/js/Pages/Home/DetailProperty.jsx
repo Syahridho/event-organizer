@@ -49,18 +49,18 @@ import { router } from "@inertiajs/react";
 import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
-import ReportModal from "@/Components/ReportModal.jsx";
+import ReportModal from "@/components/ReportModal.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
 
 // Lazy load heavy components
-const CustomCalendar = lazy(() => import("@/Components/custom-calendar.jsx"));
-const ReviewSection = lazy(() => import("@/Components/ReviewSection.jsx"));
-const AddressManager = lazy(() => import("@/Components/address-manager.jsx"));
+const CustomCalendar = lazy(() => import("@/components/custom-calendar.jsx"));
+const ReviewSection = lazy(() => import("@/components/ReviewSection.jsx"));
+const AddressManager = lazy(() => import("@/components/address-manager.jsx"));
 const PropertyConfirmDialog = lazy(() =>
-    import("@/Components/DetailPage/PropertyConfirmDialog.jsx?v=" + Date.now())
+    import("@/components/DetailPage/PropertyConfirmDialog.jsx?v=" + Date.now())
 );
 const ImageGallery = lazy(() =>
-    import("@/Components/DetailPage/ImageGallery.jsx")
+    import("@/components/DetailPage/ImageGallery.jsx")
 );
 
 // Import utilities

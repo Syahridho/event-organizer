@@ -13,18 +13,18 @@ import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 import MainLayout from "@/Layouts/Main.jsx";
-import ReportModal from "@/Components/ReportModal.jsx";
+import ReportModal from "@/components/ReportModal.jsx";
 
 // Lazy load components
 const CustomCalendar = lazy(() => import("@/components/custom-calendar"));
 const ReviewSection = lazy(() => import("@/components/ReviewSection"));
 const BuildingPaymentSheet = lazy(() =>
-    import("@/Components/DetailPage/BuildingPaymentSheet")
+    import("@/components/DetailPage/BuildingPaymentSheet")
 );
 const BuildingConfirmDialog = lazy(() =>
-    import("@/Components/DetailPage/BuildingConfirmDialog")
+    import("@/components/DetailPage/BuildingConfirmDialog")
 );
-const ImageGallery = lazy(() => import("@/Components/DetailPage/ImageGallery"));
+const ImageGallery = lazy(() => import("@/components/DetailPage/ImageGallery"));
 
 // Skeleton components
 const CalendarSkeleton = () => (

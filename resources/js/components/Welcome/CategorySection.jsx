@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
 import { Button } from "@/components/ui/button.jsx";
-import ItemCard from "@/Components/ItemCard.jsx";
+import ItemCard from "@/components/ItemCard.jsx";
 
 const CategorySection = ({ title, items, type, baseUrl, id, subtitle }) => {
     return (
@@ -12,18 +12,22 @@ const CategorySection = ({ title, items, type, baseUrl, id, subtitle }) => {
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
                     <div className="space-y-2">
                         <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/10 text-primary hover:bg-primary/20">
-                            {type === 'events' ? 'Featured' : 'Popular'}
+                            {type === "events" ? "Featured" : "Popular"}
                         </div>
                         <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
                             {title}
                         </h2>
                         <p className="text-muted-foreground text-lg max-w-2xl">
-                            {subtitle || "Pilihan terbaik untuk kebutuhan event Anda"}
+                            {subtitle ||
+                                "Pilihan terbaik untuk kebutuhan event Anda"}
                         </p>
                     </div>
-                    
+
                     <Link href={`/${type}`}>
-                        <Button variant="outline" className="group hidden md:flex">
+                        <Button
+                            variant="outline"
+                            className="group hidden md:flex"
+                        >
                             Lihat Semua
                             <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Button>
@@ -34,7 +38,10 @@ const CategorySection = ({ title, items, type, baseUrl, id, subtitle }) => {
                     <div className="flex space-x-6 pb-6 pt-2">
                         {items.length > 0 ? (
                             items.map((item, index) => (
-                                <div key={`${type}-${index}`} className="w-72 flex-shrink-0">
+                                <div
+                                    key={`${type}-${index}`}
+                                    className="w-72 flex-shrink-0"
+                                >
                                     <ItemCard
                                         item={item}
                                         type={type}
@@ -50,10 +57,12 @@ const CategorySection = ({ title, items, type, baseUrl, id, subtitle }) => {
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground text-lg font-medium">
-                                            Tidak ada {title.toLowerCase()} yang ditemukan
+                                            Tidak ada {title.toLowerCase()} yang
+                                            ditemukan
                                         </p>
                                         <p className="text-sm text-muted-foreground">
-                                            Silakan coba lagi nanti atau periksa kategori lain
+                                            Silakan coba lagi nanti atau periksa
+                                            kategori lain
                                         </p>
                                     </div>
                                     <Button

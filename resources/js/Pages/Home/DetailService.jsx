@@ -20,17 +20,17 @@ import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
 import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 import MainLayout from "@/Layouts/Main.jsx";
-import ReportModal from "@/Components/ReportModal.jsx";
+import ReportModal from "@/components/ReportModal.jsx";
 
 // Lazy load heavy components
 const CustomCalendar = lazy(() => import("@/components/custom-calendar"));
 const ReviewSection = lazy(() => import("@/components/ReviewSection"));
 const AddressManager = lazy(() => import("@/components/address-manager"));
-const PaymentSheet = lazy(() => import("@/Components/DetailPage/PaymentSheet"));
+const PaymentSheet = lazy(() => import("@/components/DetailPage/PaymentSheet"));
 const ConfirmDialog = lazy(() =>
-    import("@/Components/DetailPage/ConfirmDialog")
+    import("@/components/DetailPage/ConfirmDialog")
 );
-const ImageGallery = lazy(() => import("@/Components/DetailPage/ImageGallery"));
+const ImageGallery = lazy(() => import("@/components/DetailPage/ImageGallery"));
 
 // Skeleton components
 const CalendarSkeleton = () => (

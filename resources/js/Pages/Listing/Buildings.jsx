@@ -1,6 +1,6 @@
 import { Head, usePage } from "@inertiajs/react";
 import MainLayout from "@/Layouts/Main.jsx";
-import ItemCard from "@/Components/ItemCard.jsx";
+import ItemCard from "@/components/ItemCard.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 
 export default function BuildingsListing() {
@@ -18,7 +18,7 @@ export default function BuildingsListing() {
                     <p className="text-muted-foreground text-sm md:text-base mb-8">
                         Temukan gedung yang sempurna untuk acara Anda
                     </p>
-                    
+
                     <Separator className="my-6" />
 
                     {buildings && buildings.length > 0 ? (

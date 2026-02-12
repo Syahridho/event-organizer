@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 
 import MainLayout from "@/Layouts/Main.jsx";
-import ItemCard from "@/Components/ItemCard.jsx";
+import ItemCard from "@/components/ItemCard.jsx";
 import { Skeleton } from "@/components/ui/skeleton.jsx";
 
 // Skeleton Loading Component

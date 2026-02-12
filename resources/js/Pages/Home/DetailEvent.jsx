@@ -21,12 +21,12 @@ import { toast } from "sonner";
 
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
 import { useTicketSelection } from "@/hooks/useTicketSelection";
-import { PaymentSheet } from "@/Components/paymentSheet";
+import { PaymentSheet } from "@/components/paymentSheet";
 import { Skeleton } from "@/components/ui/skeleton.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
-import ReviewSection from "@/Components/ReviewSection.jsx";
+import ReviewSection from "@/components/ReviewSection.jsx";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
-import ReportModal from "@/Components/ReportModal.jsx";
+import ReportModal from "@/components/ReportModal.jsx";
 import { Flag } from "lucide-react";
 
 const getEventStatus = (eventData) => {

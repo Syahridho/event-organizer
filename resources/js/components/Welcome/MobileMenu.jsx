@@ -5,7 +5,7 @@ import {
     FaBuilding,
     GiMicrophone,
     GrFanOption,
-} from "@/Components/Icon.jsx";
+} from "@/components/Icon.jsx";
 
 const mobileMenuItems = [
     {
@@ -58,8 +58,13 @@ const MobileMenu = () => {
                         className={`justify-start h-auto p-4 group transition-all duration-200 border border-transparent hover:border-border ${item.hoverBg}`}
                         asChild
                     >
-                        <Link href={item.href} className="flex items-center w-full">
-                            <div className={`p-3 rounded-xl mr-4 ${item.bgColor} ${item.color} group-hover:scale-110 transition-transform duration-300`}>
+                        <Link
+                            href={item.href}
+                            className="flex items-center w-full"
+                        >
+                            <div
+                                className={`p-3 rounded-xl mr-4 ${item.bgColor} ${item.color} group-hover:scale-110 transition-transform duration-300`}
+                            >
                                 <IconComponent className="w-6 h-6" />
                             </div>
                             <div className="text-left flex-1">

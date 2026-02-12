@@ -1,12 +1,12 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import AppChat from "@/Layouts/App.jsx";
 import { Head, usePage } from "@inertiajs/react";
-import HeaderUserChatBox from "@/Components/HeaderUserChatBox.jsx";
-import ChatInputMessage from "@/Components/ChatInputMessage.jsx";
-import DateChatIndicator from "@/Components/DateChatIndicator.jsx";
-import LeftSideBoxChat from "@/Components/LeftSideBoxChat.jsx";
-import RightSideBoxChat from "@/Components/RightSideBoxChat.jsx";
-import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
+import HeaderUserChatBox from "@/components/HeaderUserChatBox.jsx";
+import ChatInputMessage from "@/components/ChatInputMessage.jsx";
+import DateChatIndicator from "@/components/DateChatIndicator.jsx";
+import LeftSideBoxChat from "@/components/LeftSideBoxChat.jsx";
+import RightSideBoxChat from "@/components/RightSideBoxChat.jsx";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
 
 export default function Show() {
     const { auth, chat_with: chatWithUser, messages } = usePage().props;

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { Card, CardContent } from "@/components/ui/card.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
-import PaymentStatusBadge from "@/Components/payment-status-badge.jsx";
+import PaymentStatusBadge from "@/components/payment-status-badge.jsx";
 import formatDateIndo from "@/Utils/formatDateIndo.js";
 import { formatRupiah } from "@/Utils/formatRupiah.js";
 import { Button } from "@/components/ui/button.jsx";

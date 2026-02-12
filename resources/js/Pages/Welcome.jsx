@@ -1,9 +1,6 @@
 ﻿import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useRef, useState, useCallback, useMemo } from "react";
-import {
-    ChevronRight,
-    Star,
-} from "lucide-react";
+import { ChevronRight, Star } from "lucide-react";
 
 // Use optimized Icon component instead of direct imports
 import {
@@ -11,7 +8,7 @@ import {
     FaBuilding,
     GiMicrophone,
     GrFanOption,
-} from "@/Components/Icon.jsx";
+} from "@/components/Icon.jsx";
 import {
     Card,
     CardContent,
@@ -19,14 +16,23 @@ import {
     CardHeader,
 } from "@/components/ui/card.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.jsx";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar.jsx";
+import {
+    Tabs,
+    TabsList,
+    TabsTrigger,
+    TabsContent,
+} from "@/components/ui/tabs.jsx";
 import Rating from "react-rating";
 import { Button } from "@/components/ui/button.jsx";
 import MainLayout from "@/Layouts/Main.jsx";
 
 // Import new components
-import CategorySection from "@/Components/Welcome/CategorySection";
+import CategorySection from "@/components/Welcome/CategorySection";
 
 const mobileMenuItems = [
     {
@@ -98,7 +104,6 @@ function TestimonialSection({ testimonials: propTestimonials }) {
                         >
                             Tentang
                         </TabsTrigger>
-                  
                     </TabsList>
 
                     <TabsContent value="testimoni" className="mt-12">
@@ -225,7 +230,6 @@ function TestimonialSection({ testimonials: propTestimonials }) {
                             </CardContent>
                         </Card>
                     </TabsContent>
-
                 </Tabs>
             </div>
         </section>
@@ -247,7 +251,6 @@ export default function Welcome() {
     const handleNavigation = useCallback((path) => {
         router.visit(path);
     }, []);
-
 
     return (
         <div className="bg-background min-h-screen">
@@ -287,13 +290,19 @@ export default function Welcome() {
                         {mobileMenuItems.map((item, idx) => {
                             const IconComponent = item.icon;
                             return (
-                                <Link href={item.href} key={idx} className="block h-full">
-                                    <Card
-                                        className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border-border/50 overflow-hidden h-full"
-                                    >
+                                <Link
+                                    href={item.href}
+                                    key={idx}
+                                    className="block h-full"
+                                >
+                                    <Card className="group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-3 border-border/50 overflow-hidden h-full">
                                         <CardContent className="p-6 text-center space-y-4">
-                                            <div className={`bg-gradient-to-br ${item.bgGradient} ${item.hoverBg} w-16 h-16 rounded-2xl mx-auto flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg`}>
-                                                <IconComponent className={`w-8 h-8 ${item.iconColor}`} />
+                                            <div
+                                                className={`bg-gradient-to-br ${item.bgGradient} ${item.hoverBg} w-16 h-16 rounded-2xl mx-auto flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg`}
+                                            >
+                                                <IconComponent
+                                                    className={`w-8 h-8 ${item.iconColor}`}
+                                                />
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">

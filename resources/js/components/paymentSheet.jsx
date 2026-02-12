@@ -12,8 +12,8 @@ import { Separator } from "@/components/ui/separator.jsx";
 import { Loader2 } from "lucide-react";
 import { FaCartPlus } from "react-icons/fa";
 import { formatRupiah } from "@/Utils/formatRupiah.js";
-import { TicketItem } from "@/Components/ticketItem";
-import { PaymentSummary } from "@/Components/paymentSummary";
+import { TicketItem } from "@/components/ticketItem";
+import { PaymentSummary } from "@/components/paymentSummary";
 
 export const PaymentSheet = ({
     tickets,

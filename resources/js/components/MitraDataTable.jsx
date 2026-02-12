@@ -8,7 +8,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table";
 
-import { Button } from "@/Components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -68,20 +68,20 @@ function DocumentViewer({ mitraId, type }) {
     React.useEffect(() => {
         // Detect file type by fetching headers
         setIsLoading(true);
-        fetch(documentUrl, { method: 'HEAD' })
-            .then(response => {
-                const contentType = response.headers.get('Content-Type');
-                if (contentType?.includes('image')) {
-                    setFileType('image');
-                } else if (contentType?.includes('pdf')) {
-                    setFileType('pdf');
+        fetch(documentUrl, { method: "HEAD" })
+            .then((response) => {
+                const contentType = response.headers.get("Content-Type");
+                if (contentType?.includes("image")) {
+                    setFileType("image");
+                } else if (contentType?.includes("pdf")) {
+                    setFileType("pdf");
                 } else {
-                    setFileType('pdf'); // default fallback
+                    setFileType("pdf"); // default fallback
                 }
                 setIsLoading(false);
             })
             .catch(() => {
-                setFileType('pdf'); // fallback on error
+                setFileType("pdf"); // fallback on error
                 setIsLoading(false);
             });
     }, [documentUrl]);
@@ -96,7 +96,7 @@ function DocumentViewer({ mitraId, type }) {
 
     return (
         <div className="border rounded-lg overflow-hidden bg-gray-50">
-            {fileType === 'image' ? (
+            {fileType === "image" ? (
                 <div className="p-4 flex flex-col items-center">
                     <img
                         src={documentUrl}
@@ -210,7 +210,9 @@ export function MitraDataTable({ data }) {
                     onError: (errors) => {
                         console.error("Approve error:", errors);
                         toast.error("Gagal Menyetujui", {
-                            description: errors.message || "Terjadi kesalahan saat menyetujui mitra.",
+                            description:
+                                errors.message ||
+                                "Terjadi kesalahan saat menyetujui mitra.",
                         });
                     },
                 }
@@ -236,7 +238,9 @@ export function MitraDataTable({ data }) {
                     onError: (errors) => {
                         console.error("Reject error:", errors);
                         toast.error("Gagal Menolak", {
-                            description: errors.message || "Terjadi kesalahan saat menolak mitra.",
+                            description:
+                                errors.message ||
+                                "Terjadi kesalahan saat menolak mitra.",
                         });
                     },
                 }
@@ -578,7 +582,8 @@ export function MitraDataTable({ data }) {
                                         Deskripsi Layanan
                                     </p>
                                     <p className="font-medium text-sm whitespace-pre-wrap">
-                                        {selectedMitra.description || "Tidak ada deskripsi"}
+                                        {selectedMitra.description ||
+                                            "Tidak ada deskripsi"}
                                     </p>
                                 </div>
                             </div>
@@ -611,7 +616,7 @@ export function MitraDataTable({ data }) {
                                 </Select>
                             </div>
 
-                            <DocumentViewer 
+                            <DocumentViewer
                                 mitraId={selectedMitra.id}
                                 type={pdfType}
                             />

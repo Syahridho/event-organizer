@@ -17,7 +17,7 @@ import { Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Link } from "@inertiajs/react";
-import Avatar from "@/Components/avatar.jsx";
+import Avatar from "@/components/avatar.jsx";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
 import { formatRupiahInput } from "@/Utils/formatRupiah.js";
@@ -69,7 +69,7 @@ export function TransactionCard({
                 return format(
                     new Date(item?.transaction?.created_at),
                     "EEEE, dd MMMM yyyy",
-                    { locale: id },
+                    { locale: id }
                 );
             } catch {
                 return "-";
@@ -179,7 +179,7 @@ export function TransactionCard({
 
     const isReadyForAction = useMemo(() => {
         const isRentItem = ["rent_property", "service"].includes(
-            item.item_type,
+            item.item_type
         );
         return (
             item.status === "confirmed" &&
@@ -243,8 +243,8 @@ export function TransactionCard({
                                     {item.delivery_type === "delivery"
                                         ? "Diantar"
                                         : item.delivery_type === "pickup"
-                                          ? "Diambil Sendiri"
-                                          : "Tidak Ditentukan"}
+                                        ? "Diambil Sendiri"
+                                        : "Tidak Ditentukan"}
                                 </div>
                             )}
 
@@ -260,9 +260,9 @@ export function TransactionCard({
                                                 {item.status === "work"
                                                     ? "Pembeli Sudah Menjemput Properti"
                                                     : item.status ===
-                                                        "completed"
-                                                      ? "Pembeli Sudah Mengembalikan Properti"
-                                                      : "Pembeli Akan Menjemput Properti"}
+                                                      "completed"
+                                                    ? "Pembeli Sudah Mengembalikan Properti"
+                                                    : "Pembeli Akan Menjemput Properti"}
                                             </span>
 
                                             {/* Status Sub-teks */}
@@ -270,9 +270,9 @@ export function TransactionCard({
                                                 {item.status === "work"
                                                     ? "(Ambil Foto Bukti)"
                                                     : item.status ===
-                                                        "completed"
-                                                      ? ""
-                                                      : "(Menunggu Penjemputan)"}
+                                                      "completed"
+                                                    ? ""
+                                                    : "(Menunggu Penjemputan)"}
                                             </span>
                                         </div>
                                     </AlertTitle>
@@ -295,7 +295,7 @@ export function TransactionCard({
                                             </span>
                                             <span className="font-bold ms-1">
                                                 {formatRupiah(
-                                                    item.delivery_fee,
+                                                    item.delivery_fee
                                                 )}
                                             </span>
                                         </AlertTitle>
@@ -309,7 +309,7 @@ export function TransactionCard({
                                             </span>
                                             <span className="font-bold ms-1">
                                                 {formatRupiah(
-                                                    item.delivery_fee,
+                                                    item.delivery_fee
                                                 )}
                                             </span>
                                         </AlertTitle>
@@ -425,12 +425,12 @@ export function TransactionCard({
                                             <Alert className="bg-primary/5 border-primary/20 flex items-center gap-2">
                                                 <div className="">
                                                     {getDeliveryIcon(
-                                                        item.delivery_type,
+                                                        item.delivery_type
                                                     )}
                                                 </div>
                                                 <AlertTitle className="text-primary font-bold">
                                                     {getDeliveryTitle(
-                                                        item.delivery_type,
+                                                        item.delivery_type
                                                     )}
                                                 </AlertTitle>
                                             </Alert>
@@ -644,7 +644,7 @@ export function TransactionCard({
                                             {item.item_type ===
                                                 "rent_property" &&
                                                 ` + Ongkir ${formatRupiah(
-                                                    item.delivery_fee,
+                                                    item.delivery_fee
                                                 )}`}
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
@@ -673,7 +673,7 @@ export function TransactionCard({
                                         {format(
                                             new Date(item.rent_days),
                                             "dd MMMM yyyy",
-                                            { locale: id },
+                                            { locale: id }
                                         )}
                                     </span>
                                 </span>

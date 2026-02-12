@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
 import { Star, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button.jsx";
-import { Avatar } from "@/Components/avatar.jsx";
+import { Avatar } from "@/components/avatar.jsx";
 import { cn } from "@/Lib/utils";
 import axios from "axios";
 import { toast } from "sonner";
@@ -15,12 +15,7 @@ import { toast } from "sonner";
  * - Optimized with pagination and indexing
  * - Fully responsive design
  */
-export default function ReviewSection({
-    itemType,
-    itemId,
-    user,
-    className,
-}) {
+export default function ReviewSection({ itemType, itemId, user, className }) {
     const [reviews, setReviews] = useState([]);
     const [stats, setStats] = useState({ average_rating: 0, total_reviews: 0 });
     const [isLoading, setIsLoading] = useState(true);

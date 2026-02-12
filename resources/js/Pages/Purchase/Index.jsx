@@ -25,11 +25,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog.jsx";
-import PaymentStatusBadge from "@/Components/payment-status-badge.jsx";
+import PaymentStatusBadge from "@/components/payment-status-badge.jsx";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
-import ItemStatusBadge from "@/Components/item-status-badge.jsx";
+import ItemStatusBadge from "@/components/item-status-badge.jsx";
 import Rating from "react-rating";
 import { IoStar, IoStarOutline } from "react-icons/io5";
 import {

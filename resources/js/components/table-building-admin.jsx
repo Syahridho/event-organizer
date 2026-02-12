@@ -44,21 +44,14 @@ import {
     XCircleIcon,
     Ban,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
 
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { formatTanggalIndo, getJamMenit } from "@/Utils/formatDateTime.js";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge.jsx";
 import { Button } from "@/components/ui/button.jsx";
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-} from "@/components/ui/chart.jsx";
-import { Checkbox } from "@/components/ui/checkbox.jsx";
+
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -95,7 +88,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table.jsx";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs.jsx";
 import { router, usePage } from "@inertiajs/react";
 import { formatRupiah } from "@/Utils/formatRupiah.js";
 
