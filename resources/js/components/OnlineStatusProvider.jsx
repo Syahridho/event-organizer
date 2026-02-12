@@ -6,7 +6,10 @@ import React, {
     useRef,
 } from "react";
 
-const OnlineStatusContext = createContext();
+const OnlineStatusContext = createContext({
+    onlineUsers: [],
+    isUserOnline: () => false,
+});
 
 export const useOnlineStatusContext = () => {
     const context = useContext(OnlineStatusContext);
@@ -15,6 +18,11 @@ export const useOnlineStatusContext = () => {
         console.error(
             "useOnlineStatusContext must be used within an OnlineStatusProvider"
         );
+        // Return a default value to prevent errors
+        return {
+            onlineUsers: [],
+            isUserOnline: () => false,
+        };
     }
     return context;
 };
