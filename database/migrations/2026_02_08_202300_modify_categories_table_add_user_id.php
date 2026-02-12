@@ -17,26 +17,14 @@ return new class extends Migration
                 $table->foreignId('user_id')->after('id')->constrained()->onDelete('cascade');
             }
             
-            // Add other columns if they don't exist
-            if (!Schema::hasColumn('categories', 'slug')) {
-                $table->string('slug')->after('name');
-            }
-            
-            if (!Schema::hasColumn('categories', 'description')) {
-                $table->text('description')->nullable()->after('slug');
-            }
-            
-            if (!Schema::hasColumn('categories', 'color')) {
-                $table->string('color')->nullable()->after('description');
-            }
-            
-            if (!Schema::hasColumn('categories', 'is_active')) {
-                $table->boolean('is_active')->default(true)->after('color');
-            }
-            
             // Add unique constraints for user-specific categories
-            $table->unique(['user_id', 'name'], 'categories_user_name_unique');
-            $table->unique(['user_id', 'slug'], 'categories_user_slug_unique');
+            try {
+                $table->unique(['user_id', 'name'], 'categories_user_name_unique');
+                $table->unique(['user_id', 'slug'], 'categories_user_slug_unique');
+            } catch (\Exception $e) {
+                // If the unique constraints already exist, just continue
+                // This might happen if the migration is run multiple times
+            }
         });
     }
 
@@ -46,9 +34,30 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('categories', function (Blueprint $table) {
-            $table->dropUnique(['categories_user_name_unique']);
-            $table->dropUnique(['categories_user_slug_unique']);
-            $table->dropColumn(['user_id', 'slug', 'description', 'color', 'is_active']);
+            // Try to drop the unique constraints, but continue if they don't exist
+            try {
+                $table->dropUnique('categories_user_name_unique');
+            } catch (\Exception $e) {
+                // Ignore if the constraint doesn't exist
+            }
+            
+            try {
+                $table->dropUnique('categories_user_slug_unique');
+            } catch (\Exception $e) {
+                // Ignore if the constraint doesn't exist
+            }
+            
+            // Drop the user_id column if it exists
+            if (Schema::hasColumn('categories', 'user_id')) {
+                $table->dropColumn(['user_id']);
+            }
+            
+            // Restore the original unique constraint on slug
+            try {
+                $table->unique('slug', 'categories_slug_unique');
+            } catch (\Exception $e) {
+                // Ignore if the constraint already exists
+            }
         });
     }
 };
