@@ -20,8 +20,8 @@ import {
     handleImageError,
 } from "@/features/randomImage";
 import { Textarea } from "@/components/ui/textarea.jsx";
-import CalendarWithTime from "@/Components/CalenderWithTime.jsx";
-import LocationPickerMap from "@/Components/location-picker-map.jsx";
+import CalendarWithTime from "@/components/CalenderWithTime.jsx";
+import LocationPickerMap from "@/components/location-picker-map.jsx";
 import {
     Select,
     SelectContent,
@@ -31,7 +31,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select.jsx";
-import Modal from "@/Components/Modal.jsx";
+import Modal from "@/components/Modal.jsx";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card.jsx";
 import useDebounce from "@/Utils/useDebounce.js";
 import { Switch } from "@/components/ui/switch.jsx";
@@ -43,7 +43,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
-import LocationInputWithMap from "@/Components/location-input-with-map.jsx";
+import LocationInputWithMap from "@/components/location-input-with-map.jsx";
 import { formatRupiahInput } from "@/Utils/formatRupiah.js";
 import { useCsrfToken } from "@/hooks/useCsrfToken";
 import "react-quill/dist/quill.snow.css";

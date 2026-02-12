@@ -12,24 +12,24 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/Components/ui/table";
+} from "@/components/ui/table";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from "@/Components/ui/dialog";
+} from "@/components/ui/dialog";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/Components/ui/select";
-import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
-import { Label } from "@/Components/ui/label";
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Eye } from "lucide-react";
 
 const breadcrumbs = [

@@ -37,7 +37,7 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from "@/Components/ui/dialog";
+} from "@/components/ui/dialog";
 import { HiEye } from "react-icons/hi"; // Impor icon mata
 import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah";
 

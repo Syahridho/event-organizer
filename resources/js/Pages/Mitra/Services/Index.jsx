@@ -1,4 +1,4 @@
-import { DataTable } from "@/Components/data-table-service-user.jsx";
+import { DataTable } from "@/components/data-table-service-user.jsx";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Head, usePage } from "@inertiajs/react";
 import { useEffect } from "react";

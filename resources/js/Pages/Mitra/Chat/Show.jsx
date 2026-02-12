@@ -2,10 +2,10 @@
 import { Head, router } from "@inertiajs/react";
 import { debounce } from "lodash";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import ChatLayout from "@/Components/ChatLayout.jsx";
-import DateChatIndicator from "@/Components/DateChatIndicator.jsx";
-import LeftSideBoxChat from "@/Components/LeftSideBoxChat.jsx";
-import RightSideBoxChat from "@/Components/RightSideBoxChat.jsx";
+import ChatLayout from "@/components/ChatLayout.jsx";
+import DateChatIndicator from "@/components/DateChatIndicator.jsx";
+import LeftSideBoxChat from "@/components/LeftSideBoxChat.jsx";
+import RightSideBoxChat from "@/components/RightSideBoxChat.jsx";
 import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
 
 const breadcrumbs = [

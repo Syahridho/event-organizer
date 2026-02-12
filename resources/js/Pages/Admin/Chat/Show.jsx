@@ -2,9 +2,9 @@
 import { Head, router } from "@inertiajs/react";
 import { debounce } from "lodash";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import ChatLayout from "@/Components/ChatLayout.jsx";
+import ChatLayout from "@/components/ChatLayout.jsx";
 import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
-import { useOnlineStatusContext } from "@/Components/OnlineStatusProvider.jsx";
+import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
 
 const breadcrumbs = [
     {

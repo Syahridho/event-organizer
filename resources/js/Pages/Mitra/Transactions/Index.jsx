@@ -12,12 +12,11 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card.jsx";
-import { TransactionCard } from "@/Components/transaction-card.jsx";
-import { TransactionCardSkeleton } from "@/Components/transaction-card-skeleton.jsx";
+import { TransactionCard } from "@/components/transaction-card.jsx";
+import { TransactionCardSkeleton } from "@/components/transaction-card-skeleton.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import {
     Dialog,
-  
     DialogContent,
     DialogHeader,
     DialogTitle,
@@ -74,7 +73,6 @@ const statusTranslations = {
     work: "Kerja",
     completed: "Selesai",
 };
-
 
 const allPossibleStatuses = [
     // Filter by TRANSACTION status for /dashboard/transactions
@@ -201,8 +199,7 @@ export default function MitraTransactionDashboard({ transactionItems }) {
         });
     };
 
-    const handleChat = (buyerId) => {
-    };
+    const handleChat = (buyerId) => {};
 
     const handleOpenDetailModal = (item) => {
         setSelectedItem(item);

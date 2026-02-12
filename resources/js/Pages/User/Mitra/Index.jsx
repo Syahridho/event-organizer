@@ -29,7 +29,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card.jsx";
-import { Stepper } from "@/Components/stepper.jsx";
+import { Stepper } from "@/components/stepper.jsx";
 import GuestLayout from "@/Layouts/GuestLayout.jsx";
 
 export default function PartnerRegistration({ existingMitra }) {
@@ -111,7 +111,7 @@ export default function PartnerRegistration({ existingMitra }) {
 // ==================== STEP 1: Register Account ====================
 function Step1RegisterAccount() {
     const { refreshToken } = useCsrfToken();
-    
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
         username: "",
@@ -128,10 +128,10 @@ function Step1RegisterAccount() {
 
     const submit = async (e) => {
         e.preventDefault();
-        
+
         // Refresh CSRF token before submitting
         await refreshToken();
-        
+
         post(route("register"), {
             onSuccess: () => {
                 toast.success("Akun berhasil dibuat!", {
@@ -336,7 +336,7 @@ function Step1RegisterAccount() {
 // ==================== STEP 2: Partner Form ====================
 function Step2PartnerForm({ user, onSuccess }) {
     const { refreshToken } = useCsrfToken();
-    
+
     const { data, setData, post, processing, errors, progress } = useForm({
         address: "",
         description: "",
@@ -606,7 +606,7 @@ function Step3Status({ existingMitra }) {
 
     const handleReapply = () => {
         setIsReapplying(true);
-        
+
         router.post(
             route("partner.reapply"),
             {},
@@ -616,13 +616,16 @@ function Step3Status({ existingMitra }) {
                     setShowReapplyDialog(false);
                     setIsReapplying(false);
                     toast.success("Berhasil!", {
-                        description: "Data lama telah dihapus. Silakan lengkapi formulir kembali.",
+                        description:
+                            "Data lama telah dihapus. Silakan lengkapi formulir kembali.",
                     });
                 },
                 onError: (errors) => {
                     setIsReapplying(false);
                     toast.error("Gagal", {
-                        description: errors.message || "Terjadi kesalahan saat menghapus data lama.",
+                        description:
+                            errors.message ||
+                            "Terjadi kesalahan saat menghapus data lama.",
                     });
                 },
             }
@@ -698,10 +701,15 @@ function Step3Status({ existingMitra }) {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <p className="text-sm text-slate-600">
-                                    Dengan mengajukan kembali, data pengajuan lama Anda akan <strong>dihapus permanen</strong> termasuk dokumen yang telah diupload.
+                                    Dengan mengajukan kembali, data pengajuan
+                                    lama Anda akan{" "}
+                                    <strong>dihapus permanen</strong> termasuk
+                                    dokumen yang telah diupload.
                                 </p>
                                 <p className="text-sm text-slate-600">
-                                    Anda akan kembali ke <strong>Step 2</strong> untuk mengisi formulir dari awal dengan data yang baru.
+                                    Anda akan kembali ke <strong>Step 2</strong>{" "}
+                                    untuk mengisi formulir dari awal dengan data
+                                    yang baru.
                                 </p>
                                 <p className="text-sm font-medium text-slate-800">
                                     Apakah Anda yakin ingin melanjutkan?
@@ -709,7 +717,9 @@ function Step3Status({ existingMitra }) {
                                 <div className="flex gap-3 pt-2">
                                     <Button
                                         variant="outline"
-                                        onClick={() => setShowReapplyDialog(false)}
+                                        onClick={() =>
+                                            setShowReapplyDialog(false)
+                                        }
                                         className="flex-1"
                                         disabled={isReapplying}
                                     >

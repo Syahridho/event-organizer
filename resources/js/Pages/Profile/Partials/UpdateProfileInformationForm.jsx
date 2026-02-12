@@ -1,8 +1,8 @@
-import InputError from "@/Components/InputError.jsx";
-import InputLabel from "@/Components/InputLabel.jsx";
-import PrimaryButton from "@/Components/PrimaryButton.jsx";
-import TextInput from "@/Components/TextInput.jsx";
-import Avatar from "@/Components/avatar.jsx";
+import InputError from "@/components/InputError.jsx";
+import InputLabel from "@/components/InputLabel.jsx";
+import PrimaryButton from "@/components/PrimaryButton.jsx";
+import TextInput from "@/components/TextInput.jsx";
+import Avatar from "@/components/avatar.jsx";
 import { Link, useForm, usePage, router } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
 import { useState, useRef } from "react";
@@ -22,13 +22,13 @@ export default function UpdateProfileInformation({
             name: user.name,
             email: user.email,
             profile_photo: null,
-            _method: 'PATCH',
+            _method: "PATCH",
         });
 
     const handlePhotoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setData('profile_photo', file);
+            setData("profile_photo", file);
 
             // Create preview
             const reader = new FileReader();
@@ -40,11 +40,11 @@ export default function UpdateProfileInformation({
     };
 
     const removePhoto = () => {
-        router.delete(route('profile.photo.destroy'), {
+        router.delete(route("profile.photo.destroy"), {
             preserveScroll: true,
             onSuccess: () => {
                 setPhotoPreview(null);
-                setData('profile_photo', null);
+                setData("profile_photo", null);
             },
         });
     };
@@ -75,7 +75,12 @@ export default function UpdateProfileInformation({
                 <div className="flex flex-col items-center space-y-4">
                     <div className="relative">
                         <Avatar
-                            src={photoPreview || (user.profile_photo ? `/storage/${user.profile_photo}` : null)}
+                            src={
+                                photoPreview ||
+                                (user.profile_photo
+                                    ? `/storage/${user.profile_photo}`
+                                    : null)
+                            }
                             name={user.name}
                             size="2xl"
                             className="ring-4 ring-white shadow-lg"
@@ -110,7 +115,10 @@ export default function UpdateProfileInformation({
                         )}
                     </div>
 
-                    <InputError className="mt-2" message={errors.profile_photo} />
+                    <InputError
+                        className="mt-2"
+                        message={errors.profile_photo}
+                    />
                 </div>
 
                 <div>
@@ -173,7 +181,7 @@ export default function UpdateProfileInformation({
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>
-                        {processing ? 'Menyimpan...' : 'Simpan'}
+                        {processing ? "Menyimpan..." : "Simpan"}
                     </PrimaryButton>
 
                     <Transition

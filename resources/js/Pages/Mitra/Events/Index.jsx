@@ -1,5 +1,5 @@
 ﻿import { Head } from "@inertiajs/react";
-import { DataTable } from "@/Components/data-table.jsx";
+import { DataTable } from "@/components/data-table.jsx";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { usePage } from "@inertiajs/react";
 import { useEffect } from "react";
@@ -18,7 +18,6 @@ const breadcrumbs = [
 
 export default function UserEvent() {
     const { events, flash } = usePage().props;
-
 
     useEffect(() => {
         if (flash?.success) {
