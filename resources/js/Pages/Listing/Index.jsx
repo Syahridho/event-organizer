@@ -244,14 +244,61 @@ const Pagination = ({ links, _currentPage, _lastPage }) => {
 
 // Main Component
 export default function Index() {
-    const { items, ziggy } = usePage().props;
+    const { items, ziggy, categories } = usePage().props;
     const [viewMode, setViewMode] = useState("grid");
     const [filterType, setFilterType] = useState("all");
+    const [filterCategory, setFilterCategory] = useState("all");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const filteredItems = items.data.filter((item) => {
-        if (filterType === "all") return true;
-        return item.type === filterType;
+        const typeMatch = filterType === "all" || item.type === filterType;
+
+        // Handle category_ids which could be a string of comma-separated IDs or null
+        let categoryIds = [];
+        if (item.category_ids) {
+            categoryIds = item.category_ids
+                .split(",")
+                .map((id) => parseInt(id.trim()));
+        }
+
+        // Debug: Log category filtering
+        console.log(
+            `Item: ${item.name}, Type: ${item.type}, Category IDs: ${categoryIds}, Filter Category: ${filterCategory}`
+        );
+
+        const categoryMatch =
+            filterCategory === "all" ||
+            (item.category_ids &&
+                categoryIds.includes(parseInt(filterCategory)));
+
+        const searchMatch =
+            searchTerm === "" ||
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.location &&
+                item.location.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        const result = typeMatch && categoryMatch && searchMatch;
+
+        // Debug: Log filter result
+        console.log(
+            `Type Match: ${typeMatch}, Category Match: ${categoryMatch}, Search Match: ${searchMatch}, Result: ${result}`
+        );
+
+        return result;
     });
+
+    const handleFilterChange = (filterType, value) => {
+        setIsLoading(true);
+        setTimeout(() => {
+            if (filterType === "type") {
+                setFilterType(value);
+            } else if (filterType === "category") {
+                setFilterCategory(value);
+            }
+            setIsLoading(false);
+        }, 500); // Simulasi loading delay
+    };
 
     return (
         <div className="bg-background min-h-screen">
@@ -279,34 +326,105 @@ export default function Index() {
             <section className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b shadow-sm">
                 <div className="container mx-auto max-w-7xl px-4 md:px-6 py-4">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 w-full sm:w-auto">
-                            <Filter className="w-5 h-5 text-muted-foreground" />
-                            <Select
-                                value={filterType}
-                                onValueChange={setFilterType}
-                            >
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="Filter Tipe" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Semua Tipe
-                                    </SelectItem>
-                                    <SelectItem value="event">Event</SelectItem>
-                                    <SelectItem value="service">
-                                        Jasa
-                                    </SelectItem>
-                                    <SelectItem value="building">
-                                        Gedung
-                                    </SelectItem>
-                                    <SelectItem value="property">
-                                        Property
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <span className="text-sm text-muted-foreground">
-                                {filteredItems.length} item
-                            </span>
+                        <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
+                            <div className="flex items-center gap-4 w-full">
+                                <Filter className="w-5 h-5 text-muted-foreground" />
+                                <div className="relative w-full sm:w-[250px]">
+                                    <input
+                                        type="text"
+                                        placeholder="Cari nama atau lokasi..."
+                                        className="w-full pl-10 pr-4 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={searchTerm}
+                                        onChange={(e) =>
+                                            setSearchTerm(e.target.value)
+                                        }
+                                        disabled={isLoading}
+                                    />
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4"
+                                    >
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                <Select
+                                    value={filterType}
+                                    onValueChange={(value) =>
+                                        handleFilterChange("type", value)
+                                    }
+                                    disabled={isLoading}
+                                >
+                                    <SelectTrigger className="w-full sm:w-[180px]">
+                                        <SelectValue placeholder="Filter Tipe" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Semua Tipe
+                                        </SelectItem>
+                                        <SelectItem value="event">
+                                            Event
+                                        </SelectItem>
+                                        <SelectItem value="service">
+                                            Jasa
+                                        </SelectItem>
+                                        <SelectItem value="building">
+                                            Gedung
+                                        </SelectItem>
+                                        <SelectItem value="property">
+                                            Property
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <Select
+                                    value={filterCategory}
+                                    onValueChange={(value) =>
+                                        handleFilterChange("category", value)
+                                    }
+                                    disabled={isLoading}
+                                >
+                                    <SelectTrigger className="w-full sm:w-[180px]">
+                                        <SelectValue placeholder="Filter Kategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Semua Kategori
+                                        </SelectItem>
+                                        {categories &&
+                                            categories.map((category) => (
+                                                <SelectItem
+                                                    key={category.id}
+                                                    value={category.id.toString()}
+                                                >
+                                                    {category.name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {isLoading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-sm text-muted-foreground">
+                                        Memuat...
+                                    </span>
+                                </div>
+                            ) : (
+                                <span className="text-sm text-muted-foreground">
+                                    {filteredItems.length} item
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -336,7 +454,32 @@ export default function Index() {
             {/* Content */}
             <section className="py-12">
                 <div className="container mx-auto max-w-7xl px-4 md:px-6">
-                    {filteredItems.length > 0 ? (
+                    {isLoading ? (
+                        <div
+                            className={
+                                viewMode === "grid"
+                                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                                    : "flex flex-col gap-6"
+                            }
+                        >
+                            {Array.from({ length: 8 }).map((_, index) => (
+                                <Card key={index} className="overflow-hidden">
+                                    <Skeleton className="aspect-[4/3] w-full" />
+                                    <CardContent className="p-4 space-y-3">
+                                        <Skeleton className="h-6 w-3/4" />
+                                        <div className="flex items-center gap-2">
+                                            <Skeleton className="h-4 w-4" />
+                                            <Skeleton className="h-4 w-1/2" />
+                                        </div>
+                                        <div className="flex justify-between items-center pt-2">
+                                            <Skeleton className="h-6 w-1/3" />
+                                            <Skeleton className="h-8 w-8" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : filteredItems.length > 0 ? (
                         <>
                             <div
                                 className={
@@ -377,7 +520,11 @@ export default function Index() {
                                 </p>
                                 <Button
                                     variant="outline"
-                                    onClick={() => setFilterType("all")}
+                                    onClick={() => {
+                                        setFilterType("all");
+                                        setFilterCategory("all");
+                                        setSearchTerm("");
+                                    }}
                                 >
                                     Reset Filter
                                 </Button>

@@ -20,4 +20,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    // Wallet routes moved to web.php for Inertia session authentication
 });

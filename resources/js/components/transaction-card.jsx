@@ -12,7 +12,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog.jsx";
-import { Alert,AlertTitle } from "@/components/ui/alert.jsx";
+import { Alert, AlertTitle } from "@/components/ui/alert.jsx";
 import { Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -69,7 +69,7 @@ export function TransactionCard({
                 return format(
                     new Date(item?.transaction?.created_at),
                     "EEEE, dd MMMM yyyy",
-                    { locale: id }
+                    { locale: id },
                 );
             } catch {
                 return "-";
@@ -124,11 +124,10 @@ export function TransactionCard({
                 isRentDateArrivedOrPassed(item.rent_days)
             );
         }
-        
+
         // Untuk rent_property/service: dari work ke completed
         return (
-            item.status === "work" &&
-            isRentDateArrivedOrPassed(item.rent_days)
+            item.status === "work" && isRentDateArrivedOrPassed(item.rent_days)
         );
     }, [item.status, item.item_type, item.rent_days]);
 
@@ -180,7 +179,7 @@ export function TransactionCard({
 
     const isReadyForAction = useMemo(() => {
         const isRentItem = ["rent_property", "service"].includes(
-            item.item_type
+            item.item_type,
         );
         return (
             item.status === "confirmed" &&
@@ -196,7 +195,6 @@ export function TransactionCard({
         // Console.log Anda akan menunjukkan:
         // isReadyForAction: true
         // isActionTime: true (jika hari ini 26 atau 27 Oktober)
-
 
         // Logika: Item siap untuk aksi DAN BUKAN di jendela waktu aksi
         return isReadyForAction && !isActionTime;
@@ -245,8 +243,8 @@ export function TransactionCard({
                                     {item.delivery_type === "delivery"
                                         ? "Diantar"
                                         : item.delivery_type === "pickup"
-                                        ? "Diambil Sendiri"
-                                        : "Tidak Ditentukan"}
+                                          ? "Diambil Sendiri"
+                                          : "Tidak Ditentukan"}
                                 </div>
                             )}
 
@@ -262,9 +260,9 @@ export function TransactionCard({
                                                 {item.status === "work"
                                                     ? "Pembeli Sudah Menjemput Properti"
                                                     : item.status ===
-                                                      "completed"
-                                                    ? "Pembeli Sudah Mengembalikan Properti"
-                                                    : "Pembeli Akan Menjemput Properti"}
+                                                        "completed"
+                                                      ? "Pembeli Sudah Mengembalikan Properti"
+                                                      : "Pembeli Akan Menjemput Properti"}
                                             </span>
 
                                             {/* Status Sub-teks */}
@@ -272,9 +270,9 @@ export function TransactionCard({
                                                 {item.status === "work"
                                                     ? "(Ambil Foto Bukti)"
                                                     : item.status ===
-                                                      "completed"
-                                                    ? ""
-                                                    : "(Menunggu Penjemputan)"}
+                                                        "completed"
+                                                      ? ""
+                                                      : "(Menunggu Penjemputan)"}
                                             </span>
                                         </div>
                                     </AlertTitle>
@@ -297,7 +295,7 @@ export function TransactionCard({
                                             </span>
                                             <span className="font-bold ms-1">
                                                 {formatRupiah(
-                                                    item.delivery_fee
+                                                    item.delivery_fee,
                                                 )}
                                             </span>
                                         </AlertTitle>
@@ -311,7 +309,7 @@ export function TransactionCard({
                                             </span>
                                             <span className="font-bold ms-1">
                                                 {formatRupiah(
-                                                    item.delivery_fee
+                                                    item.delivery_fee,
                                                 )}
                                             </span>
                                         </AlertTitle>
@@ -427,12 +425,12 @@ export function TransactionCard({
                                             <Alert className="bg-primary/5 border-primary/20 flex items-center gap-2">
                                                 <div className="">
                                                     {getDeliveryIcon(
-                                                        item.delivery_type
+                                                        item.delivery_type,
                                                     )}
                                                 </div>
                                                 <AlertTitle className="text-primary font-bold">
                                                     {getDeliveryTitle(
-                                                        item.delivery_type
+                                                        item.delivery_type,
                                                     )}
                                                 </AlertTitle>
                                             </Alert>
@@ -598,13 +596,14 @@ export function TransactionCard({
                             >
                                 {item.delivery_type === "pickup"
                                     ? "Sudah Diambil"
-                                    : "Otw"}
+                                    : "Dalam Perjalanan"}
                             </Button>
 
                             {/* 2. Tanda Keterangan Waktu */}
                             {isTooEarlyForOtw && (
                                 <span className="text-xs text-center text-yellow-600">
-                                    Otw/Ambil: -1 Hari sebelum {item.rent_days}
+                                    Pergi/Ambil: -1 Hari sebelum{" "}
+                                    {item.rent_days}
                                 </span>
                             )}
                         </div>
@@ -617,8 +616,9 @@ export function TransactionCard({
                     )}
 
                     {/* Tombol Selesai (Completed) - Selalu tampil tapi disabled jika belum waktunya */}
-                    {(item.status === "work" || 
-                      (item.item_type === "building" && item.status === "confirmed")) && (
+                    {(item.status === "work" ||
+                        (item.item_type === "building" &&
+                            item.status === "confirmed")) && (
                         <div className="flex flex-col gap-2">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -632,21 +632,26 @@ export function TransactionCard({
                                             Selesaikan Transaksi
                                         </AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Apakah Anda yakin telah menyelesaikan{" "}
+                                            Apakah Anda yakin telah
+                                            menyelesaikan{" "}
                                             {item.item_type === "building"
                                                 ? "acara"
                                                 : "pekerjaan"}{" "}
-                                            ini? Status akan diubah menjadi selesai
-                                            dan dana akan masuk ke dompet Anda. Uang{" "}
+                                            ini? Status akan diubah menjadi
+                                            selesai dan dana akan masuk ke
+                                            dompet Anda. Uang{" "}
                                             {formatRupiah(item.price)}
-                                            {item.item_type === "rent_property" &&
+                                            {item.item_type ===
+                                                "rent_property" &&
                                                 ` + Ongkir ${formatRupiah(
-                                                    item.delivery_fee
+                                                    item.delivery_fee,
                                                 )}`}
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogCancel>
+                                            Batal
+                                        </AlertDialogCancel>
                                         <AlertDialogAction
                                             onClick={() => onCompleted(item.id)}
                                         >
@@ -655,14 +660,21 @@ export function TransactionCard({
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                            
+
                             {/* Peringatan jika tombol disabled */}
                             {!canComplete && item.rent_days && (
                                 <span className="text-xs text-center text-yellow-600 font-medium leading-relaxed">
-                                    ⚠️ Tombol aktif setelah tanggal {item.item_type === "building" ? "acara" : "sewa"}
+                                    ⚠️ Tombol aktif setelah tanggal{" "}
+                                    {item.item_type === "building"
+                                        ? "acara"
+                                        : "sewa"}
                                     <br />
                                     <span className="text-yellow-700">
-                                        {format(new Date(item.rent_days), "dd MMMM yyyy", { locale: id })}
+                                        {format(
+                                            new Date(item.rent_days),
+                                            "dd MMMM yyyy",
+                                            { locale: id },
+                                        )}
                                     </span>
                                 </span>
                             )}

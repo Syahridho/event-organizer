@@ -76,7 +76,11 @@ export function useCsrfToken() {
      */
     const refreshToken = async () => {
         try {
+            console.log("Refreshing CSRF token...");
             // Fetch a fresh token from the server
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
             const response = await fetch("/csrf-token", {
                 method: "GET",
                 credentials: "same-origin",
@@ -84,10 +88,16 @@ export function useCsrfToken() {
                     "X-Requested-With": "XMLHttpRequest",
                     Accept: "application/json",
                 },
+                signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
+
+            console.log("CSRF token response status:", response.status);
 
             if (response.ok) {
                 const data = await response.json();
+                console.log("CSRF token response data:", data);
                 if (data.token) {
                     // Update both the meta tag and state
                     const metaTag = document.head.querySelector(
@@ -97,20 +107,36 @@ export function useCsrfToken() {
                         metaTag.setAttribute("content", data.token);
                     }
                     setCsrfToken(data.token);
+                    console.log("CSRF token updated successfully");
                     return data.token;
+                } else {
+                    console.error("No token in CSRF response");
+                    throw new Error("No token received from server");
                 }
+            } else {
+                console.error(
+                    "CSRF token request failed with status:",
+                    response.status
+                );
+                throw new Error(
+                    `Server responded with status: ${response.status}`
+                );
             }
         } catch (error) {
-            console.error("Failed to refresh CSRF token:", error);
-        }
+            console.error("Error refreshing CSRF token:", error);
 
-        // Fallback to reading from meta tag
-        const token = document.head.querySelector('meta[name="csrf-token"]');
-        if (token && token.content !== csrfToken) {
-            setCsrfToken(token.content);
-            return token.content;
+            // Fallback: try to get token from meta tag if fetch fails
+            const metaTag = document.head.querySelector(
+                'meta[name="csrf-token"]'
+            );
+            if (metaTag && metaTag.content) {
+                console.log("Using fallback CSRF token from meta tag");
+                setCsrfToken(metaTag.content);
+                return metaTag.content;
+            }
+
+            throw error;
         }
-        return csrfToken;
     };
 
     return { csrfToken, refreshToken };

@@ -14,6 +14,8 @@ use App\Models\ItemPhoto;
 use Illuminate\Http\Request;
 use App\Models\RentProperty;
 use App\Models\TransactionItem;
+use App\Models\Wallet;
+use App\Models\Withdraw;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Helpers\TaxHelper;
@@ -324,6 +326,17 @@ class HomeController extends Controller
                 ->toArray();
         }
         
+        // Calculate available wallet balance (total balance minus pending withdrawals)
+        $availableBalance = 0;
+        if (Auth::check()) {
+            $wallet = Wallet::where('user_id', Auth::id())->first();
+            $pendingWithdrawals = Withdraw::where('user_id', Auth::id())
+                ->where('status', 'pending')
+                ->sum('amount');
+            $walletBalance = $wallet ? $wallet->balance : 0;
+            $availableBalance = max(0, $walletBalance - $pendingWithdrawals);
+        }
+
         return Inertia::render('Home/DetailService', [
             'id' => $id,
             'service' => $serviceData,
@@ -334,6 +347,7 @@ class HomeController extends Controller
             'tax_info' => $taxInfo,
             'cartDates' => $cartItems,
             'pendingDates' => $pendingTransactions,
+            'availableBalance' => $availableBalance,
         ]);
     }
 

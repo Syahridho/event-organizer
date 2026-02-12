@@ -4,10 +4,19 @@ import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Button } from "@/components/ui/button.jsx";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import {
+    ArrowLeft,
+    Loader2,
+    LoaderCircle,
+    Plus,
+    Trash2,
+    Notebook,
+} from "lucide-react";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge.jsx";
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = lazy(() => import("react-quill"));
@@ -28,7 +37,14 @@ const breadcrumbs = [
 ];
 
 export default function ServicesUpdate() {
-    const { ziggy, service } = usePage().props;
+    const { ziggy, service, categories } = usePage().props;
+    const { csrfToken, refreshToken } = useCsrfToken();
+
+    const [uiState, setUiState] = useState({
+        categorySearch: "",
+        categorySearchResults: [],
+        isLoadingCategories: false,
+    });
 
     const { data, setData, post, processing } = useForm({
         name: service?.name ?? "",
@@ -37,6 +53,11 @@ export default function ServicesUpdate() {
         location: service?.location ?? "",
         price: service?.price ?? "",
         itemPhoto: service?.item_photos ?? [],
+        selected_categories:
+            service?.categories?.map((cat) => ({
+                id: cat.id,
+                name: cat.name,
+            })) ?? [],
         _method: "put",
     });
 
@@ -57,6 +78,53 @@ export default function ServicesUpdate() {
         setData("itemPhoto", newItemPhoto);
     };
 
+    const handleCategorySearch = async (query) => {
+        if (!query.trim()) {
+            setUiState((prev) => ({
+                ...prev,
+                categorySearchResults: [],
+                isLoadingCategories: false,
+            }));
+            return;
+        }
+
+        setUiState((prev) => ({ ...prev, isLoadingCategories: true }));
+
+        try {
+            const response = await fetch(
+                `/dashboard/categories/api?search=${encodeURIComponent(query)}`,
+                {
+                    headers: {
+                        Accept: "application/json",
+                        "X-CSRF-TOKEN": csrfToken,
+                    },
+                }
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                setUiState((prev) => ({
+                    ...prev,
+                    categorySearchResults: data.categories || [],
+                    isLoadingCategories: false,
+                }));
+            } else {
+                setUiState((prev) => ({
+                    ...prev,
+                    categorySearchResults: [],
+                    isLoadingCategories: false,
+                }));
+            }
+        } catch (error) {
+            console.error("Error searching categories:", error);
+            setUiState((prev) => ({
+                ...prev,
+                categorySearchResults: [],
+                isLoadingCategories: false,
+            }));
+        }
+    };
+
     const submit = (e) => {
         e.preventDefault();
 
@@ -67,10 +135,43 @@ export default function ServicesUpdate() {
             return;
         }
 
+        // Ensure we have the latest CSRF token before submitting
+        const latestToken = refreshToken();
+        if (latestToken !== csrfToken) {
+            setData("_token", latestToken);
+        }
+
         const formSubmit = new FormData();
 
         Object.entries(data).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
+            // Handle selected_categories specially - extract only IDs for backend
+            if (key === "selected_categories") {
+                const categoryIds = value.map((cat) => cat.id);
+
+                // Always send category_ids array, even if empty
+                if (categoryIds.length > 0) {
+                    categoryIds.forEach((id, idx) => {
+                        formSubmit.append(`category_ids[${idx}]`, id);
+                    });
+                } else {
+                    // Send empty array to explicitly clear categories
+                    formSubmit.append("category_ids", "");
+                }
+            } else if (key === "thumbnail") {
+                if (value instanceof File) {
+                    formSubmit.append(key, value);
+                } else if (
+                    typeof value === "string" &&
+                    value.startsWith("/default-event-images")
+                ) {
+                    formSubmit.append(key, value);
+                } else if (typeof value === "string") {
+                    formSubmit.append(
+                        key,
+                        value.replace(/^\/storage\/thumbnails\//, "")
+                    );
+                }
+            } else if (Array.isArray(value)) {
                 value.forEach((item, idx) => {
                     if (typeof item === "object" && item !== null) {
                         Object.entries(item).forEach(([k, v]) => {
@@ -98,6 +199,9 @@ export default function ServicesUpdate() {
             }
         });
 
+        // Add the latest CSRF token to FormData
+        formSubmit.append("_token", latestToken || csrfToken);
+
         post(route("services.update", service.id), formSubmit, {
             forceFormData: true,
         });
@@ -114,7 +218,7 @@ export default function ServicesUpdate() {
                         </Button>
                     </Link>
                     <span className="ms-2 text-lg font-semibold">
-                        Tambahkan Jasa Anda
+                        Edit Jasa Anda
                     </span>
                 </div>
                 <form onSubmit={submit} className="space-y-4">
@@ -243,7 +347,13 @@ export default function ServicesUpdate() {
                     <div className="grid w-full items-center gap-3">
                         <Label htmlFor="description">Deskripsi Jasa</Label>
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
-                            <Suspense fallback={<div className="p-4 text-center">Loading editor...</div>}>
+                            <Suspense
+                                fallback={
+                                    <div className="p-4 text-center">
+                                        Loading editor...
+                                    </div>
+                                }
+                            >
                                 <ReactQuill
                                     theme="snow"
                                     value={data.description}
@@ -294,6 +404,188 @@ export default function ServicesUpdate() {
                                 className="appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-10"
                                 required
                             />
+                        </div>
+                    </div>
+
+                    <div className="grid gap-2 rounded border p-4 shadow-md bg-white">
+                        <div className="flex w-full items-center justify-between">
+                            <Label
+                                htmlFor="categories"
+                                className="text-sm font-bold text-gray-700"
+                            >
+                                Kategori Jasa
+                            </Label>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Kaitkan minimal 1 kategori ke jasa ini agar mudah
+                            ditemukan.
+                        </p>
+
+                        <div className="mt-4 grid gap-4">
+                            {/* Input Pencarian Kategori */}
+                            <div className="relative group">
+                                <Input
+                                    placeholder="Cari kategori (contoh: Workshop, Seminar...)"
+                                    value={uiState.categorySearch || ""}
+                                    onChange={(e) => {
+                                        const query = e.target.value;
+                                        setUiState((prev) => ({
+                                            ...prev,
+                                            categorySearch: query,
+                                        }));
+                                        handleCategorySearch(query);
+                                    }}
+                                    className="w-full border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary pr-10"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    {uiState.isLoadingCategories ? (
+                                        <LoaderCircle className="h-4 w-4 animate-spin text-gray-400" />
+                                    ) : (
+                                        <Plus className="h-4 w-4 text-gray-400" />
+                                    )}
+                                </div>
+
+                                {/* Dropdown Hasil Pencarian (Style LinkedIn) */}
+                                {uiState.categorySearch && (
+                                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-xl max-h-60 overflow-y-auto">
+                                        {/* Section: Saat ini di bagian Kategori Anda */}
+                                        <div className="p-2 bg-gray-50 text-[10px] font-bold uppercase tracking-wider text-gray-500 border-b">
+                                            Hasil Pencarian
+                                        </div>
+
+                                        {uiState.categorySearchResults.length >
+                                        0 ? (
+                                            uiState.categorySearchResults.map(
+                                                (category) => (
+                                                    <div
+                                                        key={category.id}
+                                                        className="flex items-center justify-between p-3 hover:bg-slate-100 cursor-pointer transition-colors border-b last:border-0"
+                                                        onClick={() => {
+                                                            // Check if category is already selected
+                                                            const isAlreadySelected =
+                                                                data.selected_categories?.some(
+                                                                    (cat) =>
+                                                                        cat.id ===
+                                                                        category.id
+                                                                );
+
+                                                            if (
+                                                                !isAlreadySelected
+                                                            ) {
+                                                                setData(
+                                                                    "selected_categories",
+                                                                    [
+                                                                        ...(data.selected_categories ||
+                                                                            []),
+                                                                        {
+                                                                            id: category.id,
+                                                                            name: category.name,
+                                                                        },
+                                                                    ]
+                                                                );
+                                                            }
+                                                            setUiState(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    categorySearch:
+                                                                        "",
+                                                                    categorySearchResults:
+                                                                        [],
+                                                                })
+                                                            );
+                                                        }}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div
+                                                                className="w-3 h-3 rounded-full"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        category.color ||
+                                                                        "#cbd5e1",
+                                                                }}
+                                                            />
+                                                            <span className="text-sm font-medium text-gray-800">
+                                                                {category.name}
+                                                            </span>
+                                                        </div>
+                                                        {data.selected_categories?.some(
+                                                            (cat) =>
+                                                                cat.id ===
+                                                                category.id
+                                                        ) && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-[10px] text-green-600 bg-green-50 border-green-200"
+                                                            >
+                                                                Terpilih
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                )
+                                            )
+                                        ) : (
+                                            <div className="p-4 text-center text-sm text-muted-foreground italic">
+                                                Tidak ditemukan hasil untuk "
+                                                {uiState.categorySearch}"
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Daftar Badge Kategori Terpilih */}
+                            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-slate-50/50 border border-dashed border-slate-200">
+                                {data.selected_categories &&
+                                data.selected_categories.length > 0 ? (
+                                    data.selected_categories.map((category) => {
+                                        // Find the full category object to get color
+                                        const fullCategory = categories?.find(
+                                            (cat) => cat.id === category.id
+                                        );
+                                        return (
+                                            <Badge
+                                                key={category.id}
+                                                variant="secondary"
+                                                className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 bg-white border border-slate-200 hover:border-red-200 transition-all group"
+                                            >
+                                                <div
+                                                    className="w-2 h-2 rounded-full shadow-sm"
+                                                    style={{
+                                                        backgroundColor:
+                                                            fullCategory?.color ||
+                                                            "#94a3b8",
+                                                    }}
+                                                />
+                                                <span className="text-sm font-semibold text-gray-700">
+                                                    {category.name}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setData(
+                                                            "selected_categories",
+                                                            data.selected_categories.filter(
+                                                                (cat) =>
+                                                                    cat.id !==
+                                                                    category.id
+                                                            )
+                                                        )
+                                                    }
+                                                    className="ml-1 p-0.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                </button>
+                                            </Badge>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="flex items-center gap-2 text-sm text-slate-400 italic px-2">
+                                        <Notebook className="h-4 w-4" /> Belum
+                                        ada kategori dipilih
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

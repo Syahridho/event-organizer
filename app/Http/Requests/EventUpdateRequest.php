@@ -47,6 +47,10 @@ class EventUpdateRequest extends FormRequest
             'tickets.*.name' => ['string'],
             'tickets.*.price' => ['numeric'],
             'tickets.*.quota' => ['integer'],
+
+            'selected_categories' => ['nullable', 'array'],
+            'selected_categories.*.id' => ['required', 'integer', 'exists:categories,id'],
+            'selected_categories.*.name' => ['required', 'string'],
         ];
     }
 }

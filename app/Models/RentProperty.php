@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use App\Models\TransactionItem;
 
 class RentProperty extends Model
@@ -41,5 +42,13 @@ class RentProperty extends Model
     public function transactionItems()
     {
         return $this->hasMany(TransactionItem::class, 'item_id')->where('item_type', 'rent_property');
+    }
+
+    /**
+     * Get all categories for this rent property.
+     */
+    public function categories(): MorphToMany
+    {
+        return $this->morphToMany(Category::class, 'categorizable', 'category_product');
     }
 }

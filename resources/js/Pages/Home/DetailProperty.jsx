@@ -1,4 +1,11 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from "react";
+﻿import React, {
+    useState,
+    useEffect,
+    useMemo,
+    useCallback,
+    lazy,
+    Suspense,
+} from "react";
 import {
     ArrowLeft,
     MapPin,
@@ -27,16 +34,6 @@ import {
     SheetFooter,
 } from "@/components/ui/sheet.jsx";
 import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogCancel,
-    AlertDialogAction,
-} from "@/components/ui/alert-dialog.jsx";
-import {
     Carousel,
     CarouselContent,
     CarouselItem,
@@ -51,14 +48,24 @@ import { toast } from "sonner";
 import { router } from "@inertiajs/react";
 import axios from "axios";
 import { useMidtrans } from "@/hooks/usePaymentMidtrans";
-import CustomCalendar from "@/Components/custom-calendar.jsx";
-import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
-import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
-import AddressManager from "@/Components/address-manager.jsx";
-import MainLayout from "@/Layouts/Main.jsx";
-import ReviewSection from "@/Components/ReviewSection.jsx";
 import { createPaymentPayload } from "@/Utils/PaymentHelper.js";
 import ReportModal from "@/Components/ReportModal.jsx";
+import MainLayout from "@/Layouts/Main.jsx";
+
+// Lazy load heavy components
+const CustomCalendar = lazy(() => import("@/Components/custom-calendar.jsx"));
+const ReviewSection = lazy(() => import("@/Components/ReviewSection.jsx"));
+const AddressManager = lazy(() => import("@/Components/address-manager.jsx"));
+const PropertyConfirmDialog = lazy(() =>
+    import("@/Components/DetailPage/PropertyConfirmDialog.jsx?v=" + Date.now())
+);
+const ImageGallery = lazy(() =>
+    import("@/Components/DetailPage/ImageGallery.jsx")
+);
+
+// Import utilities
+import { getBookedDatesWithUser } from "@/Utils/bookedDates.js";
+import { addItemsToCart } from "@/Utils/Cart/addToCartHelper";
 
 const DetailProperty = () => {
     const {
@@ -71,6 +78,7 @@ const DetailProperty = () => {
         tax_info,
         cartDates,
         pendingDates,
+        availableBalance,
     } = usePage().props;
 
     const dispatch = useDispatch();
@@ -303,6 +311,22 @@ const DetailProperty = () => {
             currency: "IDR",
         }).format(price);
     };
+
+    // Skeleton components
+    const CalendarSkeleton = () => (
+        <div className="space-y-3">
+            <div className="h-8 w-full bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-64 w-full bg-gray-200 rounded animate-pulse"></div>
+        </div>
+    );
+
+    const ReviewSkeleton = () => (
+        <div className="space-y-4">
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-32 w-full bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-32 w-full bg-gray-200 rounded animate-pulse"></div>
+        </div>
+    );
 
     // Format leaves data untuk calendar
     const disabledLeaves = useMemo(() => {
@@ -566,12 +590,14 @@ const DetailProperty = () => {
 
                                     {/* Review Section */}
                                     <section className="mt-8">
-                                        <ReviewSection
-                                            key={property.id}
-                                            itemType="App\Models\RentProperty"
-                                            itemId={property.id}
-                                            user={user}
-                                        />
+                                        <Suspense fallback={<ReviewSkeleton />}>
+                                            <ReviewSection
+                                                key={property.id}
+                                                itemType="App\Models\RentProperty"
+                                                itemId={property.id}
+                                                user={user}
+                                            />
+                                        </Suspense>
                                     </section>
                                 </div>
                             </div>
@@ -582,20 +608,24 @@ const DetailProperty = () => {
                         <div className="bg-white rounded-lg shadow-lg border sticky md:top-12">
                             <div className="px-6 pb-6">
                                 <div className="my-6">
-                                    <CustomCalendar
-                                        selected={selectedDate}
-                                        onSelect={setSelectedDate}
-                                        disabled={(date) => date < new Date()}
-                                        bookedDatesWithUser={
-                                            bookedDatesWithUser
-                                        }
-                                        disabledLeaves={disabledLeaves}
-                                        currentUserId={user?.id}
-                                        cartDates={cartDates}
-                                        pendingDates={pendingDates}
-                                        itemId={property.id}
-                                        itemType="property"
-                                    />
+                                    <Suspense fallback={<CalendarSkeleton />}>
+                                        <CustomCalendar
+                                            selected={selectedDate}
+                                            onSelect={setSelectedDate}
+                                            disabled={(date) =>
+                                                date < new Date()
+                                            }
+                                            bookedDatesWithUser={
+                                                bookedDatesWithUser
+                                            }
+                                            disabledLeaves={disabledLeaves}
+                                            currentUserId={user?.id}
+                                            cartDates={cartDates}
+                                            pendingDates={pendingDates}
+                                            itemId={property.id}
+                                            itemType="property"
+                                        />
+                                    </Suspense>
                                 </div>
                                 <div className="text-center my-6">
                                     <div className="text-3xl font-bold text-blue-600">
@@ -660,18 +690,20 @@ const DetailProperty = () => {
                     {/* FIXED: Scrollable content area */}
                     <div className="flex-1 overflow-y-auto py-4 space-y-6">
                         <div className="flex justify-center">
-                            <CustomCalendar
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                disabled={(date) => date < new Date()}
-                                bookedDatesWithUser={bookedDatesWithUser}
-                                disabledLeaves={disabledLeaves}
-                                currentUserId={user?.id}
-                                cartDates={cartDates}
-                                pendingDates={pendingDates}
-                                itemId={property.id}
-                                itemType="property"
-                            />
+                            <Suspense fallback={<CalendarSkeleton />}>
+                                <CustomCalendar
+                                    selected={selectedDate}
+                                    onSelect={setSelectedDate}
+                                    disabled={(date) => date < new Date()}
+                                    bookedDatesWithUser={bookedDatesWithUser}
+                                    disabledLeaves={disabledLeaves}
+                                    currentUserId={user?.id}
+                                    cartDates={cartDates}
+                                    pendingDates={pendingDates}
+                                    itemId={property.id}
+                                    itemType="property"
+                                />
+                            </Suspense>
                         </div>
 
                         {/* Delivery/Pickup Dropdown - DYNAMIC */}
@@ -874,193 +906,39 @@ const DetailProperty = () => {
                 </SheetContent>
             </Sheet>
 
-            <AddressManager
-                isAddressListOpen={isAddressListOpen}
-                setIsAddressListOpen={setIsAddressListOpen}
-                addresses={addresses}
-                setAddresses={setAddresses}
-                selectedAddressId={selectedAddressId}
-                setSelectedAddressId={setSelectedAddressId}
-                user={user}
-            />
+            <Suspense fallback={null}>
+                <AddressManager
+                    isAddressListOpen={isAddressListOpen}
+                    setIsAddressListOpen={setIsAddressListOpen}
+                    addresses={addresses}
+                    setAddresses={setAddresses}
+                    selectedAddressId={selectedAddressId}
+                    setSelectedAddressId={setSelectedAddressId}
+                    user={user}
+                />
+            </Suspense>
 
-            <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                <AlertDialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-                    <AlertDialogHeader className="flex-shrink-0">
-                        <AlertDialogTitle>
-                            Konfirmasi Pembayaran
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Pastikan semua data sudah benar sebelum melanjutkan
-                            pembayaran.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    {/* FIXED: Scrollable confirmation content */}
-                    <div className="flex-1 overflow-y-auto py-4">
-                        <div className="bg-slate-50 border rounded-md p-5 text-sm space-y-3">
-                            <div className="text-center font-semibold mb-4 tracking-wide">
-                                RINCIAN PENYEWAAN
-                            </div>
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Properti</span>
-                                <span className="font-medium">
-                                    {property.name}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">
-                                    Harga Dasar
-                                </span>
-                                <span className="font-medium">
-                                    {formatPrice(property.price)} / hari
-                                </span>
-                            </div>
-
-                            {property.tax_amount > 0 && (
-                                <div className="flex justify-between py-2 border-b">
-                                    <span className="text-slate-600">
-                                        Pajak (
-                                        {tax_info?.type === "percent"
-                                            ? `${tax_info?.value}%`
-                                            : "Fixed"}
-                                        )
-                                    </span>
-                                    <span className="font-medium">
-                                        {formatPrice(property.tax_amount)}
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Tanggal</span>
-                                <span className="font-medium">
-                                    {selectedDate ? (
-                                        (() => {
-                                            const d = new Date(selectedDate);
-                                            const hari = d.toLocaleDateString(
-                                                "id-ID",
-                                                { weekday: "long" }
-                                            );
-                                            const tanggal =
-                                                d.toLocaleDateString("id-ID", {
-                                                    day: "numeric",
-                                                    month: "long",
-                                                    year: "numeric",
-                                                });
-                                            return `${tanggal} (${hari})`;
-                                        })()
-                                    ) : (
-                                        <p className="text-sm text-red-600 font-medium">
-                                            ⚠ Tanggal belum dipilih
-                                        </p>
-                                    )}
-                                </span>
-                            </div>
-
-                            <div className="flex justify-between py-2 border-b">
-                                <span className="text-slate-600">Metode</span>
-                                <span className="font-medium">
-                                    {deliveryOption === "delivery"
-                                        ? "Diantar ke Alamat"
-                                        : "Ambil di Lokasi"}
-                                </span>
-                            </div>
-
-                            <div className="py-3 border-b">
-                                {deliveryOption === "delivery" ? (
-                                    selectedAddress ? (
-                                        <div className="space-y-2">
-                                            <span className="block text-slate-600">
-                                                Alamat Penyewa (
-                                                {selectedAddress.label})
-                                            </span>
-                                            <div className="text-sm font-medium text-slate-800">
-                                                <p>
-                                                    {
-                                                        selectedAddress.recipient_name
-                                                    }{" "}
-                                                    - {selectedAddress.phone}
-                                                </p>
-                                                <p className="leading-relaxed">
-                                                    {
-                                                        selectedAddress.address_line
-                                                    }
-                                                    , {selectedAddress.district}
-                                                    , {selectedAddress.city},{" "}
-                                                    {selectedAddress.province}{" "}
-                                                    {
-                                                        selectedAddress.postal_code
-                                                    }
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-red-600 font-medium">
-                                            ⚠ Alamat belum dipilih
-                                        </p>
-                                    )
-                                ) : (
-                                    <div className="space-y-2">
-                                        <span className="block text-slate-600">
-                                            Lokasi Properti
-                                        </span>
-                                        <p className="text-sm font-medium text-slate-800">
-                                            {property.location}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {note && (
-                                <div className="py-3 border-b">
-                                    <span className="block text-slate-600 mb-2">
-                                        Catatan
-                                    </span>
-                                    <p className="text-sm text-slate-800">
-                                        {note}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="flex justify-between py-3 mt-2 border-t font-semibold text-base">
-                                <span>Total</span>
-                                <span>
-                                    {formatPrice(
-                                        property.final_price || property.price
-                                    )}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <AlertDialogFooter className="flex-shrink-0 pt-4 border-t">
-                        <AlertDialogCancel
-                            onClick={() => {
-                                setIsConfirmOpen(false);
-                                setIsPaymentOpen(true);
-                            }}
-                        >
-                            Batal
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handlePayment}
-                            disabled={!snapLoaded || isLoading.payment}
-                        >
-                            {isLoading.payment ? (
-                                <div className="flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Memproses...
-                                </div>
-                            ) : (
-                                "Bayar"
-                            )}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            {/* Property Confirmation Dialog */}
+            <Suspense fallback={null}>
+                <PropertyConfirmDialog
+                    isOpen={isConfirmOpen}
+                    onOpenChange={setIsConfirmOpen}
+                    property={property}
+                    selectedDate={selectedDate}
+                    selectedAddress={selectedAddress}
+                    note={note}
+                    tax_info={tax_info}
+                    formatPrice={formatPrice}
+                    handlePayment={handlePayment}
+                    snapLoaded={snapLoaded}
+                    setIsLoading={setIsLoading}
+                    isLoading={isLoading}
+                    setIsPaymentOpen={setIsPaymentOpen}
+                    deliveryOption={deliveryOption}
+                    user={user}
+                    saldo_user={availableBalance}
+                />
+            </Suspense>
 
             {isLoading.payment && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">

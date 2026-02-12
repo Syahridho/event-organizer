@@ -3,12 +3,12 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class AdminEventTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions; // SAFE: Only rolls back changes after test
 
     /** @test */
     public function test_admin_user_exists()

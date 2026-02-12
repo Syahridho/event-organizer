@@ -7,6 +7,8 @@ use App\Http\Requests\EventUpdateRequest;
 use App\Models\Event;
 use App\Models\Speaker;
 use App\Models\Ticket;
+use App\Models\Category;
+use App\Models\CategoryEvent;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -25,96 +27,140 @@ class EventController extends Controller
 {
     public function create()
     {
-        return Inertia::render('Mitra/Events/Create');
+        $categories = Category::active()->get();
+
+        return Inertia::render('Mitra/Events/Create', [
+            'categories' => $categories
+        ]);
     }
  
     public function store(EventRequest $request)
     {
-        try {
-            $data = $request->validated();
+        return DB::transaction(function () use ($request) {
+            try {
+                // Log raw request data for debugging
+                \Log::info('Store raw request data:', [
+                    'all' => $request->all(),
+                    'category_ids' => $request->input('category_ids'),
+                    'hasFile' => $request->allFiles(),
+                ]);
+                
+                $data = $request->validated();
+                
+                // Extract category IDs from selected_categories
+                $selectedCategories = $request->input('selected_categories', []);
+                $categoryIds = collect($selectedCategories)->pluck('id')->toArray();
+                
+                // Log the received data for debugging
+                \Log::info('Store event data:', $data);
+                \Log::info('Category IDs:', $categoryIds);
+                
+                if (!isset($data['tickets']) || empty($data['tickets'])) {
+                    $data['tickets'] = [
+                        [
+                            'name' => 'Free',
+                            'quota' => 99999999,
+                            'price' => 0,
+                        ]
+                    ];
+                }
 
-            if (!isset($data['tickets']) || empty($data['tickets'])) {
-                $data['tickets'] = [
-                    [
-                        'name' => 'Free',
-                        'quota' => 99999999,
-                        'price' => 0,
-                    ]
-                ];
-            }
+                $data['event_date_start'] = Carbon::parse($data['event_date_start'])->format('Y-m-d H:i:s');
 
-            $data['event_date_start'] = Carbon::parse($data['event_date_start'])->format('Y-m-d H:i:s');
+                $data['pin'] = is_array($data['pin']) ? implode(',', $data['pin']) : null;
 
-            $data['pin'] = is_array($data['pin']) ? implode(',', $data['pin']) : null;
+                $data['event_date_end'] = Arr::get($data, 'event_date_end')
+                    ? Carbon::parse($data['event_date_end'])->format('Y-m-d H:i:s')
+                    : $data['event_date_start'];
 
-            $data['event_date_end'] = Arr::get($data, 'event_date_end')
-                ? Carbon::parse($data['event_date_end'])->format('Y-m-d H:i:s')
-                : $data['event_date_start'];
+                $data['ticket_date_start'] = Arr::get($data, 'ticket_date_start')
+                    ? Carbon::parse($data['ticket_date_start'])->format('Y-m-d H:i:s')
+                    : Carbon::now()->format('Y-m-d H:i:s');
 
-            $data['ticket_date_start'] = Arr::get($data, 'ticket_date_start')
-                ? Carbon::parse($data['ticket_date_start'])->format('Y-m-d H:i:s')
-                : Carbon::now()->format('Y-m-d H:i:s');
+                $data['ticket_date_end'] = Arr::get($data, 'ticket_date_end')
+                    ? Carbon::parse($data['ticket_date_end'])->format('Y-m-d H:i:s')
+                    : $data['event_date_start'];
 
-            $data['ticket_date_end'] = Arr::get($data, 'ticket_date_end')
-                ? Carbon::parse($data['ticket_date_end'])->format('Y-m-d H:i:s')
-                : $data['event_date_start'];
+                $data['status'] = 'active';
+                $data['user_id'] = Auth::user()->id;
 
-            $data['status'] = 'active';
-            $data['user_id'] =  Auth::user()->id;
+                $thumbnail = $data['thumbnail'] ?? null;
 
-            $thumbnail = $data['thumbnail'] ?? null;
+                if (!is_string($thumbnail)) {
+                    $path = $thumbnail->store('thumbnails', 'public');
+                    $data['thumbnail'] = str_replace('thumbnails/', '', $path);
+                }
 
-            if (!is_string($thumbnail)) {
-                $path = $thumbnail->store('thumbnails', 'public');
-                $data['thumbnail'] = str_replace('thumbnails/', '', $path);
-            }
+                // Remove selected_categories from data before creating event
+                // (it's not a fillable field in Event model)
+                unset($data['selected_categories']);
 
-            $event = Event::create($data);
+                $event = Event::create($data);
 
-            if (!empty($data['speakers']) && is_array($data['speakers'])) {
-                foreach ($data['speakers'] as $index => $speakerData) {
-                    $photoSpeaker = '';
-                    if ($request->hasFile("speakers.$index.photo")) {
-                        $photoFile = $request->file("speakers")[$index]['photo'];
-                        $path = $photoFile->store('speakers', 'public');
-                        $photoSpeaker = str_replace('speakers/', '', $path);
+                // **FIX: Attach categories to event**
+                if (!empty($categoryIds)) {
+                    $event->categories()->attach($categoryIds);
+                }
+
+                if (!empty($data['speakers']) && is_array($data['speakers'])) {
+                    foreach ($data['speakers'] as $index => $speakerData) {
+                        $photoSpeaker = '';
+                        if ($request->hasFile("speakers.$index.photo")) {
+                            $photoFile = $request->file("speakers")[$index]['photo'];
+                            $path = $photoFile->store('speakers', 'public');
+                            $photoSpeaker = str_replace('speakers/', '', $path);
+                        }
+
+                        Speaker::create([
+                            'event_id' => $event->id,
+                            'name' => $speakerData['name'],
+                            'photo' => $photoSpeaker,
+                            'description' => $speakerData['description'],
+                        ]);
                     }
-
-                    Speaker::create([
-                        'event_id' => $event->id,
-                        'name' => $speakerData['name'],
-                        'photo' => $photoSpeaker,
-                        'description' => $speakerData['description'],
-                    ]);
                 }
-            }
 
-            if (!empty($data['tickets']) && is_array($data['tickets'])) {
-                foreach ($data['tickets'] as $ticketData) {
-                    $ticketData['price'] = (int) preg_replace('/\D/', '', $ticketData['price']);
-                    Ticket::create([
-                        'event_id' => $event->id,
-                        'name' => $ticketData['name'],
-                        'price' => $ticketData['price'],
-                        'quota' => $ticketData['quota'],
-                    ]);
+                if (!empty($data['tickets']) && is_array($data['tickets'])) {
+                    foreach ($data['tickets'] as $ticketData) {
+                        $ticketData['price'] = (int) preg_replace('/\D/', '', $ticketData['price']);
+                        Ticket::create([
+                            'event_id' => $event->id,
+                            'name' => $ticketData['name'],
+                            'price' => $ticketData['price'],
+                            'quota' => $ticketData['quota'],
+                        ]);
+                    }
                 }
+                
+                return redirect()->route('events.index')->with('success', 'Event berhasil dibuat');
+            } catch (\Exception $e) {
+                \Log::error('Event creation failed:', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return redirect()->back()->with('error', 'Gagal membuat event: ' . $e->getMessage());
             }
-
-            return redirect()->route('events.index')->with('success', 'Event berhasil dibuat');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal membuat event: ' . $e->getMessage());
-        }
+        });
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $events = Event::with('speakers', 'tickets')
+        $events = Event::with('speakers', 'tickets', 'categories')
             ->withCount(['transactionItems as settled_transactions_count' => function ($query) {
                 $query->whereHas('transaction', function ($subQuery) {
                     $subQuery->where('status', 'settlement');
                 });
             }])
+            // Cari berdasarkan teks nama event
+            ->when($request->search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            // Cari berdasarkan ID Kategori
+            ->when($request->category_id, function ($query, $catId) {
+                $query->whereHas('categories', function ($q) use ($catId) {
+                    $q->where('categories.id', $catId);
+                });
+            })
             ->where('user_id', Auth::id())
             ->latest()
             ->get()
@@ -154,269 +200,313 @@ class EventController extends Controller
 
     public function update(EventUpdateRequest $request, Event $event)
     {
-        try {
-            // Cek otorisasi
-            if ($event->user_id !== Auth::id()) {
-                abort(403);
-            }
-
-            $message = 'Acara ini tidak dapat diubah karena sudah memiliki tiket terjual. Harap hubungi administrator jika Anda perlu melakukan perubahan.';
-            if ($this->eventHasSettledTransactions($event)) {
-                abort(403, $message);
-            }
-            // === AKHIR VALIDASI ===
-            $data = $request->validated();
-    
-            $data['event_date_start'] = Carbon::parse($data['event_date_start'])->format('Y-m-d H:i:s');
-            $data['pin'] = is_array($data['pin']) ? implode(',', $data['pin']) : null;
-            
-            $data['event_date_end'] = Arr::get($data, 'event_date_end')
-                ? Carbon::parse($data['event_date_end'])->format('Y-m-d H:i:s')
-                : $data['event_date_start'];
-    
-            $data['ticket_date_start'] = Arr::get($data, 'ticket_date_start')
-                ? Carbon::parse($data['ticket_date_start'])->format('Y-m-d H:i:s')
-                : Carbon::now()->format('Y-m-d H:i:s');
-    
-            $data['ticket_date_end'] = Arr::get($data, 'ticket_date_end')
-                ? Carbon::parse($data['ticket_date_end'])->format('Y-m-d H:i:s')
-                : $data['event_date_start'];
-    
-            $data['speakers'] = $data['speakers'] ?? [];
-            $data['tickets'] = $data['tickets'] ?? [];
-
-            // Enforce default free ticket when no ticket data provided
-            if (!isset($data['tickets']) || empty($data['tickets'])) {
-                $data['tickets'] = [
-                    [
-                        'name' => 'Free',
-                        'quota' => 99999999,
-                        'price' => 0,
-                    ]
-                ];
-            }
-    
-            
-            $thumbnail = $data['thumbnail'] ?? null;
-
-            if ($thumbnail) {
-                // Cek apakah thumbnail yang dikirim sama dengan thumbnail yang sudah ada di database
-                if (is_string($thumbnail) && $thumbnail === $event->thumbnail) {
-                    // Tidak ada perubahan - jangan update thumbnail
-                    unset($data['thumbnail']);
-                } 
-                // Cek apakah ini adalah file upload baru (bukan string, tapi object file)
-                elseif (!is_string($thumbnail)) {
-                    // Hapus thumbnail lama jika itu adalah file upload user (bukan default image)
-                    if ($event->thumbnail && !str_contains($event->thumbnail, 'default-event-images')) {
-                        Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
-                    }
-                    // Simpan file baru ke storage
-                    $path = $thumbnail->store('thumbnails', 'public');
-                    // Simpan hanya nama file (tanpa path 'thumbnails/')
-                    $data['thumbnail'] = basename($path);
-                } 
-                // User mengganti ke gambar yang berbeda (berupa string path)
-                else {
-                    // Hapus thumbnail lama jika itu adalah file upload user (bukan default image)
-                    if ($event->thumbnail && !str_contains($event->thumbnail, 'default-event-images')) {
-                        Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
-                    }
-                    
-                    // Bersihkan path - simpan hanya path relatif dari folder 'thumbnails/'
-                    $data['thumbnail'] = str_replace(['/storage/thumbnails/', 'thumbnails/'], '', $thumbnail);
+        return DB::transaction(function () use ($request, $event) {
+            try {
+                // Cek otorisasi
+                if ($event->user_id !== Auth::id()) {
+                    abort(403);
                 }
-            } else {
-                // Tidak ada thumbnail yang dikirim - jangan update field thumbnail
-                unset($data['thumbnail']);
-            }
 
-            // Update data event ke database
-            $event->update($data);
-    
-            // Process speakers
-            if (isset($data['speakers']) && is_array($data['speakers'])) {
-                $submittedSpeakerIds = [];
-    
-                foreach ($data['speakers'] as $index => $speakerData) {
-                    $speakerId = $speakerData['id'] ?? null;
-                    $photoFile = $request->hasFile("speakers.$index.photo")
-                        ? $request->file("speakers.$index.photo")
-                        : ($speakerData['photo'] ?? null);
-    
-                    $photoPath = null;
-                    if ($speakerId) {
-                        if ($photoFile && !is_string($photoFile)) {
+                $message = 'Acara ini tidak dapat diubah karena sudah memiliki tiket terjual. Harap hubungi administrator jika Anda perlu melakukan perubahan.';
+                if ($this->eventHasSettledTransactions($event)) {
+                    abort(403, $message);
+                }
+                
+                // **CRITICAL DEBUG LOGGING**
+                \Log::info('=== UPDATE REQUEST RECEIVED ===', [
+                    'request_all' => $request->all(),
+                    'selected_categories' => $request->input('selected_categories'),
+                    'has_selected_categories' => $request->has('selected_categories'),
+                ]);
+                
+                $data = $request->validated();
+                
+                \Log::info('=== AFTER VALIDATION ===', [
+                    'validated_data_keys' => array_keys($data),
+                    'selected_categories' => $data['selected_categories'] ?? 'NOT FOUND',
+                ]);
+        
+                $data['event_date_start'] = Carbon::parse($data['event_date_start'])->format('Y-m-d H:i:s');
+                $data['pin'] = is_array($data['pin']) ? implode(',', $data['pin']) : null;
+                
+                $data['event_date_end'] = Arr::get($data, 'event_date_end')
+                    ? Carbon::parse($data['event_date_end'])->format('Y-m-d H:i:s')
+                    : $data['event_date_start'];
+        
+                $data['ticket_date_start'] = Arr::get($data, 'ticket_date_start')
+                    ? Carbon::parse($data['ticket_date_start'])->format('Y-m-d H:i:s')
+                    : Carbon::now()->format('Y-m-d H:i:s');
+        
+                $data['ticket_date_end'] = Arr::get($data, 'ticket_date_end')
+                    ? Carbon::parse($data['ticket_date_end'])->format('Y-m-d H:i:s')
+                    : $data['event_date_start'];
+        
+                $data['speakers'] = $data['speakers'] ?? [];
+                $data['tickets'] = $data['tickets'] ?? [];
+
+                if (!isset($data['tickets']) || empty($data['tickets'])) {
+                    $data['tickets'] = [
+                        [
+                            'name' => 'Free',
+                            'quota' => 99999999,
+                            'price' => 0,
+                        ]
+                    ];
+                }
+        
+                $thumbnail = $data['thumbnail'] ?? null;
+
+                if ($thumbnail) {
+                    if (is_string($thumbnail) && $thumbnail === $event->thumbnail) {
+                        unset($data['thumbnail']);
+                    } 
+                    elseif (!is_string($thumbnail)) {
+                        if ($event->thumbnail && !str_contains($event->thumbnail, 'default-event-images')) {
+                            Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
+                        }
+                        $path = $thumbnail->store('thumbnails', 'public');
+                        $data['thumbnail'] = basename($path);
+                    } 
+                    else {
+                        if ($event->thumbnail && !str_contains($event->thumbnail, 'default-event-images')) {
+                            Storage::disk('public')->delete('thumbnails/' . $event->thumbnail);
+                        }
+                        $data['thumbnail'] = str_replace(['/storage/thumbnails/', 'thumbnails/', '/default-event-images/'], '', $thumbnail);
+                    }
+                } else {
+                    unset($data['thumbnail']);
+                }
+
+                // **FIX: Extract category IDs dari selected_categories**
+                $categoryIds = [];
+                if (isset($data['selected_categories']) && is_array($data['selected_categories'])) {
+                    $categoryIds = collect($data['selected_categories'])->pluck('id')->toArray();
+                }
+                unset($data['selected_categories']);
+                
+                \Log::info('=== CATEGORY IDS EXTRACTION ===', [
+                    'categoryIds' => $categoryIds,
+                    'is_array' => is_array($categoryIds),
+                    'is_empty' => empty($categoryIds),
+                    'count' => count($categoryIds),
+                ]);
+
+                // Update data event ke database
+                $event->update($data);
+        
+                // Process speakers
+                if (isset($data['speakers']) && is_array($data['speakers'])) {
+                    $submittedSpeakerIds = [];
+        
+                    foreach ($data['speakers'] as $index => $speakerData) {
+                        $speakerId = $speakerData['id'] ?? null;
+                        $photoFile = $request->hasFile("speakers.$index.photo")
+                            ? $request->file("speakers.$index.photo")
+                            : ($speakerData['photo'] ?? null);
+        
+                        $photoPath = null;
+                        if ($speakerId) {
+                            if ($photoFile && !is_string($photoFile)) {
+                                $path = $photoFile->store('speakers', 'public');
+                                $photoPath = str_replace('speakers/', '', $path);
+                            } elseif (is_string($photoFile)) {
+                                $photoPath = $speakerData['photo'] ?? null;
+                            }
+                            
+                            $speaker = Speaker::find($speakerId);
+                            $updateData = [
+                                'name' => $speakerData['name'],
+                                'description' => $speakerData['description'],
+                            ];
+        
+                            if (!is_string($photoFile) && $photoFile) {
+                                if ($speaker->photo) {
+                                    Storage::disk('public')->delete('speakers/' . $speaker->photo);
+                                }
+                                $updateData['photo'] = $photoPath;
+                            }
+        
+                            $speaker->update($updateData);
+                            $submittedSpeakerIds[] = $speaker->id;
+                        } else {
                             $path = $photoFile->store('speakers', 'public');
                             $photoPath = str_replace('speakers/', '', $path);
-                        } elseif (is_string($photoFile)) {
-                            $photoPath = $speakerData['photo'] ?? null;
+        
+                            $newSpeaker = Speaker::create([
+                                'event_id' => $event->id,
+                                'name' => $speakerData['name'],
+                                'photo' => $photoPath,
+                                'description' => $speakerData['description'] ?? '',
+                            ]);
+        
+                            $submittedSpeakerIds[] = $newSpeaker->id;
                         }
-                        
-                        $speaker = Speaker::find($speakerId);
-                        $updateData = [
-                            'name' => $speakerData['name'],
-                            'description' => $speakerData['description'],
-                        ];
-    
-                        if (!is_string($photoFile) && $photoFile) {
-                            if ($speaker->photo) {
-                                Storage::disk('public')->delete('speakers/' . $speaker->photo);
-                            }
-                            $updateData['photo'] = $photoPath;
+                    }
+        
+                    $speakersToDelete = Speaker::where('event_id', $event->id)
+                        ->whereNotIn('id', $submittedSpeakerIds)
+                        ->get();
+        
+                    foreach ($speakersToDelete as $speaker) {
+                        if ($speaker->photo) {
+                            Storage::disk('public')->delete('speakers/' . $speaker->photo);
                         }
-    
-                        $speaker->update($updateData);
-                        $submittedSpeakerIds[] = $speaker->id;
-                    } else {
-                        $path = $photoFile->store('speakers', 'public');
-                        $photoPath = str_replace('speakers/', '', $path);
-    
-                        $newSpeaker = Speaker::create([
-                            'event_id' => $event->id,
-                            'name' => $speakerData['name'],
-                            'photo' => $photoPath,
-                            'description' => $speakerData['description'] ?? '',
-                        ]);
-    
-                        $submittedSpeakerIds[] = $newSpeaker->id;
+                        $speaker->delete();
                     }
                 }
-    
-                $speakersToDelete = Speaker::where('event_id', $event->id)
-                    ->whereNotIn('id', $submittedSpeakerIds)
-                    ->get();
-    
-                foreach ($speakersToDelete as $speaker) {
-                    if ($speaker->photo) {
-                        Storage::disk('public')->delete('speakers/' . $speaker->photo);
-                    }
-                    $speaker->delete();
-                }
-            }
-    
-            // Process tickets
-            if (is_array($data['tickets'])) {
-                $submittedTicketIds = [];
-                $warnings = [];
-    
-                if (!empty($data['tickets'])) {
-                    foreach ($data['tickets'] as $ticketData) {
-                        $ticketId = $ticketData['id'] ?? null;
-                        $ticketData['price'] = (int) preg_replace('/\D/', '', $ticketData['price']);
-    
-                        if ($ticketId) {
-                            // UPDATE existing ticket
-                            $ticket = Ticket::where('event_id', $event->id)->find($ticketId);
-                            
-                            if ($ticket) {
-                                // Hitung sold count dan buyer count
-                                $soldCount = DB::table('transaction_items')
-                                    ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-                                    ->where('transaction_items.item_id', $ticket->id)
-                                    ->where('transaction_items.item_type', 'ticket')
-                                    ->whereIn('transactions.status', ['settlement', 'pending'])
-                                    ->sum('transaction_items.qty');
-    
-                                $buyerCount = DB::table('transaction_items')
-                                    ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
-                                    ->where('transaction_items.item_id', $ticket->id)
-                                    ->where('transaction_items.item_type', 'ticket')
-                                    ->whereIn('transactions.status', ['settlement', 'pending'])
-                                    ->distinct('transactions.user_id')
-                                    ->count('transactions.user_id');
-    
-                                // WARNING: Cek apakah ada perubahan harga
-                                if ($ticket->price != $ticketData['price'] && $soldCount > 0) {
-                                    $warnings[] = "Tiket '{$ticket->name}': Harga diubah dari Rp " . number_format($ticket->price, 0, ',', '.') . 
-                                                 " menjadi Rp " . number_format($ticketData['price'], 0, ',', '.') . 
-                                                 ". Sudah ada {$buyerCount} pembeli dengan {$soldCount} tiket terjual.";
+        
+                // Process tickets
+                if (is_array($data['tickets'])) {
+                    $submittedTicketIds = [];
+                    $warnings = [];
+        
+                    if (!empty($data['tickets'])) {
+                        foreach ($data['tickets'] as $ticketData) {
+                            $ticketId = $ticketData['id'] ?? null;
+                            $ticketData['price'] = (int) preg_replace('/\D/', '', $ticketData['price']);
+        
+                            if ($ticketId) {
+                                $ticket = Ticket::where('event_id', $event->id)->find($ticketId);
+                                
+                                if ($ticket) {
+                                    $soldCount = DB::table('transaction_items')
+                                        ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+                                        ->where('transaction_items.item_id', $ticket->id)
+                                        ->where('transaction_items.item_type', 'ticket')
+                                        ->whereIn('transactions.status', ['settlement', 'pending'])
+                                        ->sum('transaction_items.qty');
+        
+                                    $buyerCount = DB::table('transaction_items')
+                                        ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+                                        ->where('transaction_items.item_id', $ticket->id)
+                                        ->where('transaction_items.item_type', 'ticket')
+                                        ->whereIn('transactions.status', ['settlement', 'pending'])
+                                        ->distinct('transactions.user_id')
+                                        ->count('transactions.user_id');
+        
+                                    if ($ticket->price != $ticketData['price'] && $soldCount > 0) {
+                                        $warnings[] = "Tiket '{$ticket->name}': Harga diubah dari Rp " . number_format($ticket->price, 0, ',', '.') . 
+                                                    " menjadi Rp " . number_format($ticketData['price'], 0, ',', '.') . 
+                                                    ". Sudah ada {$buyerCount} pembeli dengan {$soldCount} tiket terjual.";
+                                    }
+        
+                                    if ($ticket->quota > $ticketData['quota'] && $soldCount > 0) {
+                                        $warnings[] = "Tiket '{$ticket->name}': Quota dikurangi dari {$ticket->quota} menjadi {$ticketData['quota']}. " .
+                                                    "Sudah ada {$buyerCount} pembeli dengan {$soldCount} tiket terjual.";
+                                    }
+        
+                                    if ($ticketData['quota'] < $soldCount) {
+                                        $this->syncCategories($event, $categoryIds);
+                                        
+                                        return redirect()->back()
+                                            ->withInput()
+                                            ->withErrors([
+                                                'tickets' => "Tiket '{$ticket->name}' tidak bisa diupdate. Quota baru ({$ticketData['quota']}) lebih kecil dari yang sudah terjual ({$soldCount})."
+                                            ]);
+                                    }
+        
+                                    $ticket->update([
+                                        'name' => $ticketData['name'],
+                                        'price' => $ticketData['price'],
+                                        'quota' => $ticketData['quota'],
+                                    ]);
+                                    
+                                    $submittedTicketIds[] = $ticket->id;
                                 }
-    
-                                // WARNING: Cek apakah quota dikurangi
-                                if ($ticket->quota > $ticketData['quota'] && $soldCount > 0) {
-                                    $warnings[] = "Tiket '{$ticket->name}': Quota dikurangi dari {$ticket->quota} menjadi {$ticketData['quota']}. " .
-                                                 "Sudah ada {$buyerCount} pembeli dengan {$soldCount} tiket terjual.";
-                                }
-    
-                                // Validasi quota minimal
-                                if ($ticketData['quota'] < $soldCount) {
-                                    return redirect()->back()
-                                        ->withInput()
-                                        ->withErrors([
-                                            'tickets' => "Tiket '{$ticket->name}' tidak bisa diupdate. Quota baru ({$ticketData['quota']}) lebih kecil dari yang sudah terjual ({$soldCount})."
-                                        ]);
-                                }
-    
-                                $ticket->update([
+                            } else {
+                                $newTicket = Ticket::create([
+                                    'event_id' => $event->id,
                                     'name' => $ticketData['name'],
                                     'price' => $ticketData['price'],
                                     'quota' => $ticketData['quota'],
                                 ]);
-                                
-                                $submittedTicketIds[] = $ticket->id;
+                                $submittedTicketIds[] = $newTicket->id;
                             }
-                        } else {
-                            // CREATE new ticket
-                            $newTicket = Ticket::create([
-                                'event_id' => $event->id,
-                                'name' => $ticketData['name'],
-                                'price' => $ticketData['price'],
-                                'quota' => $ticketData['quota'],
-                            ]);
-                            $submittedTicketIds[] = $newTicket->id;
                         }
                     }
-                }
-    
-                // Hapus ticket yang tidak di-submit (dengan validasi)
-                $ticketsToDelete = Ticket::where('event_id', $event->id)
-                    ->whereNotIn('id', $submittedTicketIds)
-                    ->get();
-    
-                foreach ($ticketsToDelete as $ticket) {
-                    // Cek transaksi
-                    $hasTransactions = DB::table('transaction_items')
-                        ->where('item_id', $ticket->id)
-                        ->where('item_type', 'ticket')
-                        ->exists();
-    
-                    // Cek cart
-                    $hasInCart = DB::table('carts')
-                        ->where('item_id', $ticket->id)
-                        ->where('item_type', 'App\\Models\\Ticket')
-                        ->exists();
-    
-                    if ($hasTransactions || $hasInCart) {
-                        return redirect()->back()
-                            ->withInput()
-                            ->withErrors([
-                                'tickets' => "Tiket '{$ticket->name}' tidak bisa dihapus karena masih digunakan."
-                            ]);
+        
+                    $ticketsToDelete = Ticket::where('event_id', $event->id)
+                        ->whereNotIn('id', $submittedTicketIds)
+                        ->get();
+        
+                    foreach ($ticketsToDelete as $ticket) {
+                        $hasTransactions = DB::table('transaction_items')
+                            ->where('item_id', $ticket->id)
+                            ->where('item_type', 'ticket')
+                            ->exists();
+        
+                        $hasInCart = DB::table('carts')
+                            ->where('item_id', $ticket->id)
+                            ->where('item_type', 'App\\Models\\Ticket')
+                            ->exists();
+        
+                        if ($hasTransactions || $hasInCart) {
+                            $this->syncCategories($event, $categoryIds);
+                            
+                            return redirect()->back()
+                                ->withInput()
+                                ->withErrors([
+                                    'tickets' => "Tiket '{$ticket->name}' tidak bisa dihapus karena masih digunakan."
+                                ]);
+                        }
+                    }
+        
+                    $ticketsToDelete->each->delete();
+        
+                    if (!empty($warnings)) {
+                        $this->syncCategories($event, $categoryIds);
+                        
+                        return redirect()->route('events.index')
+                            ->with('success', 'Event berhasil diperbarui')
+                            ->with('warnings', $warnings);
                     }
                 }
-    
-                $ticketsToDelete->each->delete();
-    
-                // Redirect dengan warnings jika ada perubahan
-                if (!empty($warnings)) {
-                    return redirect()->route('events.index')
-                        ->with('success', 'Event berhasil diperbarui')
-                        ->with('warnings', $warnings);
-                }
+
+                // **FIX: Sync categories di akhir proses**
+                $this->syncCategories($event, $categoryIds);
+        
+                return redirect()->route('events.index')->with('success', 'Event berhasil diperbarui');
+            } catch (\Exception $e) {
+                \Log::error('Update event error:', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return redirect()->back()->withInput()->withErrors(['error' => 'Failed to update event: ' . $e->getMessage()]);
             }
-    
-            return redirect()->route('events.index')->with('success', 'Event berhasil diperbarui');
-        } catch (\Exception $e) {
-            \Log::error('Update event error:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return redirect()->back()->withInput()->withErrors(['error' => 'Failed to update event: ' . $e->getMessage()]);
-        }
+        });
     }
 
+    /**
+     * Helper method untuk sync categories
+     */
+    private function syncCategories($event, $categoryIds)
+    {
+        \Log::info('=== SYNC CATEGORIES CALLED ===', [
+            'event_id' => $event->id,
+            'categoryIds' => $categoryIds,
+            'is_array' => is_array($categoryIds),
+            'is_empty' => empty($categoryIds),
+            'count' => count($categoryIds),
+        ]);
 
+        if (!empty($categoryIds) && is_array($categoryIds)) {
+            \Log::info('ACTION: Syncing categories', ['categoryIds' => $categoryIds]);
+            $event->categories()->sync($categoryIds);
+            
+            // Verify sync
+            $event->load('categories');
+            \Log::info('AFTER SYNC: Categories attached', [
+                'categories' => $event->categories->pluck('id')->toArray()
+            ]);
+        } else {
+            \Log::warning('ACTION: Detaching all categories', [
+                'reason' => empty($categoryIds) ? 'Empty array' : 'Not an array',
+                'categoryIds_value' => $categoryIds,
+            ]);
+            $event->categories()->detach();
+        }
+    }
+    
     public function destroy(Event $event)
     {
         try {
@@ -459,10 +549,20 @@ class EventController extends Controller
 
     public function edit($id)
     {
-        $event = Event::with(['speakers', 'tickets'])->findOrFail($id);
-
+        $event = Event::with([
+            'speakers', 
+            'tickets', 
+            'user',
+            'categories' => function ($query) {
+                $query->withoutGlobalScope('user');
+            }
+        ])->findOrFail($id);
+        
+        $categories = Category::active()->get();
+    
         return Inertia::render('Mitra/Events/Update', [
             'event' => $event,
+            'categories' => $categories,
             'id' => $id
         ]);
     }
@@ -479,7 +579,7 @@ class EventController extends Controller
 
     public function show($id)
     {
-        $event = Event::with(['tickets'])->findOrFail($id);
+        $event = Event::with(['tickets', 'categories'])->findOrFail($id);
 
         // Inject a virtual "Default Free Ticket" when no tickets exist
         if ($event->tickets->isEmpty()) {
@@ -613,4 +713,33 @@ class EventController extends Controller
         }
     }
 
+    /**
+     * Sync event categories with validation to ensure user owns all categories.
+     */
+    private function syncEventCategories(Event $event, array $categoryIds): void
+    {
+        // 1. Validasi ID kategori (Milik user atau publik)
+        $validCategoryIds = Category::where(function($query) {
+                $query->where('user_id', Auth::id())
+                    ->orWhereNull('user_id');
+            })
+            ->whereIn('id', $categoryIds)
+            ->pluck('id')
+            ->toArray();
+
+        // 2. Cari ID yang tidak valid
+        $invalidIds = array_diff($categoryIds, $validCategoryIds);
+
+        // 3. Lempar error jika ada ID tidak valid
+        if (!empty($invalidIds)) {
+            throw new \Illuminate\Validation\ValidationException(
+                validator()->make([], [])
+                    ->errors()
+                    ->add('category_ids', 'Some categories do not belong to you or are not public.')
+            );
+        }
+
+        // 4. Jika valid, lakukan sinkronisasi menggunakan CategoryEvent model
+        $event->categories()->sync($validCategoryIds);
+    }
 }

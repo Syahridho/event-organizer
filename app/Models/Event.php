@@ -5,13 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Event extends Model
 {
     use HasFactory;
 
-    protected $with = ['speakers', 'tickets', 'user'];
+    protected $with = ['speakers', 'tickets', 'user', 'categories'];
 
     protected $fillable = [
         'user_id',
@@ -44,6 +46,23 @@ class Event extends Model
         return $this->hasMany(Ticket::class);
     }
 
+    /**
+     * Get the categories that belong to this event.
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'category_event', 'event_id', 'category_id')
+                    ->using(CategoryEvent::class);
+    }
+
+    /**
+     * Get the categories that belong to this event (polymorphic relationship).
+     */
+    public function categoryProducts(): MorphToMany
+    {
+        return $this->morphToMany(Category::class, 'categorizable', 'category_product');
+    }
+
     public function transactionItems()
     {
         return $this->hasManyThrough(
@@ -54,5 +73,17 @@ class Event extends Model
             'id',           // Local key on events table
             'id'            // Local key on tickets table
         )->where('transaction_items.item_type', 'ticket');
+    }
+
+    public function categoriesWithoutScope(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'category_event', 'event_id', 'category_id')
+                    ->withoutGlobalScope('user')
+                    ->using(CategoryEvent::class);
+    }
+
+    public function getCategoriesAttribute()
+    {
+        return $this->categories()->withoutGlobalScope('user')->get();
     }
 }

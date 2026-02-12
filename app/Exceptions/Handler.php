@@ -30,12 +30,36 @@ class Handler extends ExceptionHandler
         });
 
         $this->renderable(function (Throwable $e, $request) {
-            // Only handle HTTP exceptions for Inertia requests
-            if ($request->header('X-Inertia') && $e instanceof HttpException) {
+            // Handle Inertia requests
+            if ($request->header('X-Inertia')) {
+                // Only handle actual exceptions, not successful requests
+                // For login requests that actually failed with an exception
+                if ($request->is('login') && $request->isMethod('POST') && $e instanceof \Exception) {
+                    // Log the exception for debugging
+                    \Log::error('Login exception caught', [
+                        'message' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'request_data' => $request->except(['password'])
+                    ]);
+                    
+                    return redirect()->back()
+                        ->with('error', 'Terjadi kesalahan saat login. Silakan coba lagi.')
+                        ->withErrors(['email' => 'Terjadi kesalahan saat login. Silakan coba lagi.']);
+                }
+                
+                // Handle HTTP exceptions
+                if ($e instanceof HttpException) {
+                    return Inertia::render('Error', [
+                        'status' => $e->getStatusCode(),
+                        'message' => $e->getMessage() ?: 'An error occurred',
+                    ])->toResponse($request)->setStatusCode($e->getStatusCode());
+                }
+                
+                // Handle other exceptions for Inertia requests
                 return Inertia::render('Error', [
-                    'status' => $e->getStatusCode(),
-                    'message' => $e->getMessage() ?: 'An error occurred',
-                ])->toResponse($request)->setStatusCode($e->getStatusCode());
+                    'status' => 500,
+                    'message' => 'Terjadi kesalahan yang tidak terduga. Silakan coba lagi.',
+                ])->toResponse($request)->setStatusCode(500);
             }
         });
     }

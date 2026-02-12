@@ -4,12 +4,12 @@ namespace Tests\Feature\Wallet;
 
 use App\Models\User;
 use App\Models\Withdraw;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class WithdrawTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions; // SAFE: Only rolls back changes after test
 
     /** @test */
     public function test_withdraw_can_be_created()

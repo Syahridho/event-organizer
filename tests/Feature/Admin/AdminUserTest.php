@@ -3,12 +3,12 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class AdminUserTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions; // SAFE: Only rolls back changes after test
 
     /** @test */
     public function test_user_can_have_admin_role()

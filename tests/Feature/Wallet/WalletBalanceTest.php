@@ -4,12 +4,12 @@ namespace Tests\Feature\Wallet;
 
 use App\Models\User;
 use App\Models\Wallet;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class WalletBalanceTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions; // SAFE: Only rolls back changes after test
 
     /** @test */
     public function test_user_can_have_wallet()

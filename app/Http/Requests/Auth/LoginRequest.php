@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
@@ -40,18 +41,35 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+        
+        Log::info('Attempting authentication', [
+            'email' => $this->input('email'),
+            'remember' => $this->boolean('remember')
+        ]);
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            Log::warning('Authentication failed', [
+                'email' => $this->input('email'),
+                'ip' => $this->ip(),
+                'reason' => 'invalid_credentials'
+            ]);
+            
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => 'Email atau password yang Anda masukkan salah.',
             ]);
         }
 
         // Check if user is banned
         $user = Auth::user();
         if ($user && $user->is_banned) {
+            Log::warning('Authentication failed - user banned', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'ip' => $this->ip()
+            ]);
+            
             Auth::logout();
             RateLimiter::hit($this->throttleKey());
 
@@ -59,6 +77,11 @@ class LoginRequest extends FormRequest
                 'email' => 'Akun Anda telah diblokir. Hubungi admin untuk informasi lebih lanjut.',
             ]);
         }
+        
+        Log::info('Authentication successful', [
+            'user_id' => $user->id,
+            'email' => $user->email
+        ]);
 
         RateLimiter::clear($this->throttleKey());
     }
@@ -79,10 +102,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => 'Terlalu banyak percobaan login. Silakan coba lagi dalam ' . ceil($seconds / 60) . ' menit.',
         ]);
     }
 

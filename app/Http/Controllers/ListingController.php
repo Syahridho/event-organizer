@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Service;
 use App\Models\Building;
 use App\Models\RentProperty;
+use App\Models\Category;
 use Illuminate\Support\Facades\DB;
 
 class ListingController extends Controller
@@ -30,74 +31,95 @@ class ListingController extends Controller
 
                 // Events (tidak punya kolom price, gunakan NULL)
                 $query->select(
-                    'id',
-                    'name',
+                    'e.id',
+                    'e.name',
                     DB::raw("NULL as price"),
-                    'thumbnail',
-                    'location',
-                    'description',
+                    'e.thumbnail',
+                    'e.location',
+                    'e.description',
                     DB::raw("'event' as type"),
                     DB::raw("'events' as type_slug"),
-                    'created_at'
+                    'e.created_at',
+                    DB::raw("GROUP_CONCAT(ce.category_id) as category_ids")
                 )
-                ->from('events')
-                ->where('status', 'active')
+                ->from('events as e')
+                ->leftJoin('category_event as ce', 'e.id', '=', 'ce.event_id')
+                ->where('e.status', 'active')
+                ->groupBy('e.id', 'e.name', 'e.thumbnail', 'e.location', 'e.description', 'e.created_at')
                 ->inRandomOrder()
                 ->limit($limit)
 
                 // Services
                 ->unionAll(
-                    DB::table('services')
+                    DB::table('services as s')
                         ->select(
-                            'id',
-                            'name',
-                            'price',
-                            'thumbnail',
-                            'location',
-                            'description',
+                            's.id',
+                            's.name',
+                            's.price',
+                            's.thumbnail',
+                            's.location',
+                            's.description',
                             DB::raw("'service' as type"),
                             DB::raw("'services' as type_slug"),
-                            'created_at'
+                            's.created_at',
+                            DB::raw("GROUP_CONCAT(cp.category_id) as category_ids")
                         )
-                        ->where('status', 'active')
+                        ->leftJoin('category_product as cp', function($join) {
+                            $join->on('s.id', '=', 'cp.categorizable_id')
+                                 ->where('cp.categorizable_type', '=', 'App\\Models\\Service');
+                        })
+                        ->where('s.status', 'active')
+                        ->groupBy('s.id', 's.name', 's.price', 's.thumbnail', 's.location', 's.description', 's.created_at')
                         ->inRandomOrder()
                         ->limit($limit)
                 )
 
                 // Buildings
                 ->unionAll(
-                    DB::table('buildings')
+                    DB::table('buildings as b')
                         ->select(
-                            'id',
-                            'name',
-                            'price',
-                            'thumbnail',
-                            'location',
-                            'description',
+                            'b.id',
+                            'b.name',
+                            'b.price',
+                            'b.thumbnail',
+                            'b.location',
+                            'b.description',
                             DB::raw("'building' as type"),
                             DB::raw("'buildings' as type_slug"),
-                            'created_at'
+                            'b.created_at',
+                            DB::raw("GROUP_CONCAT(cp.category_id) as category_ids")
                         )
-                        ->where('status', 'active')
+                        ->leftJoin('category_product as cp', function($join) {
+                            $join->on('b.id', '=', 'cp.categorizable_id')
+                                 ->where('cp.categorizable_type', '=', 'App\\Models\\Building');
+                        })
+                        ->where('b.status', 'active')
+                        ->groupBy('b.id', 'b.name', 'b.price', 'b.thumbnail', 'b.location', 'b.description', 'b.created_at')
                         ->inRandomOrder()
                         ->limit($limit)
                 )
 
                 // property
                 ->unionAll(
-                    DB::table('rent_propertys')
+                    DB::table('rent_propertys as p')
                         ->select(
-                            'id',
-                            'name',
-                            'price',
-                            'thumbnail',
-                            'location',
-                            'description',
+                            'p.id',
+                            'p.name',
+                            'p.price',
+                            'p.thumbnail',
+                            'p.location',
+                            'p.description',
                             DB::raw("'property' as type"),
                             DB::raw("'propertys' as type_slug"),
-                            'created_at'
+                            'p.created_at',
+                            DB::raw("GROUP_CONCAT(cp.category_id) as category_ids")
                         )
-                        ->where('status', 'active')
+                        ->leftJoin('category_product as cp', function($join) {
+                            $join->on('p.id', '=', 'cp.categorizable_id')
+                                 ->where('cp.categorizable_type', '=', 'App\\Models\\RentProperty');
+                        })
+                        ->where('p.status', 'active')
+                        ->groupBy('p.id', 'p.name', 'p.price', 'p.thumbnail', 'p.location', 'p.description', 'p.created_at')
                         ->inRandomOrder()
                         ->limit($limit)
                 );
@@ -105,8 +127,18 @@ class ListingController extends Controller
             ->inRandomOrder() // Final shuffle
             ->paginate($perPage);
 
+        // Ambil semua kategori aktif tanpa filter user
+        $categories = Category::active()->withoutUserScope()->get();
+
+        // Debug: Log kategori yang diambil
+        \Log::info('Categories: ' . json_encode($categories->toArray()));
+        
+        // Debug: Log items yang diambil
+        \Log::info('Items: ' . json_encode($items->toArray()));
+
         return Inertia::render('Listing/Index', [
             'items' => $items,
+            'categories' => $categories,
         ]);
     }
 

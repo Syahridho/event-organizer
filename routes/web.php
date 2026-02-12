@@ -49,6 +49,10 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\MitraProfileController;
+use App\Http\Controllers\WalletPaymentController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Admin\AdminCategoryController;
 
 // CSRF token refresh endpoint
 Route::get('/csrf-token', function () {
@@ -239,6 +243,14 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/admin/dashboard/{uuid}', [ChatController::class, 'adminShow'])->name('admin.dashboard.chat.show');
         Route::post('/admin/dashboard/{uuid}', [ChatController::class, 'chat'])->name('admin.dashboard.chat.store');
 
+        // Admin Category Management routes
+        Route::get('/admin/categories', [AdminCategoryController::class, 'index'])->name('admin.categories.index');
+        Route::get('/admin/categories/create', [AdminCategoryController::class, 'create'])->name('admin.categories.create');
+        Route::post('/admin/categories', [AdminCategoryController::class, 'store'])->name('admin.categories.store');
+        Route::get('/admin/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('admin.categories.edit');
+        Route::put('/admin/categories/{category}', [AdminCategoryController::class, 'update'])->name('admin.categories.update');
+        Route::delete('/admin/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('admin.categories.destroy');
+
     });
 
     // Mitra (partner) routes
@@ -246,6 +258,10 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/dashboard', [MitraController::class, 'dashboard'])->name('mitra.dashboard');
 
         Route::resource('/dashboard/events', EventController::class);
+        Route::resource('/dashboard/products', ProductController::class);
+        
+        // API route for categories (for dropdown/select) - moved to admin
+        Route::get('/dashboard/categories/api', [App\Http\Controllers\Admin\AdminCategoryController::class, 'apiIndex'])->name('categories.api');
 
         // Event Attendance routes (accessible by both admin and mitra)
         Route::get('/dashboard/events/{event}/attendance', [App\Http\Controllers\Admin\EventAttendanceController::class, 'show'])->name('dashboard.events.attendance');
@@ -312,6 +328,10 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
 
     // User withdrawal request (member side)
     Route::post('/profile/withdraw', [UserWithdrawController::class, 'store'])->name('profile.withdraw');
+    
+    // Wallet payment routes
+    Route::get('/wallet/balance', [WalletPaymentController::class, 'checkBalance'])->name('wallet.balance');
+    Route::post('/wallet/pay', [WalletPaymentController::class, 'createWalletTransaction'])->name('wallet.pay');
 
     // Chat functionality
     Route::controller(ChatController::class)->prefix('chat')->name('chat.')->group(function () {

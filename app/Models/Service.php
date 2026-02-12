@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use App\Models\TransactionItem;
 
 class Service extends Model
@@ -36,5 +37,13 @@ class Service extends Model
     public function transactionItems()
     {
         return $this->hasMany(TransactionItem::class, 'item_id')->where('item_type', 'service');
+    }
+
+    /**
+     * Get all categories for this service.
+     */
+    public function categories(): MorphToMany
+    {
+        return $this->morphToMany(Category::class, 'categorizable', 'category_product');
     }
 }

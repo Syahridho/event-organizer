@@ -3,12 +3,12 @@
 namespace Tests\Feature\Event;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class EventCrudTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions; // SAFE: Only rolls back changes after test
 
     /** @test */
     public function test_user_can_be_created()

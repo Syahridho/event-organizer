@@ -44,6 +44,11 @@ class EventRequest extends FormRequest
             'tickets.*.name' => ['required', 'string'],
             'tickets.*.price' => ['required', 'numeric'],
             'tickets.*.quota' => ['required', 'integer'],
+            'selected_categories' => ['array'],
+            'selected_categories.*' => ['nullable'],
+            
+            'category_ids' => ['array'],
+            'category_ids.*' => ['required', 'integer', 'exists:categories,id'],
         ];
     }
 }

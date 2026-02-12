@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use App\Helpers\TaxHelper;
+use Illuminate\Support\Facades\DB;
 
 class RentController extends Controller
 {
@@ -23,131 +24,166 @@ class RentController extends Controller
 
     public function create()
     {
-        return Inertia::render('Mitra/RentProperty/Create');
+        $categories = \App\Models\Category::active()->get();
+
+        return Inertia::render('Mitra/RentProperty/Create', [
+            'categories' => $categories
+        ]);
     }
 
     public function store(Request $request)
     {
-        if ($request->hasFile('thumbnail')) {
-            $file = $request->file('thumbnail');
-            $filename = Str::uuid() . "." . $file->getClientOriginalExtension();
-            $path = $file->storeAs('thumbnails', $filename, 'public');
-            $photo = str_replace('thumbnails/', '', $path);
-        } else {
-            $photo = null;
-        }
-
-    
-        $rent = RentProperty::create([
-            'user_id' => Auth::id(),
-            'name' => $request->name,
-            'thumbnail' => $photo,
-            'description' => $request->description,
-            'location' => $request->location,
-            'price' => intval(str_replace('.', '', $request->price)),
-            'pin' => implode(',', $request->pin),
-            'delivered' => $request->delivered,
-            'picked_up' => $request->picked_up,
-            'status' => "active",
-        ]);
-
-        if ($request->has('itemPhoto')) {
-            foreach ($request->file('itemPhoto') as $index => $item) {
-                if (isset($item['photo'])) {
-                    $photoFile = $item['photo'];
-                    $filename = Str::uuid() . "." . $photoFile->getClientOriginalExtension();
-                    $path = $photoFile->storeAs('item-photos', $filename, 'public');
-
-                    ItemPhoto::create([
-                        'item_id' => $rent->id,
-                        'item_type' => RentProperty::class,
-                        'photo' => $filename,
-                        'caption' => $request->input("itemPhoto.$index.caption"),
-                    ]);
+        return DB::transaction(function () use ($request) {
+            try {
+                if ($request->hasFile('thumbnail')) {
+                    $file = $request->file('thumbnail');
+                    $filename = Str::uuid() . "." . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('thumbnails', $filename, 'public');
+                    $photo = str_replace('thumbnails/', '', $path);
+                } else {
+                    $photo = null;
                 }
+
+            
+                $rent = RentProperty::create([
+                    'user_id' => Auth::id(),
+                    'name' => $request->name,
+                    'thumbnail' => $photo,
+                    'description' => $request->description,
+                    'location' => $request->location,
+                    'price' => intval(str_replace('.', '', $request->price)),
+                    'pin' => implode(',', $request->pin),
+                    'delivered' => $request->delivered,
+                    'picked_up' => $request->picked_up,
+                    'status' => "active",
+                ]);
+
+                // Handle categories
+                $selectedCategories = $request->input('selected_categories', []);
+                $categoryIds = collect($selectedCategories)->pluck('id')->toArray();
+                
+                if (!empty($categoryIds)) {
+                    $rent->categories()->attach($categoryIds);
+                }
+
+                if ($request->has('itemPhoto')) {
+                    foreach ($request->file('itemPhoto') as $index => $item) {
+                        if (isset($item['photo'])) {
+                            $photoFile = $item['photo'];
+                            $filename = Str::uuid() . "." . $photoFile->getClientOriginalExtension();
+                            $path = $photoFile->storeAs('item-photos', $filename, 'public');
+
+                            ItemPhoto::create([
+                                'item_id' => $rent->id,
+                                'item_type' => RentProperty::class,
+                                'photo' => $filename,
+                                'caption' => $request->input("itemPhoto.$index.caption"),
+                            ]);
+                        }
+                    }
+                }
+
+                return redirect()->route('rents.index')->with('success', 'Property Berhasil Ditambahkan');
+            } catch (\Exception $e) {
+                return Redirect::back()->withErrors(['error' => 'Gagal Menambah Property: ' . $e->getMessage()]);
             }
-        }
-
-        return redirect()->route('rents.index')->with('success', 'Property Berhasil Ditambahkan');
-
+        });
     }
 
     public function edit($id)
     {
-        $rent = RentProperty::findOrFail($id);
+        $rent = RentProperty::with([
+            'categories' => function ($query) {
+                $query->withoutGlobalScope('user');
+            }
+        ])->findOrFail($id);
+        
+        $categories = \App\Models\Category::active()->get();
+
         return Inertia::render('Mitra/RentProperty/Update', [
             'id' => $id,
             'rent' => $rent,
+            'categories' => $categories,
         ]);
     }
 
     public function update(Request $request, $id)
     {
+        return DB::transaction(function () use ($request, $id) {
+            try {
+                $rent = RentProperty::findOrFail($id);
 
-        try {
-            // dd($request->price);
-            $rent = RentProperty::findOrFail($id);
+                if ($request->hasFile('thumbnail')) {
+                    if ($rent->thumbnail && Storage::disk('public')->exists('thumbnails/' . $rent->thumbnail)) {
+                        Storage::disk('public')->delete('thumbnails/' . $rent->thumbnail);
+                    }
 
-            if ($request->hasFile('thumbnail')) {
-                if ($rent->thumbnail && Storage::disk('public')->exists('thumbnails/' . $rent->thumbnail)) {
-                    Storage::disk('public')->delete('thumbnails/' . $rent->thumbnail);
+                    $file = $request->file('thumbnail');
+                    $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('thumbnails', $filename, 'public');
+                    $rent->thumbnail = str_replace('thumbnails/', '', $path);
                 }
 
-                $file = $request->file('thumbnail');
-                $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('thumbnails', $filename, 'public');
-                $rent->thumbnail = str_replace('thumbnails/', '', $path);
-            }
+                $rent->name = $request->name;
+                $rent->description = $request->description;
+                $rent->location = $request->location;
+                $rent->pin = implode(',', $request->pin);
+                $rent->price = intval(str_replace('.', '', $request->price));
+                $rent->delivered = $request->delivered;
+                $rent->picked_up = $request->picked_up;
+                $rent->save();
 
-            $rent->name = $request->name;
-            $rent->description = $request->description;
-            $rent->location = $request->location;
-            $rent->pin = implode(',', $request->pin);
-            $rent->price = intval(str_replace('.', '', $request->price));
-            $rent->delivered = $request->delivered;
-            $rent->picked_up = $request->picked_up;
-            $rent->save();
+                // Handle categories
+                $selectedCategories = $request->input('selected_categories', []);
+                $categoryIds = collect($selectedCategories)->pluck('id')->toArray();
+                
+                if (!empty($categoryIds)) {
+                    $rent->categories()->sync($categoryIds);
+                } else {
+                    $rent->categories()->detach();
+                }
 
-            $keepIds = collect($request->input('itemPhoto'))
-                ->pluck('id')
-                ->filter()
-                ->map(fn($id) => intval($id))
-                ->toArray();
+                $keepIds = collect($request->input('itemPhoto'))
+                    ->pluck('id')
+                    ->filter()
+                    ->map(fn($id) => intval($id))
+                    ->toArray();
 
-            $rent->itemPhotos()
-                ->whereNotIn('id', $keepIds)
-                ->each(function ($photo) {
-                    if ($photo->photo && Storage::disk('public')->exists('item-photos/' . $photo->photo)) {
-                        Storage::disk('public')->delete('item-photos/' . $photo->photo);
-                    }
-                    $photo->delete();
-                });
+                $rent->itemPhotos()
+                    ->whereNotIn('id', $keepIds)
+                    ->each(function ($photo) {
+                        if ($photo->photo && Storage::disk('public')->exists('item-photos/' . $photo->photo)) {
+                            Storage::disk('public')->delete('item-photos/' . $photo->photo);
+                        }
+                        $photo->delete();
+                    });
 
-            $files = $request->file('itemPhoto');
+                $files = $request->file('itemPhoto');
 
-            if (is_array($files)) {
-                foreach ($files as $index => $fileSet) {
-                    if (!isset($request->input("itemPhoto")[$index]['id']) && isset($fileSet['photo'])) {
-                        $photoFile = $fileSet['photo'];
-                        $filename = Str::uuid() . "." . $photoFile->getClientOriginalExtension();
-                        $photoFile->storeAs('item-photos', $filename, 'public');
+                if (is_array($files)) {
+                    foreach ($files as $index => $fileSet) {
+                        if (!isset($request->input("itemPhoto")[$index]['id']) && isset($fileSet['photo'])) {
+                            $photoFile = $fileSet['photo'];
+                            $filename = Str::uuid() . "." . $photoFile->getClientOriginalExtension();
+                            $photoFile->storeAs('item-photos', $filename, 'public');
 
-                        $rent->itemPhotos()->create([
-                            'photo' => $filename,
-                            'item_type' => RentProperty::class,
-                            'caption' => $request->input("itemPhoto.$index.caption"),
-                        ]);
+                            $rent->itemPhotos()->create([
+                                'photo' => $filename,
+                                'item_type' => RentProperty::class,
+                                'caption' => $request->input("itemPhoto.$index.caption"),
+                            ]);
+                        }
                     }
                 }
+
+                return redirect()->route('rents.index')->with('success', 'Property berhasil diperbarui');
+
+            } catch (\Exception $e) {
+                return redirect()->back()->withErrors([
+                    'error' => 'Gagal memperbarui Property: ' . $e->getMessage()
+                ]);
             }
-
-            return redirect()->route('rents.index')->with('success', 'Property berhasil diperbarui');
-
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
-                'error' => 'Gagal memperbarui Property: ' . $e->getMessage()
-            ]);
-        }
+        });
     }
 
     /**
@@ -179,6 +215,9 @@ class RentController extends Controller
             }
             // === AKHIR VALIDASI ===
 
+            // Detach categories to clean up pivot table entries
+            $rent->categories()->detach();
+
             if ($rent->thumbnail && Storage::disk('public')->exists('thumbnails/' . $rent->thumbnail)) {
                 Storage::disk('public')->delete('thumbnails/' . $rent->thumbnail);
             }
@@ -192,7 +231,7 @@ class RentController extends Controller
 
             return Redirect::route('rents.index')->with('success', 'Berhasil Menghapus Property');
            } catch (\Exception $e) {
-            return Redirect::back()->withErrors(['error' => 'Gagal menghapus jasa: ' . $e->getMessage()]);
+            return Redirect::back()->withErrors(['error' => 'Gagal menghapus Property: ' . $e->getMessage()]);
         }
     }
 

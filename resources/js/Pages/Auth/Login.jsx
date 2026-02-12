@@ -7,16 +7,17 @@ import GuestLayout from "@/Layouts/GuestLayout.jsx";
 import InputError from "@/Components/InputError.jsx";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { LoaderCircle, Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 export default function Login({ status, canResetPassword }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
 
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get("redirect") || "";
 
     const [showPassword, setShowPassword] = useState(false);
+    const [authError, setAuthError] = useState("");
     const { csrfToken, refreshToken } = useCsrfToken();
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -26,19 +27,128 @@ export default function Login({ status, canResetPassword }) {
         redirect: redirectUrl,
     });
 
+    // Handle session errors from backend
+    useEffect(() => {
+        // Only set auth error if we're not currently processing
+        if (!processing) {
+            if (props.errors && Object.keys(props.errors).length > 0) {
+                const firstError = Object.values(props.errors)[0];
+                setAuthError(firstError);
+            }
+
+            if (props.error) {
+                setAuthError(props.error);
+            }
+        }
+    }, [props.errors, props.error, processing]);
+
     const submit = (e) => {
         e.preventDefault();
+        setAuthError(""); // Clear previous auth errors
 
-        refreshToken();
-
-        post(route("login"), {
-            onFinish: () => reset("password"),
-            onError: (errors) => {
-                if (errors.csrf || errors._token) {
-                    refreshToken();
-                }
-            },
+        console.log("Login submit started", {
+            email: data.email,
+            redirect: data.redirect,
         });
+
+        // Refresh CSRF token first, then proceed with login
+        refreshToken()
+            .then(() => {
+                console.log("CSRF token refreshed successfully");
+
+                // Now proceed with login after token is refreshed
+                post(route("login"), {
+                    onFinish: () => {
+                        console.log("Login request finished");
+                        reset("password");
+                    },
+                    onError: (errors) => {
+                        console.error("Login error received:", errors);
+                        handleLoginErrors(errors);
+                    },
+                    onSuccess: () => {
+                        console.log("Login successful");
+                        setAuthError(""); // Clear any existing auth errors on successful login
+                    },
+                    onCancel: () => {
+                        console.log("Login request cancelled");
+                        setAuthError("Login dibatalkan. Silakan coba lagi.");
+                    },
+                    onTimeout: () => {
+                        console.error("Login request timed out");
+                        setAuthError(
+                            "Request timeout. Periksa koneksi internet Anda dan coba lagi."
+                        );
+                    },
+                });
+            })
+            .catch((error) => {
+                console.error("Failed to refresh CSRF token:", error);
+                setAuthError(
+                    "Terjadi kesalahan saat memperbarui token keamanan. Silakan refresh halaman dan coba lagi."
+                );
+            });
+    };
+
+    // Helper function to handle login errors
+    const handleLoginErrors = (errors) => {
+        console.log("Handling login errors:", errors);
+
+        // Don't show error if errors object is empty
+        if (!errors || Object.keys(errors).length === 0) {
+            console.log("No errors to handle");
+            return;
+        }
+
+        // Handle CSRF errors specifically
+        if (errors.csrf || errors._token) {
+            console.log("CSRF error detected, refreshing token and retrying");
+            refreshToken()
+                .then(() => {
+                    // Retry the login request after refreshing token
+                    post(route("login"), {
+                        onFinish: () => reset("password"),
+                        onError: (retryErrors) => {
+                            console.error(
+                                "Retry login also failed:",
+                                retryErrors
+                            );
+                            handleLoginErrors(retryErrors);
+                        },
+                        onSuccess: () => {
+                            console.log("Retry login successful");
+                            setAuthError(""); // Clear any existing auth errors on successful retry
+                        },
+                    });
+                })
+                .catch((tokenError) => {
+                    console.error(
+                        "Failed to refresh CSRF token on retry:",
+                        tokenError
+                    );
+                    setAuthError(
+                        "Terjadi kesalahan keamanan. Silakan refresh halaman dan coba lagi."
+                    );
+                });
+            return; // Don't process other errors yet
+        }
+
+        // Set general authentication error if email error exists
+        if (errors.email) {
+            setAuthError(errors.email);
+        } else if (errors.password) {
+            setAuthError(errors.password);
+        } else {
+            // Handle other errors that might not be field-specific
+            const errorMessages = Object.values(errors);
+            if (errorMessages.length > 0) {
+                setAuthError(errorMessages[0]);
+            } else {
+                setAuthError(
+                    "Terjadi kesalahan saat login. Silakan periksa email dan password Anda."
+                );
+            }
+        }
     };
 
     return (
@@ -62,6 +172,11 @@ export default function Login({ status, canResetPassword }) {
                                 {status}
                             </div>
                         )}
+                        {authError && (
+                            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                                {authError}
+                            </div>
+                        )}
                         {errors.csrf && (
                             <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700 text-sm">
                                 {errors.csrf}
@@ -81,9 +196,10 @@ export default function Login({ status, canResetPassword }) {
                                         value={data.email}
                                         className="pl-10"
                                         autoComplete="username"
-                                        onChange={(e) =>
-                                            setData("email", e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            setData("email", e.target.value);
+                                            setAuthError(""); // Clear auth error when user types
+                                        }}
                                         required
                                     />
                                 </div>
@@ -104,9 +220,10 @@ export default function Login({ status, canResetPassword }) {
                                         value={data.password}
                                         className="pl-10 pr-10"
                                         autoComplete="current-password"
-                                        onChange={(e) =>
-                                            setData("password", e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            setData("password", e.target.value);
+                                            setAuthError(""); // Clear auth error when user types
+                                        }}
                                         required
                                     />
                                     <button

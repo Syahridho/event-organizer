@@ -3,12 +3,12 @@
 namespace Tests\Feature\Building;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class BuildingCrudTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions; // SAFE: Only rolls back changes after test
 
     /** @test */
     public function test_user_factory_works()
@@ -21,9 +21,10 @@ class BuildingCrudTest extends TestCase
     /** @test */
     public function test_user_has_email()
     {
-        $user = User::factory()->create(['email' => 'test@example.com']);
+        $uniqueEmail = 'test_' . uniqid() . '@example.com';
+        $user = User::factory()->create(['email' => $uniqueEmail]);
 
-        $this->assertEquals('test@example.com', $user->email);
+        $this->assertEquals($uniqueEmail, $user->email);
     }
 
     /** @test */

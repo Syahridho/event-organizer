@@ -483,6 +483,8 @@ const DetailBuilding = () => {
                     snapLoaded={snapLoaded}
                     isLoading={isLoading}
                     setIsPaymentOpen={setIsPaymentOpen}
+                    user={user}
+                    saldo_user={null} // Buildings don't have availableBalance in props
                 />
             </Suspense>
 

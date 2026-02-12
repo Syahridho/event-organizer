@@ -36,17 +36,37 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
-        $user = Auth::user();
-        $request->session()->regenerate();
+        // Set a longer timeout for login requests to prevent hanging
+        set_time_limit(30); // 30 seconds max execution time
         
-        // Update last seen at
-        $user->update([
-            'last_seen_at' => now(),
+        Log::info('Login attempt started', [
+            'email' => $request->email,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
         ]);
+        
+        try {
+            $request->authenticate();
+            $user = Auth::user();
+            $request->session()->regenerate();
+            
+            Log::info('Authentication successful', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+            
+            // Update last seen at
+            $user->update([
+                'last_seen_at' => now(),
+            ]);
     
         // Check if user's email is verified
         if (!$user->hasVerifiedEmail()) {
+            Log::info('User email not verified', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+            
             // Send OTP for email verification
             try {
                 $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -70,12 +90,28 @@ class AuthenticatedSessionController extends Controller
         $redirectTo = $request->get('redirect');
         
         $defaultRedirect = RouteServiceProvider::HOME;
+        
+        Log::info('Redirecting user', [
+            'user_id' => $user->id,
+            'redirect_to' => $redirectTo ?: $defaultRedirect
+        ]);
     
         if ($redirectTo) {
             return redirect($redirectTo);
         }
     
         return redirect()->intended($defaultRedirect);
+        
+        } catch (\Exception $e) {
+            Log::error('Login error occurred', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Re-throw the exception to let the LoginRequest handle validation errors
+            throw $e;
+        }
     }
 
     /**

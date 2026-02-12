@@ -59,6 +59,7 @@ const DetailService = () => {
         tax_info,
         cartDates,
         pendingDates,
+        availableBalance,
     } = usePage().props;
 
     const dispatch = useDispatch();
@@ -67,13 +68,7 @@ const DetailService = () => {
         [service.id, service.price]
     );
 
-    const {
-        // itemCounts,
-        // selectedDates,
-        // handleChangeSelectedDate,
-        // totalHarga,
-        handleChangeItem,
-    } = useSelected(items);
+    const { handleChangeItem } = useSelected(items);
 
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
     const [isAddressListOpen, setIsAddressListOpen] = useState(false);
@@ -524,8 +519,10 @@ const DetailService = () => {
                     formatPrice={formatPrice}
                     handlePayment={handlePayment}
                     snapLoaded={snapLoaded}
+                    setIsLoading={setIsLoading}
                     isLoading={isLoading}
                     setIsPaymentOpen={setIsPaymentOpen}
+                    saldo_user={availableBalance}
                 />
             </Suspense>
 

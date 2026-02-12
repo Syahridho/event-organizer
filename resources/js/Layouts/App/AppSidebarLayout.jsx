@@ -12,6 +12,7 @@ import {
     Fan,
     Settings,
     Flag,
+    Tags,
 } from "lucide-react";
 import { FaMoneyBillTransfer } from "react-icons/fa6";
 import { IoMdNotificationsOutline } from "react-icons/io";
@@ -78,6 +79,11 @@ const admin = [
         title: "Laporan",
         url: "/admin/dashboard/report",
         icon: Flag,
+    },
+    {
+        title: "Kategori",
+        url: "/admin/categories",
+        icon: Tags,
     },
     {
         title: "Kustom Testimoni",
