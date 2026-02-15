@@ -55,7 +55,11 @@ import {
     TrendingUpIcon,
     XCircleIcon,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar.jsx";
 
 import { toast } from "sonner";
 import { z } from "zod";
@@ -110,7 +114,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table.jsx";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs.jsx";
 import { router, usePage } from "@inertiajs/react";
 
 export const schema = z.object({
@@ -676,9 +685,9 @@ export function DataTable({ data: initialData }) {
                                         {getStatusCount("completed")}
                                     </Badge>
                                 </DropdownMenuItem>
-                                
+
                                 <DropdownMenuSeparator />
-                                
+
                                 <DropdownMenuItem
                                     onClick={() => setStatusFilter("inactive")}
                                     className="justify-between"

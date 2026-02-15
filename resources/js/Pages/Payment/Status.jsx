@@ -248,70 +248,42 @@ export default function PaymentStatus({
                             </div>
 
                             {/* OPTIMIZED: VA Info Card with O(1) rendering */}
-                            {va_info && (va_info.va_number || va_info.bill_key) && (
-                                <div className="mt-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-md">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <CreditCard className="w-5 h-5 text-blue-600" />
-                                        <h3 className="text-base font-bold text-blue-900">
-                                            Informasi Pembayaran
-                                        </h3>
-                                    </div>
-
-                                    {/* Bank Name */}
-                                    {va_info.bank_name && (
-                                        <div className="mb-4 p-3 bg-white/80 rounded-lg border border-blue-100">
-                                            <p className="text-xs text-gray-600 mb-1">
-                                                Bank
-                                            </p>
-                                            <p className="text-lg font-bold text-gray-900">
-                                                {va_info.bank_name}
-                                            </p>
+                            {va_info &&
+                                (va_info.va_number || va_info.bill_key) && (
+                                    <div className="mt-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-md">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <CreditCard className="w-5 h-5 text-blue-600" />
+                                            <h3 className="text-base font-bold text-blue-900">
+                                                Informasi Pembayaran
+                                            </h3>
                                         </div>
-                                    )}
 
-                                    {/* VA Number (BCA, BNI, BRI, Permata, etc.) */}
-                                    {va_info.va_number && (
-                                        <div className="mb-3 p-4 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-xs font-semibold text-gray-600">
-                                                    Nomor Virtual Account
+                                        {/* Bank Name */}
+                                        {va_info.bank_name && (
+                                            <div className="mb-4 p-3 bg-white/80 rounded-lg border border-blue-100">
+                                                <p className="text-xs text-gray-600 mb-1">
+                                                    Bank
                                                 </p>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        copyToClipboard(
-                                                            va_info.va_number,
-                                                            "Nomor VA"
-                                                        )
-                                                    }
-                                                    className="h-7 px-2 text-blue-600 hover:bg-blue-100"
-                                                >
-                                                    <Copy className="w-4 h-4 mr-1" />
-                                                    Salin
-                                                </Button>
+                                                <p className="text-lg font-bold text-gray-900">
+                                                    {va_info.bank_name}
+                                                </p>
                                             </div>
-                                            <p className="text-2xl font-mono font-black text-blue-600 tracking-wider">
-                                                {va_info.va_number}
-                                            </p>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {/* Mandiri Bill Payment */}
-                                    {va_info.bill_key && va_info.biller_code && (
-                                        <>
+                                        {/* VA Number (BCA, BNI, BRI, Permata, etc.) */}
+                                        {va_info.va_number && (
                                             <div className="mb-3 p-4 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <p className="text-xs font-semibold text-gray-600">
-                                                        Biller Code
+                                                        Nomor Virtual Account
                                                     </p>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() =>
                                                             copyToClipboard(
-                                                                va_info.biller_code,
-                                                                "Biller Code"
+                                                                va_info.va_number,
+                                                                "Nomor VA"
                                                             )
                                                         }
                                                         className="h-7 px-2 text-blue-600 hover:bg-blue-100"
@@ -320,60 +292,98 @@ export default function PaymentStatus({
                                                         Salin
                                                     </Button>
                                                 </div>
-                                                <p className="text-xl font-mono font-black text-blue-600 tracking-wider">
-                                                    {va_info.biller_code}
+                                                <p className="text-2xl font-mono font-black text-blue-600 tracking-wider">
+                                                    {va_info.va_number}
                                                 </p>
                                             </div>
+                                        )}
 
-                                            <div className="p-4 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <p className="text-xs font-semibold text-gray-600">
-                                                        Bill Key
-                                                    </p>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            copyToClipboard(
-                                                                va_info.bill_key,
-                                                                "Bill Key"
-                                                            )
-                                                        }
-                                                        className="h-7 px-2 text-blue-600 hover:bg-blue-100"
-                                                    >
-                                                        <Copy className="w-4 h-4 mr-1" />
-                                                        Salin
-                                                    </Button>
-                                                </div>
-                                                <p className="text-xl font-mono font-black text-blue-600 tracking-wider">
-                                                    {va_info.bill_key}
+                                        {/* Mandiri Bill Payment */}
+                                        {va_info.bill_key &&
+                                            va_info.biller_code && (
+                                                <>
+                                                    <div className="mb-3 p-4 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <p className="text-xs font-semibold text-gray-600">
+                                                                Biller Code
+                                                            </p>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    copyToClipboard(
+                                                                        va_info.biller_code,
+                                                                        "Biller Code"
+                                                                    )
+                                                                }
+                                                                className="h-7 px-2 text-blue-600 hover:bg-blue-100"
+                                                            >
+                                                                <Copy className="w-4 h-4 mr-1" />
+                                                                Salin
+                                                            </Button>
+                                                        </div>
+                                                        <p className="text-xl font-mono font-black text-blue-600 tracking-wider">
+                                                            {
+                                                                va_info.biller_code
+                                                            }
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="p-4 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <p className="text-xs font-semibold text-gray-600">
+                                                                Bill Key
+                                                            </p>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    copyToClipboard(
+                                                                        va_info.bill_key,
+                                                                        "Bill Key"
+                                                                    )
+                                                                }
+                                                                className="h-7 px-2 text-blue-600 hover:bg-blue-100"
+                                                            >
+                                                                <Copy className="w-4 h-4 mr-1" />
+                                                                Salin
+                                                            </Button>
+                                                        </div>
+                                                        <p className="text-xl font-mono font-black text-blue-600 tracking-wider">
+                                                            {va_info.bill_key}
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                        {/* Total Amount */}
+                                        {transaction && transaction.total && (
+                                            <div className="mt-4 p-3 bg-white/80 rounded-lg border border-blue-100">
+                                                <p className="text-xs text-gray-600 mb-1">
+                                                    Total Pembayaran
+                                                </p>
+                                                <p className="text-2xl font-bold text-blue-600">
+                                                    Rp{" "}
+                                                    {Number(
+                                                        transaction.total
+                                                    ).toLocaleString("id-ID")}
                                                 </p>
                                             </div>
-                                        </>
-                                    )}
+                                        )}
 
-                                    {/* Total Amount */}
-                                    {transaction && transaction.total && (
-                                        <div className="mt-4 p-3 bg-white/80 rounded-lg border border-blue-100">
-                                            <p className="text-xs text-gray-600 mb-1">
-                                                Total Pembayaran
-                                            </p>
-                                            <p className="text-2xl font-bold text-blue-600">
-                                                Rp {Number(transaction.total).toLocaleString("id-ID")}
+                                        <div className="mt-4 p-3 bg-amber-100 border border-amber-300 rounded-lg">
+                                            <p className="text-xs text-amber-900 flex items-start gap-2">
+                                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                <span>
+                                                    Gunakan nomor ini untuk
+                                                    menyelesaikan pembayaran
+                                                    melalui ATM, Mobile Banking,
+                                                    atau Internet Banking
+                                                </span>
                                             </p>
                                         </div>
-                                    )}
-
-                                    <div className="mt-4 p-3 bg-amber-100 border border-amber-300 rounded-lg">
-                                        <p className="text-xs text-amber-900 flex items-start gap-2">
-                                            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                            <span>
-                                                Gunakan nomor ini untuk menyelesaikan pembayaran melalui ATM, Mobile Banking, atau Internet Banking
-                                            </span>
-                                        </p>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
                             {/* Additional Info for Pending Status */}
                             {status.toLowerCase() === "pending" && (
@@ -438,9 +448,7 @@ export default function PaymentStatus({
 
                 {/* Help Section */}
                 <div className="mt-8 text-center">
-                    <p className="text-sm text-gray-600 mb-2">
-                        Butuh bantuan?
-                    </p>
+                    <p className="text-sm text-gray-600 mb-2">Butuh bantuan?</p>
                     <div className="flex justify-center gap-4 flex-wrap">
                         <Link
                             href="/chat"

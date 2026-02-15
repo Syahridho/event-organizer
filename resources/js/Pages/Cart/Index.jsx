@@ -12,7 +12,7 @@ import React, {
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent, CardHeader } from "@/components/ui/card.jsx";
 import { Checkbox } from "@/components/ui/checkbox.jsx";
-import {  XCircle, ChevronLeft } from "lucide-react";
+import { XCircle, ChevronLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
     updateCartQuantity,
@@ -153,7 +153,11 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                 const status = checkItemStatus(item);
                 if (
                     status.disabled &&
-                    !["ticket_sold", "event_banned", "already_booked_by_me"].includes(status.type)
+                    ![
+                        "ticket_sold",
+                        "event_banned",
+                        "already_booked_by_me",
+                    ].includes(status.type)
                 ) {
                     toast.error(status.reason);
                     return;
@@ -187,8 +191,12 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             try {
                 await axios.delete(`/cart/${cartId}`);
                 toast.success("Item berhasil dihapus");
-                router.reload({ only: ["carts"], preserveScroll: true, preserveState: true });
-        } catch (error) {
+                router.reload({
+                    only: ["carts"],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
+            } catch (error) {
                 dispatch(setCartItems(originalCarts));
                 toast.error("Gagal menghapus item");
             }
@@ -203,7 +211,11 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                 const status = checkItemStatus(item);
                 if (
                     status.disabled &&
-                    !["ticket_sold", "event_banned", "already_booked_by_me"].includes(status.type)
+                    ![
+                        "ticket_sold",
+                        "event_banned",
+                        "already_booked_by_me",
+                    ].includes(status.type)
                 ) {
                     toast.error(status.reason);
                     return;
@@ -241,9 +253,15 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             });
 
             try {
-                await Promise.all(itemIds.map((id) => axios.delete(`/cart/${id}`)));
+                await Promise.all(
+                    itemIds.map((id) => axios.delete(`/cart/${id}`))
+                );
                 toast.success(`${items.length} item berhasil dihapus`);
-                router.reload({ only: ["carts"], preserveScroll: true, preserveState: true });
+                router.reload({
+                    only: ["carts"],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
             } catch (error) {
                 dispatch(setCartItems(originalCarts));
                 toast.error("Gagal menghapus beberapa item");
@@ -260,7 +278,8 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
     const selectedTotal = useMemo(
         () =>
             selectedCartItems.reduce(
-                (sum, item) => sum + (item.item?.price || 0) * (item.item_qty || 0),
+                (sum, item) =>
+                    sum + (item.item?.price || 0) * (item.item_qty || 0),
                 0
             ),
         [selectedCartItems]
@@ -273,7 +292,10 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             : parseFloat(taxInfo.value);
     }, [taxInfo, selectedTotal]);
 
-    const totalWithTax = useMemo(() => selectedTotal + taxAmount, [selectedTotal, taxAmount]);
+    const totalWithTax = useMemo(
+        () => selectedTotal + taxAmount,
+        [selectedTotal, taxAmount]
+    );
 
     const handleCheckout = useCallback(() => {
         if (selectedItems.size === 0) {
@@ -288,7 +310,10 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             items: selectedCartItems.map((item) => ({
                 cart_id: item.id,
                 id: item.item_id,
-                name: item.type === "ticket" ? item.item?.event.name : item.item?.name,
+                name:
+                    item.type === "ticket"
+                        ? item.item?.event.name
+                        : item.item?.name,
                 ticket_name: item.type === "ticket" ? item.item?.name : null,
                 type: item.type,
                 price: item.item?.price,
@@ -296,7 +321,9 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                 rent_days: item.rent_days || null,
                 delivery_type: item?.delivery_type || null,
                 is_unavailable: item.is_unavailable || false,
-                thumbnail: item?.item?.event?.thumbnail?.includes("default-event-images")
+                thumbnail: item?.item?.event?.thumbnail?.includes(
+                    "default-event-images"
+                )
                     ? item?.item?.event?.thumbnail?.replace(/^\/+/, "")
                     : item?.type === "ticket"
                     ? item?.item?.event?.thumbnail?.replace(/^\/+/, "")
@@ -310,7 +337,9 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
             data: checkoutData,
             onError: (errors) => {
                 console.error("Checkout error:", errors);
-                toast.error(errors.message || "Terjadi kesalahan saat checkout");
+                toast.error(
+                    errors.message || "Terjadi kesalahan saat checkout"
+                );
             },
             onFinish: () => setIsCheckingOut(false),
         });
@@ -319,12 +348,14 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
     // Auto-refresh cart
     useEffect(() => {
         const intervalId = setInterval(() => {
-            router.reload({ only: ["carts"], preserveScroll: true, preserveState: true });
+            router.reload({
+                only: ["carts"],
+                preserveScroll: true,
+                preserveState: true,
+            });
         }, 10000);
         return () => clearInterval(intervalId);
     }, []);
-
-
 
     // Auto-remove disabled items from selection
     useEffect(() => {
@@ -344,10 +375,13 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
     const handleDeliveryChange = useCallback(
         async (cartId, deliveryType) => {
             try {
-                const response = await axios.post("/cart/update-delivery-type", {
-                    cart_id: cartId,
-                    delivery_type: deliveryType,
-                });
+                const response = await axios.post(
+                    "/cart/update-delivery-type",
+                    {
+                        cart_id: cartId,
+                        delivery_type: deliveryType,
+                    }
+                );
 
                 if (response.data.success) {
                     const item = safeCartItems.find((i) => i.id === cartId);
@@ -392,11 +426,17 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
                     <div className="flex items-center gap-4 mb-8">
                         <Link href="/">
-                            <Button variant="ghost" size="icon" className="rounded-full">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full"
+                            >
                                 <ChevronLeft className="w-6 h-6" />
                             </Button>
                         </Link>
-                        <h1 className="text-2xl font-bold text-gray-900">Keranjang Belanja</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            Keranjang Belanja
+                        </h1>
                     </div>
 
                     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -410,10 +450,14 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                         Keranjang Anda Kosong
                                     </h2>
                                     <p className="text-gray-500 mb-8 max-w-md mx-auto">
-                                        Sepertinya Anda belum menambahkan item apapun. Yuk mulai jelajahi layanan kami!
+                                        Sepertinya Anda belum menambahkan item
+                                        apapun. Yuk mulai jelajahi layanan kami!
                                     </p>
                                     <Link href="/">
-                                        <Button size="lg" className="rounded-full px-8">
+                                        <Button
+                                            size="lg"
+                                            className="rounded-full px-8"
+                                        >
                                             Mulai Belanja
                                         </Button>
                                     </Link>
@@ -428,14 +472,22 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                                     <div className="flex items-center space-x-3">
                                                         <Checkbox
                                                             checked={
-                                                                selectedItems.size === validItems.length &&
-                                                                validItems.length > 0
+                                                                selectedItems.size ===
+                                                                    validItems.length &&
+                                                                validItems.length >
+                                                                    0
                                                             }
-                                                            onCheckedChange={handleSelectAll}
-                                                            disabled={validItems.length === 0}
+                                                            onCheckedChange={
+                                                                handleSelectAll
+                                                            }
+                                                            disabled={
+                                                                validItems.length ===
+                                                                0
+                                                            }
                                                         />
                                                         <span className="font-medium text-gray-700">
-                                                            Pilih Semua ({validItems.length})
+                                                            Pilih Semua (
+                                                            {validItems.length})
                                                         </span>
                                                     </div>
                                                     {selectedItems.size > 0 && (
@@ -445,8 +497,11 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                             onClick={() =>
                                                                 handleBulkDelete(
-                                                                    safeCartItems.filter((i) =>
-                                                                        selectedItems.has(i.id)
+                                                                    safeCartItems.filter(
+                                                                        (i) =>
+                                                                            selectedItems.has(
+                                                                                i.id
+                                                                            )
                                                                     )
                                                                 )
                                                             }
@@ -461,25 +516,34 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                         {/* Valid Items */}
                                         <Card className="border-gray-200 shadow-sm overflow-hidden">
                                             <CardContent className="p-0">
-                                                
-                                                    {validItems.map((item) => (
-                                                        <CartItem
-                                                            key={item.id}
-                                                            item={item}
-                                                            isSelected={selectedItems.has(item.id)}
-                                                            onSelect={handleSelectItem}
-                                                            onQtyChange={handleQtyChange}
-                                                            onDelete={handleDeleteCart}
-                                                            onDeliveryChange={handleDeliveryChange}
-                                                            baseUrl={ziggy.url}
-                                                        />
-                                                    ))}
-                                                    {validItems.length === 0 && (
-                                                        <div className="p-8 text-center text-gray-500">
-                                                            Tidak ada item yang tersedia
-                                                        </div>
-                                                    )}
-                                                
+                                                {validItems.map((item) => (
+                                                    <CartItem
+                                                        key={item.id}
+                                                        item={item}
+                                                        isSelected={selectedItems.has(
+                                                            item.id
+                                                        )}
+                                                        onSelect={
+                                                            handleSelectItem
+                                                        }
+                                                        onQtyChange={
+                                                            handleQtyChange
+                                                        }
+                                                        onDelete={
+                                                            handleDeleteCart
+                                                        }
+                                                        onDeliveryChange={
+                                                            handleDeliveryChange
+                                                        }
+                                                        baseUrl={ziggy.url}
+                                                    />
+                                                ))}
+                                                {validItems.length === 0 && (
+                                                    <div className="p-8 text-center text-gray-500">
+                                                        Tidak ada item yang
+                                                        tersedia
+                                                    </div>
+                                                )}
                                             </CardContent>
                                         </Card>
 
@@ -488,31 +552,52 @@ export default function CartPage({ carts: serverCarts, taxInfo }) {
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between">
                                                     <h3 className="font-semibold text-gray-900">
-                                                        Item Tidak Tersedia ({disabledItems.length})
+                                                        Item Tidak Tersedia (
+                                                        {disabledItems.length})
                                                     </h3>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         className="text-red-600"
-                                                        onClick={() => handleBulkDelete(disabledItems)}
+                                                        onClick={() =>
+                                                            handleBulkDelete(
+                                                                disabledItems
+                                                            )
+                                                        }
                                                     >
                                                         Hapus Semua
                                                     </Button>
                                                 </div>
                                                 <Card className="border-gray-200 shadow-sm bg-gray-50">
                                                     <CardContent className="p-0">
-                                                        {disabledItems.map((item) => (
-                                                            <CartItem
-                                                                key={item.id}
-                                                                item={item}
-                                                                isSelected={selectedItems.has(item.id)}
-                                                                onSelect={handleSelectItem}
-                                                                onQtyChange={handleQtyChange}
-                                                                onDelete={handleDeleteCart}
-                                                                onDeliveryChange={handleDeliveryChange}
-                                                                baseUrl={ziggy.url}
-                                                            />
-                                                        ))}
+                                                        {disabledItems.map(
+                                                            (item) => (
+                                                                <CartItem
+                                                                    key={
+                                                                        item.id
+                                                                    }
+                                                                    item={item}
+                                                                    isSelected={selectedItems.has(
+                                                                        item.id
+                                                                    )}
+                                                                    onSelect={
+                                                                        handleSelectItem
+                                                                    }
+                                                                    onQtyChange={
+                                                                        handleQtyChange
+                                                                    }
+                                                                    onDelete={
+                                                                        handleDeleteCart
+                                                                    }
+                                                                    onDeliveryChange={
+                                                                        handleDeliveryChange
+                                                                    }
+                                                                    baseUrl={
+                                                                        ziggy.url
+                                                                    }
+                                                                />
+                                                            )
+                                                        )}
                                                     </CardContent>
                                                 </Card>
                                             </div>

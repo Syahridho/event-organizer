@@ -569,10 +569,18 @@ export default function UserDashboard({
                                         <SelectValue placeholder="Pilih Periode" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="week">7 Hari Terakhir</SelectItem>
-                                        <SelectItem value="month">30 Hari Terakhir</SelectItem>
-                                        <SelectItem value="3_months">3 Bulan Terakhir</SelectItem>
-                                        <SelectItem value="year">Tahun Ini</SelectItem>
+                                        <SelectItem value="week">
+                                            7 Hari Terakhir
+                                        </SelectItem>
+                                        <SelectItem value="month">
+                                            30 Hari Terakhir
+                                        </SelectItem>
+                                        <SelectItem value="3_months">
+                                            3 Bulan Terakhir
+                                        </SelectItem>
+                                        <SelectItem value="year">
+                                            Tahun Ini
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -645,8 +653,10 @@ export default function UserDashboard({
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
-                        {(!chartData || chartData.length === 0 || !chartData.some(d => d.sales > 0)) && (
-                             <p className="text-xs text-slate-500 text-center mt-4">
+                        {(!chartData ||
+                            chartData.length === 0 ||
+                            !chartData.some((d) => d.sales > 0)) && (
+                            <p className="text-xs text-slate-500 text-center mt-4">
                                 Belum ada data pendapatan untuk ditampilkan.
                             </p>
                         )}
@@ -734,24 +744,37 @@ export default function UserDashboard({
                                 )}
                             </TableBody>
                         </Table>
-                         {/* Pagination Controls */}
-                         <div className="mt-4 flex items-center justify-between">
+                        {/* Pagination Controls */}
+                        <div className="mt-4 flex items-center justify-between">
                             <div className="text-sm text-muted-foreground">
-                                Menampilkan {transactionItems.from} sampai {transactionItems.to} dari {transactionItems.total} hasil
+                                Menampilkan {transactionItems.from} sampai{" "}
+                                {transactionItems.to} dari{" "}
+                                {transactionItems.total} hasil
                             </div>
                             <div className="flex gap-2">
                                 {transactionItems.links.map((link, i) => (
                                     <Button
                                         key={i}
-                                        variant={link.active ? "default" : "outline"}
+                                        variant={
+                                            link.active ? "default" : "outline"
+                                        }
                                         size="sm"
                                         asChild
                                         disabled={!link.url}
                                     >
                                         {link.url ? (
-                                            <Link href={link.url} dangerouslySetInnerHTML={{ __html: link.label }} />
+                                            <Link
+                                                href={link.url}
+                                                dangerouslySetInnerHTML={{
+                                                    __html: link.label,
+                                                }}
+                                            />
                                         ) : (
-                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                            <span
+                                                dangerouslySetInnerHTML={{
+                                                    __html: link.label,
+                                                }}
+                                            />
                                         )}
                                     </Button>
                                 ))}

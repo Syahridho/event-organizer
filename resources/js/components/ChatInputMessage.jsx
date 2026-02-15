@@ -29,22 +29,10 @@ export default function ChatInputMessage(props) {
 
     const submitHandler = (e) => {
         e.preventDefault();
-        // Check if we're on the admin or mitra chat page
-        const isAdminChat = route().current() === "admin.chat.show";
-        const isMitraChat = route().current() === "mitra.chat.show";
-        const routeName = isAdminChat
-            ? "admin.chat.store"
-            : isMitraChat
-            ? "mitra.chat.store"
-            : "chat.store";
-
-        post(route(routeName, chatWithUser.uuid), {
+        post(route("chat.store", chatWithUser.uuid), {
             onStart: () => {
                 reset();
-                // Note: e.target refer to form here, ensure textarea resizing logic is handled if needed
-                if (e.target.querySelector("textarea")) {
-                    e.target.querySelector("textarea").style.height = "auto";
-                }
+                e.target.style.height = "auto";
                 props.setReply(null);
                 props.setIsTyping(false);
             },
@@ -52,22 +40,12 @@ export default function ChatInputMessage(props) {
         });
     };
 
-    const typingTimeoutRef = React.useRef(null);
-
     const onTyping = () => {
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
-        typingTimeoutRef.current = setTimeout(() => {
-            if (window.Echo) {
-                // Use the same channel name as the listener in Chat component
-                window.Echo.private(`message.${chatWithUser.uuid}`).whisper(
-                    "typing",
-                    {
-                        name: usePage().props.auth.user.name,
-                    }
-                );
-            }
-        }, 500);
+        setTimeout(() => {
+            Echo.private(`message.${chatWithUser.uuid}`).whisper("typing", {
+                name: chatWithUser.name,
+            });
+        }, 300);
     };
 
     return (
@@ -77,7 +55,7 @@ export default function ChatInputMessage(props) {
                     name="message"
                     id="message"
                     autoComplete="off"
-                    className="flex-1 py-1.5 text-xs lg:text-sm bg-slate-200/50 border-0 rounded-md focus:ring-0"
+                    className="flex-1 py-1.5 text-xs lg:text-sm text-black bg-transparent border-0 rounded-md focus:ring-0"
                     placeholder="Type a message"
                     value={data.message}
                     rows={1}

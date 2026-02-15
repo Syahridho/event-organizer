@@ -21,7 +21,10 @@ export function NavMain({ items }) {
     const currentUrl = url;
 
     function isMenuActive(currentUrl, menuUrl, exact = false) {
-        const normalize = (url) => String(url || "").split('?')[0].replace(/\/+$/, "");
+        const normalize = (url) =>
+            String(url || "")
+                .split("?")[0]
+                .replace(/\/+$/, "");
 
         const current = normalize(currentUrl);
         const menu = normalize(menuUrl);

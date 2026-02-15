@@ -120,14 +120,6 @@ export async function initializeEcho() {
         encrypted: false,
         disableStats: true,
         enabledTransports: ["ws", "wss"],
-        auth: {
-            headers: {
-                "X-CSRF-TOKEN": document.head.querySelector(
-                    'meta[name="csrf-token"]'
-                )?.content,
-                "X-Requested-With": "XMLHttpRequest",
-            },
-        },
     });
 
     window.Echo = echoInstance;
@@ -141,6 +133,6 @@ if (typeof window !== "undefined") {
         // Initialize after a short delay to prioritize critical resources
         setTimeout(() => {
             initializeEcho().catch(console.error);
-        }, 500);
+        }, 2000);
     });
 }

@@ -1,16 +1,9 @@
 "use client";
 import * as React from "react";
-import { Head, router, useForm, usePage } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import clsx from "clsx";
-import { cn } from "@/Lib/utils";
-import {
-    PencilLine,
-    Check,
-    ChevronsUpDown,
-    X,
-    Plus,
-    Trash2,
-} from "lucide-react";
+// import { cn } from "@/Lib/utils";
+import { PencilLine } from "lucide-react";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import { Button } from "@/components/ui/button.jsx";
 import { Label } from "@/components/ui/label.jsx";
@@ -477,10 +470,12 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                     </Dialog>
                                 </CardTitle>
                                 <CardDescription>
-  {setting?.tax_type === "percent"
-    ? `${setting?.tax_value}%`
-    : `Rp. ${formatRupiah(setting?.tax_value || 0)}`}
-</CardDescription>
+                                    {setting?.tax_type === "percent"
+                                        ? `${setting?.tax_value}%`
+                                        : `Rp. ${formatRupiah(
+                                              setting?.tax_value || 0
+                                          )}`}
+                                </CardDescription>
                             </CardHeader>
                         </Card>
                     </div>

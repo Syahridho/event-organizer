@@ -44,12 +44,24 @@ export default function AdminTransactionsIndex({ transactions }) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="font-semibold">ID</TableHead>
-                                        <TableHead className="font-semibold">User</TableHead>
-                                        <TableHead className="font-semibold">Event/Item</TableHead>
-                                        <TableHead className="font-semibold">Tanggal</TableHead>
-                                        <TableHead className="font-semibold text-right">Jumlah</TableHead>
-                                        <TableHead className="font-semibold text-center">Status</TableHead>
+                                        <TableHead className="font-semibold">
+                                            ID
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            User
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Event/Item
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Tanggal
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-right">
+                                            Jumlah
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-center">
+                                            Status
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -59,30 +71,46 @@ export default function AdminTransactionsIndex({ transactions }) {
                                                 key={tx.id}
                                                 className="hover:bg-slate-50 transition-colors"
                                             >
-                                                <TableCell className="font-medium">#{tx.id}</TableCell>
+                                                <TableCell className="font-medium">
+                                                    #{tx.id}
+                                                </TableCell>
                                                 <TableCell>{tx.user}</TableCell>
                                                 <TableCell className="max-w-xs truncate">
                                                     {tx.event}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {format(new Date(tx.created_at), "dd MMM yyyy HH:mm", { locale: id })}
+                                                    {format(
+                                                        new Date(tx.created_at),
+                                                        "dd MMM yyyy HH:mm",
+                                                        { locale: id }
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-right font-semibold">
-                                                    Rp {tx.amount.toLocaleString("id-ID")}
+                                                    Rp{" "}
+                                                    {tx.amount.toLocaleString(
+                                                        "id-ID"
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     <span
                                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                            tx.status === "paid" || tx.status === "settlement"
+                                                            tx.status ===
+                                                                "paid" ||
+                                                            tx.status ===
+                                                                "settlement"
                                                                 ? "bg-green-100 text-green-800"
-                                                                : tx.status === "pending"
+                                                                : tx.status ===
+                                                                  "pending"
                                                                 ? "bg-yellow-100 text-yellow-800"
                                                                 : "bg-red-100 text-red-800"
                                                         }`}
                                                     >
-                                                        {tx.status === "paid" || tx.status === "settlement"
+                                                        {tx.status === "paid" ||
+                                                        tx.status ===
+                                                            "settlement"
                                                             ? "Lunas"
-                                                            : tx.status === "pending"
+                                                            : tx.status ===
+                                                              "pending"
                                                             ? "Pending"
                                                             : "Dibatalkan"}
                                                     </span>
@@ -106,21 +134,34 @@ export default function AdminTransactionsIndex({ transactions }) {
                         {/* Pagination Controls */}
                         <div className="mt-4 flex items-center justify-between">
                             <div className="text-sm text-muted-foreground">
-                                Menampilkan {transactions.from} sampai {transactions.to} dari {transactions.total} hasil
+                                Menampilkan {transactions.from} sampai{" "}
+                                {transactions.to} dari {transactions.total}{" "}
+                                hasil
                             </div>
                             <div className="flex gap-2">
                                 {transactions?.links?.map((link, i) => (
                                     <Button
                                         key={i}
-                                        variant={link.active ? "default" : "outline"}
+                                        variant={
+                                            link.active ? "default" : "outline"
+                                        }
                                         size="sm"
                                         asChild
                                         disabled={!link.url}
                                     >
                                         {link.url ? (
-                                            <Link href={link.url} dangerouslySetInnerHTML={{ __html: link.label }} />
+                                            <Link
+                                                href={link.url}
+                                                dangerouslySetInnerHTML={{
+                                                    __html: link.label,
+                                                }}
+                                            />
                                         ) : (
-                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                            <span
+                                                dangerouslySetInnerHTML={{
+                                                    __html: link.label,
+                                                }}
+                                            />
                                         )}
                                     </Button>
                                 ))}

@@ -1,6 +1,6 @@
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
-import { Head, router, Link } from "@inertiajs/react";
-import { Button } from "@/components/ui/button.jsx";
+import { Head, router } from "@inertiajs/react";
+// import { Button } from "@/components/ui/button.jsx";
 import {
     Select,
     SelectContent,
@@ -23,20 +23,7 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Legend,
-    LineChart,
-    Line,
-    Area,
-    AreaChart,
 } from "recharts";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table.jsx";
 import { TrendingUp, Calendar, DollarSign, Activity } from "lucide-react";
 import React, { useMemo } from "react";
 
@@ -66,7 +53,6 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function AdminDashboard({
-    auth,
     stats,
     chartData,
     taxIncome,
@@ -218,9 +204,15 @@ export default function AdminDashboard({
                                     <SelectValue placeholder="Pilih Periode" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="day">Hari Ini</SelectItem>
-                                    <SelectItem value="week">Minggu Ini</SelectItem>
-                                    <SelectItem value="month">Bulan Ini</SelectItem>
+                                    <SelectItem value="day">
+                                        Hari Ini
+                                    </SelectItem>
+                                    <SelectItem value="week">
+                                        Minggu Ini
+                                    </SelectItem>
+                                    <SelectItem value="month">
+                                        Bulan Ini
+                                    </SelectItem>
                                     <SelectItem value="3_months">
                                         3 Bulan Terakhir
                                     </SelectItem>
@@ -380,8 +372,6 @@ export default function AdminDashboard({
                         </div>
                     </CardContent>
                 </Card>
-
-
             </div>
         </AppLayout>
     );

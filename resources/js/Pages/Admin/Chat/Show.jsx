@@ -4,7 +4,7 @@ import { debounce } from "lodash";
 import AppLayout from "@/Layouts/App/AppSidebarLayout";
 import ChatLayout from "@/components/ChatLayout.jsx";
 import useRealtimeChatUpdates from "@/hooks/useRealtimeChatUpdates.js";
-import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
+// import { useOnlineStatusContext } from "@/components/OnlineStatusProvider.jsx";
 
 const breadcrumbs = [
     {
@@ -33,34 +33,114 @@ export default function AdminChatShow({
 
     // Additional effect for message-specific updates
     useEffect(() => {
-        // Check if Echo is initialized
-        if (!window.Echo) {
-            console.warn("Echo is not initialized yet");
-            return;
+        console.log(
+            "[DEBUG] Admin Chat Show message listener effect triggered"
+        );
+        console.log("[DEBUG] Echo available:", !!window.Echo);
+        console.log("[DEBUG] User UUID:", auth.user.uuid);
+        console.log("[DEBUG] Chat with user ID:", chatWithUser.id);
+
+        // Function to set up message listeners
+        const setupMessageListeners = () => {
+            if (!window.Echo) {
+                console.warn(
+                    "[DEBUG] Echo is not initialized yet in Admin Chat Show"
+                );
+                return false;
+            }
+
+            const debouncedMessageReload = debounce(() => {
+                console.log("[DEBUG] Admin debounced message reload triggered");
+                router.reload({
+                    preserveScroll: true,
+                    only: ["messages"], // Only reload messages
+                });
+            }, 350);
+
+            const channelName = "message." + auth.user.uuid;
+            console.log(
+                "[DEBUG] Admin Chat Show subscribing to channel:",
+                channelName
+            );
+            const channel = window.Echo.private(channelName);
+
+            channel
+                .listen("NewMessageEvent", (e) => {
+                    console.log(
+                        "[DEBUG] Admin Chat Show NewMessageEvent received:",
+                        e
+                    );
+                    // Check if the message is for the current chat
+                    if (
+                        e.message.sender_id === chatWithUser.id ||
+                        e.message.receiver_id === chatWithUser.id
+                    ) {
+                        console.log(
+                            "[DEBUG] Message is for current admin chat, reloading"
+                        );
+                        debouncedMessageReload();
+                    } else {
+                        console.log(
+                            "[DEBUG] Message is not for current admin chat, ignoring"
+                        );
+                    }
+                })
+                .error((error) => {
+                    console.error(
+                        "[DEBUG] Admin Chat Show channel subscription error:",
+                        error
+                    );
+                });
+
+            // Store cleanup function
+            window._adminChatShowCleanup = () => {
+                console.log(
+                    "[DEBUG] Cleaning up Admin Chat Show message listener"
+                );
+                if (window.Echo) {
+                    channel.stopListening("NewMessageEvent");
+                }
+            };
+
+            return true;
+        };
+
+        // Try to set up listeners immediately
+        if (setupMessageListeners()) {
+            return () => {
+                if (window._adminChatShowCleanup) {
+                    window._adminChatShowCleanup();
+                    delete window._adminChatShowCleanup;
+                }
+            };
         }
 
-        const debouncedMessageReload = debounce(() => {
-            router.reload({
-                preserveScroll: true,
-                only: ["messages"], // Only reload messages
-            });
-        }, 350);
-
-        const channel = window.Echo.private("message." + auth.user.uuid);
-
-        channel.listen("NewMessageEvent", (e) => {
-            // Check if the message is for the current chat
-            if (
-                e.message.sender_id === chatWithUser.id ||
-                e.message.receiver_id === chatWithUser.id
-            ) {
-                debouncedMessageReload();
+        // If Echo is not ready, wait for it to be initialized
+        const checkEchoInterval = setInterval(() => {
+            if (window.Echo) {
+                console.log(
+                    "[DEBUG] Echo detected in Admin Chat Show, setting up listeners"
+                );
+                if (setupMessageListeners()) {
+                    clearInterval(checkEchoInterval);
+                }
             }
-        });
+        }, 100);
+
+        // Timeout after 5 seconds
+        const timeout = setTimeout(() => {
+            clearInterval(checkEchoInterval);
+            console.error(
+                "[DEBUG] Echo initialization timeout in Admin Chat Show after 5 seconds"
+            );
+        }, 5000);
 
         return () => {
-            if (window.Echo) {
-                channel.stopListening("NewMessageEvent");
+            clearInterval(checkEchoInterval);
+            clearTimeout(timeout);
+            if (window._adminChatShowCleanup) {
+                window._adminChatShowCleanup();
+                delete window._adminChatShowCleanup;
             }
         };
     }, [auth.user.uuid, chatWithUser.id]);
@@ -71,25 +151,78 @@ export default function AdminChatShow({
 
     // Setup typing listener
     useEffect(() => {
-        // Check if Echo is initialized
-        if (!window.Echo) {
-            console.warn("Echo is not initialized yet");
-            return;
+        console.log("[DEBUG] Admin Chat Show typing listener effect triggered");
+
+        // Function to set up typing listeners
+        const setupTypingListeners = () => {
+            if (!window.Echo) {
+                console.warn(
+                    "[DEBUG] Echo is not initialized yet for admin typing"
+                );
+                return false;
+            }
+
+            const channel = window.Echo.private("message." + auth.user.uuid);
+            console.log("[DEBUG] Admin Chat Show setting up typing listener");
+
+            channel.listenForWhisper("typing", () => {
+                console.log("[DEBUG] Admin typing whisper received");
+                setIsTyping(true);
+
+                setTimeout(() => {
+                    setIsTyping(false);
+                }, 2000);
+            });
+
+            // Store cleanup function
+            window._adminTypingCleanup = () => {
+                console.log(
+                    "[DEBUG] Cleaning up Admin Chat Show typing listener"
+                );
+                if (window.Echo) {
+                    channel.stopListeningForWhisper("typing");
+                }
+            };
+
+            return true;
+        };
+
+        // Try to set up listeners immediately
+        if (setupTypingListeners()) {
+            return () => {
+                if (window._adminTypingCleanup) {
+                    window._adminTypingCleanup();
+                    delete window._adminTypingCleanup;
+                }
+            };
         }
 
-        const channel = window.Echo.private("message." + auth.user.uuid);
+        // If Echo is not ready, wait for it to be initialized
+        const checkEchoInterval = setInterval(() => {
+            if (window.Echo) {
+                console.log(
+                    "[DEBUG] Echo detected for admin typing, setting up listeners"
+                );
+                if (setupTypingListeners()) {
+                    clearInterval(checkEchoInterval);
+                }
+            }
+        }, 100);
 
-        channel.listenForWhisper("typing", () => {
-            setIsTyping(true);
-
-            setTimeout(() => {
-                setIsTyping(false);
-            }, 2000);
-        });
+        // Timeout after 5 seconds
+        const timeout = setTimeout(() => {
+            clearInterval(checkEchoInterval);
+            console.error(
+                "[DEBUG] Echo initialization timeout for admin typing after 5 seconds"
+            );
+        }, 5000);
 
         return () => {
-            if (window.Echo) {
-                channel.stopListeningForWhisper("typing");
+            clearInterval(checkEchoInterval);
+            clearTimeout(timeout);
+            if (window._adminTypingCleanup) {
+                window._adminTypingCleanup();
+                delete window._adminTypingCleanup;
             }
         };
     }, [auth.user.uuid]);

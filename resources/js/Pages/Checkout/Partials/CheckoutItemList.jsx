@@ -1,17 +1,9 @@
 ﻿import React, { memo } from "react";
 import { Button } from "@/components/ui/button.jsx";
 import { formatRupiah } from "@/Utils/formatRupiah.js";
-import {
-    FaTicketAlt,
-    FaCalendarAlt,
-    FaEdit,
-} from "react-icons/fa";
+import { FaTicketAlt, FaCalendarAlt, FaEdit } from "react-icons/fa";
 
-const CheckoutItemList = memo(({
-    items,
-    itemNotes,
-    onEditNote,
-}) => {
+const CheckoutItemList = memo(({ items, itemNotes, onEditNote }) => {
     return (
         <div className="space-y-4">
             {items.map((item, index) => (
@@ -80,9 +72,11 @@ const CheckoutItemList = memo(({
                                 <div className="text-xs text-gray-600">
                                     Rp {formatRupiah(item.price)} ×{" "}
                                     {item.quantity}{" "}
-                                    {["service", "building", "property"].includes(
-                                        item.type
-                                    ) &&
+                                    {[
+                                        "service",
+                                        "building",
+                                        "property",
+                                    ].includes(item.type) &&
                                         item.rent_days &&
                                         "Hari"}
                                     {["ticket"].includes(item.type) && "Tiket"}

@@ -87,30 +87,34 @@ const PaymentSheet = ({
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     Memuat Alamat...
                                 </div>
-                            ) : (() => {
-                                const filtered = addresses.filter(
-                                    (address) => address.id === selectedAddressId
-                                );
-
-                                if (filtered.length === 0) {
-                                    return (
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                            <FaMapMarkerAlt />
-                                            Masukkan Alamat
-                                        </div>
+                            ) : (
+                                (() => {
+                                    const filtered = addresses.filter(
+                                        (address) =>
+                                            address.id === selectedAddressId
                                     );
-                                }
 
-                                return filtered.map((address) => (
-                                    <div
-                                        key={address.id}
-                                        className="flex items-center gap-2 text-slate-800"
-                                    >
-                                        <FaMapMarkerAlt />
-                                        {address.label || address.recipient_name}
-                                    </div>
-                                ));
-                            })()}
+                                    if (filtered.length === 0) {
+                                        return (
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <FaMapMarkerAlt />
+                                                Masukkan Alamat
+                                            </div>
+                                        );
+                                    }
+
+                                    return filtered.map((address) => (
+                                        <div
+                                            key={address.id}
+                                            className="flex items-center gap-2 text-slate-800"
+                                        >
+                                            <FaMapMarkerAlt />
+                                            {address.label ||
+                                                address.recipient_name}
+                                        </div>
+                                    ));
+                                })()
+                            )}
                         </Button>
                     </div>
 

@@ -11,14 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select.jsx";
-import {
-    
-    ImageIcon,
-    
-    Search,
-    Filter,
-    Settings,
-} from "lucide-react";
+import { ImageIcon, Search, Filter, Settings } from "lucide-react";
 import {
     Table,
     TableBody,
@@ -43,10 +36,8 @@ export default function Index({
     buildings = [],
     propertys = [],
     leaves = [],
-    
 }) {
     const ziggy = { url: "" };
-
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat("id-ID", {

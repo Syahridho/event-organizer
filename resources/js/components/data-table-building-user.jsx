@@ -44,7 +44,11 @@ import {
     XCircleIcon,
     Ban,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.jsx";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar.jsx";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -109,7 +113,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table.jsx";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs.jsx";
 import { router, usePage } from "@inertiajs/react";
 import { formatRupiah } from "@/Utils/formatRupiah.js";
 

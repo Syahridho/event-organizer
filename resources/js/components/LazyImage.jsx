@@ -18,7 +18,11 @@ const LazyImage = ({ src, alt, className, onLoad, onError, ...props }) => {
 
     return (
         <div className="relative overflow-hidden rounded-lg w-full h-full">
-            {!loaded && <Skeleton className={`absolute inset-0 w-full h-full ${className}`} />}
+            {!loaded && (
+                <Skeleton
+                    className={`absolute inset-0 w-full h-full ${className}`}
+                />
+            )}
             <img
                 src={src}
                 alt={alt}

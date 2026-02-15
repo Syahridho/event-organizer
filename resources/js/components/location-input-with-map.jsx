@@ -72,13 +72,13 @@ export default function LocationInputWithMap({
                 )}
             </div>
 
-            <div 
-                className="map-wrapper w-full" 
-                style={{ 
+            <div
+                className="map-wrapper w-full"
+                style={{
                     height: "300px",
                     position: "relative",
                     overflow: "hidden",
-                    marginTop: "0.5rem"
+                    marginTop: "0.5rem",
                 }}
             >
                 <LocationPickerMap pin={pin} onPinChange={onPinChange} />

@@ -7,7 +7,13 @@ import {
 import { Card, CardContent } from "@/components/ui/card.jsx";
 import { cn } from "@/Lib/utils";
 
-const ImageGallery = ({ images, activeImage, setActiveImage, serviceName, serviceStatus }) => {
+const ImageGallery = ({
+    images,
+    activeImage,
+    setActiveImage,
+    serviceName,
+    serviceStatus,
+}) => {
     return (
         <>
             <div className="bg-white rounded-lg overflow-hidden shadow-lg">

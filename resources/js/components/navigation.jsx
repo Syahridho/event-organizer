@@ -37,7 +37,6 @@ export default function Navigation() {
     const { auth, ziggy, counts } = usePage().props;
     const dispatch = useDispatch();
 
-
     const cartItemCount = useSelector(selectCartItemCount);
 
     const [searchKeyword, setSearchKeyword] = useState("");
@@ -54,9 +53,6 @@ export default function Navigation() {
         const initialCartItems = counts?.cart_items;
 
         if (initialCartItems && initialCartItems.length > 0) {
-            
-            
-
             dispatch(setCartItems(initialCartItems));
         } else if (initialCartItems && initialCartItems.length === 0) {
             dispatch(clearCart());
@@ -252,7 +248,6 @@ export default function Navigation() {
                         <span className="text-xl md:text-2xl font-bold text-primary">
                             Eventnusa
                         </span>
-                      
                     </Link>
 
                     <div className="hidden md:flex flex-1 max-w-md mx-6">
