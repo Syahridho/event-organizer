@@ -57,7 +57,7 @@ const CustomCalendar = lazy(() => import("@/components/custom-calendar.jsx"));
 const ReviewSection = lazy(() => import("@/components/ReviewSection.jsx"));
 const AddressManager = lazy(() => import("@/components/address-manager.jsx"));
 const PropertyConfirmDialog = lazy(() =>
-    import("@/components/DetailPage/PropertyConfirmDialog.jsx?v=" + Date.now())
+    import("@/components/DetailPage/PropertyConfirmDialog.jsx")
 );
 const ImageGallery = lazy(() =>
     import("@/components/DetailPage/ImageGallery.jsx")
