@@ -16,7 +16,7 @@ export default defineConfig({
             refresh: true,
         }),
         react({
-            // Enable React optimization
+            // Enable React optimization web
             babel: {
                 plugins: [
                     // Remove PropTypes in production
