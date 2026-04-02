@@ -87,10 +87,6 @@ export default defineConfig({
                     "icons-pi": ["react-icons/pi"],
                     "icons-ti": ["react-icons/ti"],
                 },
-                // Optimize chunk file names
-                chunkFileNames: "assets/js/[name]-[hash].js",
-                entryFileNames: "assets/js/[name]-[hash].js",
-                assetFileNames: "assets/[ext]/[name]-[hash].[ext]",
             },
         },
         // Increase chunk size warning limit
