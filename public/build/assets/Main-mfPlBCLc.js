@@ -1,1 +1,0 @@
-import{j as s}from"./vendor-ui-3hjf0fOv.js";import{N as i,F as n}from"./navigation-DniVUWmz.js";function r({children:r}){return s.jsxs("div",{className:"min-h-screen flex flex-col",children:[s.jsx(i,{}),s.jsx("main",{children:r}),s.jsx(n,{})]})}export{r as M};

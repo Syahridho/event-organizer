@@ -37,6 +37,7 @@ import { formatRupiah, formatRupiahInput } from "@/Utils/formatRupiah.js";
 import { Textarea } from "@/components/ui/textarea.jsx";
 import { Switch } from "@/components/ui/switch.jsx";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 
 const breadcrumbs = [
     { title: "Dashboard", href: "/admin/dashboard" },
@@ -397,7 +398,7 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                             Rp.
                                                         </span>
                                                     ) : pajakType ===
-                                                      "percent" ? (
+                                                        "percent" ? (
                                                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                                                             %
                                                         </span>
@@ -409,22 +410,21 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                         placeholder="Masukkan Jumlah Pajak"
                                                         type={
                                                             pajakType ===
-                                                            "fixed"
+                                                                "fixed"
                                                                 ? "text"
                                                                 : "number"
                                                         }
-                                                        className={`appearance-none pl-10 ${
-                                                            pajakType ===
-                                                            "percent"
+                                                        className={`appearance-none pl-10 ${pajakType ===
+                                                                "percent"
                                                                 ? "[&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                                                 : ""
-                                                        }`}
+                                                            }`}
                                                         value={
                                                             pajakType ===
-                                                            "fixed"
+                                                                "fixed"
                                                                 ? formatRupiahInput(
-                                                                      pajakAmount
-                                                                  )
+                                                                    pajakAmount
+                                                                )
                                                                 : pajakAmount
                                                         }
                                                         onChange={(e) => {
@@ -473,8 +473,8 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                     {setting?.tax_type === "percent"
                                         ? `${setting?.tax_value}%`
                                         : `Rp. ${formatRupiah(
-                                              setting?.tax_value || 0
-                                          )}`}
+                                            setting?.tax_value || 0
+                                        )}`}
                                 </CardDescription>
                             </CardHeader>
                         </Card>
@@ -536,8 +536,8 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                         className={clsx(
                                                             "mx-auto w-20 h-20 rounded-lg shadow-sm border-2 flex justify-center items-center cursor-pointer hover:bg-muted transition-colors",
                                                             !newLogoPreview &&
-                                                                !logo &&
-                                                                "border-dashed"
+                                                            !logo &&
+                                                            "border-dashed"
                                                         )}
                                                     >
                                                         {newLogoPreview ? (
@@ -850,8 +850,8 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                                 className={clsx(
                                                     "mx-auto w-full h-74 rounded shadow border flex justify-center items-center rounded cursor-pointer hover:bg-muted ",
                                                     !newHeroPreview &&
-                                                        !heroImage &&
-                                                        "border-dashed"
+                                                    !heroImage &&
+                                                    "border-dashed"
                                                 )}
                                             >
                                                 {newHeroPreview ? (
@@ -1057,7 +1057,7 @@ export default function AdminSettingDashboard({ auth, setting }) {
                                         className={clsx(
                                             "mx-auto w-full h-74 rounded shadow border flex justify-center items-center rounded cursor-pointer hover:bg-muted ",
                                             !newDefaultEventPreview &&
-                                                "border-dashed"
+                                            "border-dashed"
                                         )}
                                     >
                                         {newDefaultEventPreview ? (
